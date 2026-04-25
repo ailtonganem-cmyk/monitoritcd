@@ -78,6 +78,31 @@
 - Mensagens de erro genéricas para o cliente; detalhe técnico apenas em log estruturado.
 - `pydantic.SecretStr` em todos os campos sensíveis.
 
+### T11: Cloud Function `bot_webhook` (Telegram bot serverless)
+**Estado**: ativo (2026-04-25).
+
+Substitui o polling worker local (Task Scheduler Windows) por webhook
+Cloud Function que recebe updates do Telegram e despacha para os
+handlers existentes em `monitoritcd.bot.handlers`.
+
+**Vantagens**:
+- Bot 24/7 sem dependência de PC ligado.
+- Cold start ~1-2s (Cloud Run idle); aceitável para casos esporádicos.
+- Reusa todo o código de handlers (dispatch, /observar, /status, etc).
+
+**Auth**: header `X-Telegram-Bot-Api-Secret-Token` deve bater com
+`TELEGRAM_WEBHOOK_SECRET` (Telegram envia automaticamente quando
+webhook é configurado com `secret_token`).
+
+**Configuração no Telegram (manual, uma vez)**:
+```
+curl -X POST "https://api.telegram.org/bot<TOKEN>/setWebhook" \
+     -d "url=<URL>" \
+     -d "secret_token=<TELEGRAM_WEBHOOK_SECRET>"
+```
+
+**Localização**: `functions/bot_webhook/main.py`. 7 testes unitários.
+
 ### T10: Cloud Function `canary_filter` (anti-ruído honeytoken)
 **Estado**: ativo (2026-04-25).
 

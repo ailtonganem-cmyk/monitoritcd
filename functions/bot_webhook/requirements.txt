@@ -1,0 +1,5 @@
+# Bot webhook dependencies
+# monitoritcd is installed from GitHub at deploy time (repo is public)
+git+https://github.com/ailtonganem-cmyk/monitoritcd.git@main
+functions-framework==3.*
+flask==3.*

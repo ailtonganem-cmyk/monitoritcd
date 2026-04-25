@@ -109,15 +109,44 @@ jobs:
             --set-env-vars=FILTER_TOKEN=$FILTER_TOKEN,TELEGRAM_BOT_TOKEN=$TG_BOT,TELEGRAM_OWNER_CHAT_ID=$TG_CHAT \
             --project=$PROJECT_ID
 
+      - name: Deploy bot_webhook
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Bot webhook reusa todo o pacote monitoritcd (instalado via git+https)
+          # Memory mais alta porque importa pacote inteiro + Firestore async
+          gcloud functions deploy bot_webhook \
+            --gen2 \
+            --runtime=python311 \
+            --region=southamerica-east1 \
+            --source=functions/bot_webhook \
+            --entry-point=bot_webhook \
+            --trigger-http \
+            --allow-unauthenticated \
+            --memory=512MB \
+            --timeout=60s \
+            --max-instances=3 \
+            --set-env-vars="OWNER_ID=$OWNER_ID,OWNER_EMAIL=$OWNER_EMAIL,GEMINI_API_KEY=$GEMINI_API_KEY,GMAIL_USER=$GMAIL_USER,GMAIL_APP_PASSWORD=$GMAIL_APP_PASSWORD,TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN,TELEGRAM_OWNER_CHAT_ID=$TELEGRAM_OWNER_CHAT_ID,TELEGRAM_WEBHOOK_SECRET=$TELEGRAM_WEBHOOK_SECRET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET,FIREBASE_SERVICE_ACCOUNT_JSON=$FIREBASE_SERVICE_ACCOUNT_JSON" \
+            --project=$PROJECT_ID
+
       - name: Print URLs
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
-          echo "proxy_br:"
-          gcloud functions describe proxy_br \
-            --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
-            --format='value(serviceConfig.uri)'
-          echo "canary_filter:"
-          gcloud functions describe canary_filter \
-            --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
-            --format='value(serviceConfig.uri)'
+          for fn in proxy_br canary_filter bot_webhook; do
+            echo "$fn:"
+            gcloud functions describe $fn \
+              --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
+              --format='value(serviceConfig.uri)' 2>/dev/null || echo "  (not deployed)"
+          done

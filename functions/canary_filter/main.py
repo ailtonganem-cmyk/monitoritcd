@@ -96,12 +96,7 @@ def _extract_trigger_info(payload: dict[str, Any]) -> dict[str, str]:
     """
     info = payload.get("additional_info") or {}
     if isinstance(info, dict):
-        ua = (
-            info.get("useragent")
-            or info.get("user_agent")
-            or info.get("User-Agent")
-            or ""
-        )
+        ua = info.get("useragent") or info.get("user_agent") or info.get("User-Agent") or ""
         ip = info.get("src_ip") or info.get("source_ip") or info.get("ip") or ""
     else:
         ua = ""
@@ -165,7 +160,7 @@ def canary_filter(request: Request) -> Response:
 
     try:
         payload = request.get_json(force=True, silent=True) or {}
-    except Exception:  # noqa: BLE001 - aceitar qualquer corpo, Canarytokens varia
+    except Exception:
         payload = {}
 
     info = _extract_trigger_info(payload)

@@ -43,9 +43,7 @@ class TestIsScannerUA:
         assert _is_scanner_ua("curl/7.84.0")
 
     def test_browser_passes(self) -> None:
-        assert not _is_scanner_ua(
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0"
-        )
+        assert not _is_scanner_ua("Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/132.0")
 
     def test_empty(self) -> None:
         assert not _is_scanner_ua("")
@@ -154,7 +152,7 @@ class TestCanaryFilter:
     def test_telegram_failure_still_returns_200(self) -> None:
         # Canarytokens.org não retentar se 200; falha Telegram absorvida
         with patch("functions.canary_filter.main.httpx.Client") as mock_client_cls:
-            import httpx
+            import httpx  # noqa: PLC0415
 
             mock_client = MagicMock()
             mock_client.__enter__.return_value = mock_client
