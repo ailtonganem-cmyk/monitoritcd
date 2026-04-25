@@ -205,3 +205,18 @@ ignore-init-method = true
 ignore-magic = true
 ignore-private = true
 verbose = 1
+
+# ---------------------------------------------------------------------------
+# Mutation testing (mutmut 3.x)
+# ---------------------------------------------------------------------------
+# Roda em CI semanal (segundas 03:00 UTC) — não no commit, custo alto.
+# Foco em módulos críticos: filters, dedup, security.
+[tool.mutmut]
+paths_to_mutate = [
+    "src/monitoritcd/filters",
+    "src/monitoritcd/dedup.py",
+    "src/monitoritcd/security",
+    "src/monitoritcd/notifiers/severity.py",
+]
+runner = "python -m pytest -x -q tests/unit tests/security"
+also_copy = ["tests/", "pyproject.toml"]
