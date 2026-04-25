@@ -1,13 +1,13 @@
-id: almg-proposicoes
+id: almg-legislacao
 uf: MG
-nome: "ALMG — Proposições em tramitação"
+nome: "ALMG — Legislação mineira (leis sancionadas)"
 tipo: assembleia
 parser: almg
-url: "https://dadosabertos.almg.gov.br/api/v2/proposicoes/pesquisa/direcionada"
+url: "https://dadosabertos.almg.gov.br/api/v2/legislacao/mineira/pesquisa/direcionada"
 selectors:
-  modo: proposicoes
+  modo: legislacao
   palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
-  dias: "60"
+  dias: "90"
 keywords_required:
   - ITCMD
   - ITCD
@@ -24,6 +24,5 @@ ativo: true
 trusted: true
 fragile: false
 notas: |
-  ALMG — Assembleia Legislativa de Minas Gerais.
-  API pública sem autenticação em dadosabertos.almg.gov.br.
-  Cobre PLs, PECs, vetos, mensagens em tramitação.
+  ALMG legislação mineira sancionada (Leis, Decretos, Resoluções).
+  Mais lenta de mudar que proposições — janela de 90 dias é razoável.

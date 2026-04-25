@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from monitoritcd.collectors import (
+    ALMGCollector,
     GenericHTMLCollector,
     GenericRSSCollector,
     LexMLCollector,
@@ -399,3 +400,228 @@ class TestLexML:
             async with LexMLCollector(src) as c:
                 items = await c.collect()
         assert len(items) == 2
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALMG (Assembleia Legislativa de Minas Gerais)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _almg_source(modo: str = "legislacao") -> Source:
+    base = "https://dadosabertos.almg.gov.br/api/v2"
+    if modo == "proposicoes":
+        url = f"{base}/proposicoes/pesquisa/direcionada"
+    else:
+        url = f"{base}/legislacao/mineira/pesquisa/direcionada"
+    return Source(
+        id=f"almg-{modo}",
+        uf="MG",
+        nome=f"ALMG {modo}",
+        tipo=TipoFonte.ASSEMBLEIA,
+        parser=Parser.ALMG,
+        url=url,
+        selectors={
+            "modo": modo,
+            "palavras_chave": "ITCMD",
+            "dias": str(365 * 10),  # tudo, para o teste
+        },
+    )
+
+
+ALMG_LEGIS_RESPONSE = """{
+  "resultado": {
+    "noOcorrencias": 1,
+    "listaItem": [
+      {
+        "numDoc": "000121965",
+        "norma": "Lei 25825 2026",
+        "tipo": "LEI",
+        "numero": "25825",
+        "ano": "2026",
+        "data": "20260422",
+        "origem": "Legislativo",
+        "ementa": "Disciplina ITCMD em casos de heranca digital."
+      }
+    ]
+  }
+}"""
+
+
+ALMG_PROP_RESPONSE = """{
+  "resultado": {
+    "noOcorrencias": 1,
+    "listaItem": [
+      {
+        "tipoProjeto": "PROJETO DE LEI",
+        "siglaTipoProjeto": "PL",
+        "numero": "1234",
+        "ano": "2026",
+        "autor": "Dep. Fulano",
+        "assunto": "Aumenta aliquota do ITCMD para grandes fortunas.",
+        "situacao": "Em tramitacao",
+        "dataPublicacao": "2026-04-20",
+        "numeroDoc": "000999888",
+        "proposicao": "PL 1234 2026 - PROJETO DE LEI"
+      }
+    ]
+  }
+}"""
+
+
+@pytest.mark.integration
+class TestALMGCollector:
+    @pytest.mark.asyncio
+    async def test_legislacao_parses_response(self) -> None:
+        src = _almg_source(modo="legislacao")
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=ALMG_LEGIS_RESPONSE),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1
+        assert items[0].titulo_raw == "Lei 25825 2026"
+        assert "heranca digital" in (items[0].texto_raw or "")
+        assert items[0].url.startswith("https://www.almg.gov.br/legislacao-mineira/lei/25825/2026")
+        assert items[0].data_publicacao is not None
+        assert items[0].data_publicacao.year == 2026
+
+    @pytest.mark.asyncio
+    async def test_proposicoes_parses_response(self) -> None:
+        src = _almg_source(modo="proposicoes")
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=ALMG_PROP_RESPONSE),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1
+        assert "PL 1234" in items[0].titulo_raw
+        assert "tramitacao-projetos" in items[0].url
+        assert "Dep. Fulano" in (items[0].texto_raw or "")
+
+    @pytest.mark.asyncio
+    async def test_dedupe_across_keywords(self) -> None:
+        # Mesmo doc retornado para 2 keywords → deve aparecer só 1 vez
+        src = _almg_source(modo="legislacao").model_copy(
+            update={
+                "selectors": {
+                    "modo": "legislacao",
+                    "palavras_chave": "ITCMD|ITCD",
+                    "dias": "3650",
+                },
+            },
+        )
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=ALMG_LEGIS_RESPONSE),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1  # numDoc 000121965 deduped
+
+    @pytest.mark.asyncio
+    async def test_filter_by_dias(self) -> None:
+        # Item de 2026-04-22, com dias=1 e teste rodando muito depois → filtrado
+        src = _almg_source(modo="legislacao").model_copy(
+            update={
+                "selectors": {
+                    "modo": "legislacao",
+                    "palavras_chave": "ITCMD",
+                    "dias": "1",
+                },
+            },
+        )
+        old_response = ALMG_LEGIS_RESPONSE.replace("20260422", "20200101")
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=old_response),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_invalid_modo_raises(self) -> None:
+        src = _almg_source(modo="legislacao").model_copy(
+            update={"selectors": {"modo": "invalido", "palavras_chave": "X"}},
+        )
+        async with ALMGCollector(src) as c:
+            with pytest.raises(CollectorError, match="modo ALMG inválido"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_empty_keywords_raises(self) -> None:
+        src = _almg_source(modo="legislacao").model_copy(
+            update={"selectors": {"modo": "legislacao", "palavras_chave": "  |  "}},
+        )
+        async with ALMGCollector(src) as c:
+            with pytest.raises(CollectorError, match="palavras_chave"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_logs_and_continues(self) -> None:
+        src = _almg_source(modo="legislacao")
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text="not json"),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        # JSON invalido nao derruba — só loga e segue
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_invalid_dias_raises(self) -> None:
+        src = _almg_source(modo="legislacao").model_copy(
+            update={"selectors": {"modo": "legislacao", "palavras_chave": "X", "dias": "abc"}},
+        )
+        async with ALMGCollector(src) as c:
+            with pytest.raises(CollectorError, match="dias inválido"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_fetch_failure_does_not_raise(self) -> None:
+        src = _almg_source(modo="legislacao")
+        async with respx.mock:
+            # Todas as tentativas retornam 500 — tenacity desiste, CollectorError captado
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(500),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert items == []  # falha não derruba pipeline
+
+    @pytest.mark.asyncio
+    async def test_legislacao_skips_item_without_required_fields(self) -> None:
+        src = _almg_source(modo="legislacao")
+        bad_response = """{"resultado": {"listaItem": [{"numDoc": "X", "tipo": "LEI"}]}}"""
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=bad_response),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        # numero e ano ausentes → item descartado silenciosamente
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_proposicao_skips_item_without_required_fields(self) -> None:
+        src = _almg_source(modo="proposicoes")
+        bad_response = """{"resultado": {"listaItem": [{"numeroDoc": "X", "siglaTipoProjeto": "PL"}]}}"""
+        async with respx.mock:
+            respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
+                return_value=httpx.Response(200, text=bad_response),
+            )
+            async with ALMGCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_compact_date_invalid_returns_none(self) -> None:
+        from monitoritcd.collectors.custom.almg import _parse_compact_date  # noqa: PLC0415
+
+        assert _parse_compact_date(None) is None
+        assert _parse_compact_date("") is None
+        assert _parse_compact_date("notadate") is None
+        assert _parse_compact_date("20260230") is None  # 30 fev: dia inválido
