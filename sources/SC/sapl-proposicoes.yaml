@@ -20,7 +20,7 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: true
 fragile: false
 geo_restricted: true
@@ -31,3 +31,6 @@ notas: |
 
   geo_restricted=true: servidor pode rejeitar IPs Azure US.
   Fallback autom√°tico via Cloud Function proxy_br BR.
+
+# AVISO 2026-04-25: caminho /sapl/api/ retorna HTML do CMS, N√O eh SAPL real.
+# Marcado inativo. Investigar URL alternativa em fase futura.

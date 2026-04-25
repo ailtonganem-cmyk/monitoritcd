@@ -16,23 +16,26 @@
 #### Via ALMG (custom, API JSON própria — 1 UF)
 - **MG** — `dadosabertos.almg.gov.br` (proposições + legislação mineira)
 
-#### Via SAPL/Interlegis (genérico, API REST padronizada — 13 UFs)
-- **AC** — `sapl.al.ac.leg.br`
-- **AL** — `sapl.al.al.leg.br`
+#### Via SAPL/Interlegis (genérico, API REST padronizada — 11 UFs)
+Validados em smoke test 2026-04-25: 104 items reais coletados:
+- **AC** — `sapl.al.ac.leg.br` (4 hits ITCMD)
+- **AL** — `sapl.al.al.leg.br` (PL 1334/2025)
 - **AM** — `sapl.al.am.leg.br`
 - **CE** — `www.al.ce.leg.br/sapl`
 - **ES** — `www.al.es.leg.br/sapl`
 - **GO** — `www.al.go.leg.br/sapl`
 - **MT** — `sapl.al.mt.leg.br`
-- **PB** — `sapl.al.pb.leg.br`
-- **PE** — `www.al.pe.leg.br/sapl`
-- **PI** — `sapl.al.pi.leg.br`
-- **RO** — `sapl.al.ro.leg.br`
-- **RR** — `sapl.al.rr.leg.br`
-- **SC** — `www.al.sc.leg.br/sapl`
+- **PB** — `sapl.al.pb.leg.br` (20 items)
+- **PI** — `sapl.al.pi.leg.br` (12 items)
+- **RO** — `sapl.al.ro.leg.br` (10 items)
+- **RR** — `sapl.al.rr.leg.br` (17 items)
 
-**Total**: 19 fontes ativas. Cobertura legislativa (LexML) atinge 27 entes + federal.
-Cobertura de proposições em tramitação: 14 UFs (52%).
+**Marcados inativos** (path `/sapl/api/` é WordPress, não SAPL real):
+- ⚠️ **PE** — Alepe usa CMS próprio, URL `/sapl/api/` retorna HTML
+- ⚠️ **SC** — Alesc idem
+
+**Total**: 17 fontes ativas. Cobertura legislativa (LexML) atinge 27 entes + federal.
+Cobertura de proposições em tramitação: 12 UFs (44%).
 
 ## 🎯 Após implementação do LexMLPortalCollector
 
