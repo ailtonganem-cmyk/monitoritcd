@@ -78,6 +78,35 @@
 - Mensagens de erro genéricas para o cliente; detalhe técnico apenas em log estruturado.
 - `pydantic.SecretStr` em todos os campos sensíveis.
 
+### T10: Cloud Function `canary_filter` (anti-ruído honeytoken)
+**Estado**: ativo (2026-04-25).
+
+Em repos públicos, scanners automatizados detectam padrões `AKIA...` e
+**tentam autenticar** o token para validar — disparando o canarytoken
+dezenas de vezes/dia sem ser ataque humano real. Ruído alto, valor zero.
+
+Esta função recebe webhook do Canarytokens.org, filtra por User-Agent
+e IP de cloud providers conhecidos, e só notifica via Telegram quando
+o trigger parece **humano real**.
+
+**Filtros aplicados**:
+- User-Agent regex: `python-requests`, `Go-http-client`, `curl/`,
+  `libwww-perl`, `aiohttp`, `okhttp`, `aws-sdk-go`, `botocore`,
+  `trufflehog`, `gitleaks`, etc.
+- IP em ranges de cloud: Azure US (52.160-179, 20/8, 13.64/11),
+  AWS US, GCP US.
+
+**Auth**: `?token=...` ou `X-Canary-Filter-Token` header (secret
+`CANARY_FILTER_TOKEN` no GitHub).
+
+**Configuração no Canarytokens.org** (manual, uma única vez):
+1. Email do canary → "Manage Alert" → tab "Webhook"
+2. URL: `https://canary-filter-XXX.run.app/?token=<CANARY_FILTER_TOKEN>`
+3. Save
+4. Email original pode continuar ativo como backup
+
+Localização: `functions/canary_filter/main.py`. 18 testes unitários.
+
 ### T9: Cloud Function `proxy_br` (anti-SSRF)
 **Estado**: ativo (2026-04-25).
 

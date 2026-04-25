@@ -88,12 +88,36 @@ jobs:
             --set-env-vars=PROXY_TOKEN=$PROXY_TOKEN \
             --project=$PROJECT_ID
 
-      - name: Print URL
+      - name: Deploy canary_filter
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FILTER_TOKEN: ${{ secrets.CANARY_FILTER_TOKEN }}
+          TG_BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TG_CHAT: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+        run: |
+          gcloud functions deploy canary_filter \
+            --gen2 \
+            --runtime=python311 \
+            --region=southamerica-east1 \
+            --source=functions/canary_filter \
+            --entry-point=canary_filter \
+            --trigger-http \
+            --allow-unauthenticated \
+            --memory=256MB \
+            --timeout=30s \
+            --max-instances=5 \
+            --set-env-vars=FILTER_TOKEN=$FILTER_TOKEN,TELEGRAM_BOT_TOKEN=$TG_BOT,TELEGRAM_OWNER_CHAT_ID=$TG_CHAT \
+            --project=$PROJECT_ID
+
+      - name: Print URLs
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
+          echo "proxy_br:"
           gcloud functions describe proxy_br \
-            --gen2 \
-            --region=southamerica-east1 \
-            --project=$PROJECT_ID \
+            --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
+            --format='value(serviceConfig.uri)'
+          echo "canary_filter:"
+          gcloud functions describe canary_filter \
+            --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
             --format='value(serviceConfig.uri)'
