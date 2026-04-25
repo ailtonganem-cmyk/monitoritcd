@@ -1,0 +1,25 @@
+# MonitorITCD — gitleaks config
+# Estende a config padrão e adiciona allowlist para fixtures de teste
+# que contêm padrões intencionalmente parecidos com secrets para validar
+# o redator de logs.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixtures de teste do redactor de logs"
+# Caminhos com fakes intencionais (auditados manualmente)
+paths = [
+    '''tests/security/test_log_redactor\.py''',
+    '''scripts/check_secret_literals\.py''',     # patterns de detecção (não secrets)
+    '''CLAUDE\.md''',                            # docs mencionam prefixos
+    '''SECURITY\.md''',
+    '''IDEAS\.md''',
+    '''\.pre-commit-config\.yaml''',             # patterns no hook
+    '''\.gitleaks\.toml''',                      # esta própria config
+]
+# Strings literais que aparecem em docs ou testes
+regexes = [
+    '''AKIAIOSFODNN7EXAMPLE''',                  # exemplo oficial AWS
+    '''-----BEGIN [A-Z ]*PRIVATE KEY-----''',    # marcador, não chave real (em docs)
+]

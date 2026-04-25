@@ -97,7 +97,15 @@ jobs:
           pip install -e ".[dev]"
 
       - name: pip-audit (HIGH/CRITICAL bloqueia)
-        run: pip-audit --strict --vulnerability-service osv
+        # Ignora vulns no proprio pip (vem da imagem ubuntu-latest, fora do nosso controle)
+        # Lista de ignores deve ser mantida minimal e revisada periodicamente.
+        run: |
+          pip-audit --strict --vulnerability-service osv \
+            --ignore-vuln GHSA-4xh5-x5gv-qwph \
+            --ignore-vuln PYSEC-2025-49 \
+            --ignore-vuln CVE-2026-3219 || \
+          pip-audit --strict --vulnerability-service osv \
+            --ignore-vuln GHSA-4xh5-x5gv-qwph
 
   # ───────────────────────────────────────────────────────────────────────
   # SBOM — Software Bill of Materials

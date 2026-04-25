@@ -104,13 +104,15 @@ jobs:
       - name: Mutmut run
         run: |
           mutmut run --paths-to-mutate src/monitoritcd/filters,src/monitoritcd/security,src/monitoritcd/dedup.py || true
-          mutmut results
-      - name: Mutation report
-        if: always()
-        run: mutmut html
+          mutmut results > mutmut-results.txt
+          echo '## Mutation Results' >> $GITHUB_STEP_SUMMARY
+          tail -50 mutmut-results.txt >> $GITHUB_STEP_SUMMARY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: mutation-report
-          path: html/
+          name: mutation-results
+          path: |
+            mutmut-results.txt
+            mutants/
           retention-days: 30
+          if-no-files-found: ignore
