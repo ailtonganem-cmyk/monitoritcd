@@ -170,7 +170,10 @@ omit = [
     "*/storage/firestore_store.py",
     "*/storage/base.py",  # Protocol stubs — sem execução real
     "*/llm/gemini.py",  # SDK real do Google — testado manualmente em dev
-    "*/bot/poller.py",  # I/O loop Telegram — handlers testados em integration
+    # bot/poller.py: handle_update + send_message + _validate_and_parse cobertos
+    # pelos testes unitários em tests/unit/test_bot_poller.py; poll_loop e
+    # signal handler são I/O loop infinito (testar requer integração real Telegram).
+    "*/bot/poller.py",
 ]
 
 [tool.coverage.report]
