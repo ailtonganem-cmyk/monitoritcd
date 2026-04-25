@@ -50,6 +50,7 @@ import structlog
 
 from monitoritcd.collectors import (
     ALEPCollector,
+    ALEPECollector,
     ALMGCollector,
     GenericHTMLCollector,
     GenericRSSCollector,
@@ -89,6 +90,7 @@ _PARSERS_TO_COLLECTORS = {
     Parser.LEXML_PORTAL: LexMLPortalCollector,
     Parser.ALMG: ALMGCollector,
     Parser.ALEP: ALEPCollector,
+    Parser.ALEPE: ALEPECollector,
     Parser.SAPL: SAPLCollector,
 }
 

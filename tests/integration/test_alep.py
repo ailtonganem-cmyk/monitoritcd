@@ -164,3 +164,28 @@ class TestALEPCollector:
             async with ALEPCollector(_src()) as c:
                 items = await c.collect()
         assert items == []
+
+    @pytest.mark.asyncio
+    async def test_http_error_logs_and_continues(self) -> None:
+        async with respx.mock:
+            respx.post(
+                "http://webservices.assembleia.pr.leg.br/api/public/proposicao/filtrar"
+            ).mock(return_value=httpx.Response(500))
+            async with ALEPCollector(_src()) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_iso_date_with_offset_parsed(self) -> None:
+        from monitoritcd.collectors.custom.alep import _parse_iso_date  # noqa: PLC0415
+
+        # ALEP serve "2006-02-17T08:00:00.000+0000" — offset sem ":"
+        result = _parse_iso_date("2006-02-17T08:00:00.000+0000")
+        assert result is not None
+        assert result.year == 2006
+        # Sem TZ
+        result_no_tz = _parse_iso_date("2024-01-15T10:00:00")
+        assert result_no_tz is not None
+        # None / inválida
+        assert _parse_iso_date(None) is None
+        assert _parse_iso_date("nao-data") is None

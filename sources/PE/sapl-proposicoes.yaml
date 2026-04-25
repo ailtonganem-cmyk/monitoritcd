@@ -1,13 +1,13 @@
-id: sapl-pe
+id: alepe-pe
 uf: PE
-nome: "ALEPE — Proposições em tramitação (SAPL)"
+nome: "ALEPE — Proposições (Portal Dados Abertos)"
 tipo: assembleia
-parser: sapl
-url: "https://www.al.pe.leg.br/sapl/api/materia/materialegislativa/"
+parser: alepe
+url: "https://dadosabertos.alepe.pe.gov.br/api/v1/proposicoes"
 selectors:
   palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
   dias: "365"
-  page_size: "50"
+  tipos: "projetos|indicacoes|requerimentos"
 keywords_required:
   - ITCMD
   - ITCD
@@ -20,10 +20,12 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
 fragile: false
 geo_restricted: true
 notas: |
-  ALEPE: caminho /sapl/api/ retorna HTML do CMS WordPress, NÃO é SAPL real.
-  Marcado inativo em 2026-04-25. Investigar URL alternativa em fase futura.
+  ALEPE — Portal Dados Abertos da Assembleia de Pernambuco.
+  API XML em /api/v1/proposicoes/{tipo}?ano={ano}.
+  Filtro por keyword feito local (servidor não filtra).
+  Cobre: projetos, indicações, requerimentos.
