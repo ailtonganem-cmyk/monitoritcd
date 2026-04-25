@@ -11,10 +11,15 @@
 | **STF notícias** | Decisões STF | ~10 entries |
 | **STJ notícias** | Decisões STJ | ~100 entries |
 
-### Proposições estaduais em tramitação (14 UFs)
+### Proposições estaduais em tramitação (13 UFs ativas)
 
 #### Via ALMG (custom, API JSON própria — 1 UF)
 - **MG** — `dadosabertos.almg.gov.br` (proposições + legislação mineira)
+
+#### Via ALEP (custom, API JSON via POST — 1 UF)
+- **PR** — `webservices.assembleia.pr.leg.br` (POST /proposicao/filtrar com palavraChave)
+  - HTTP only (HTTPS quebrado no proxy ALEP); host listado em
+    `HTTP_ALLOWED_HOSTS` no url_validator (exceção auditada)
 
 #### Via SAPL/Interlegis (genérico, API REST padronizada — 11 UFs)
 Validados em smoke test 2026-04-25: 104 items reais coletados:

@@ -81,6 +81,7 @@ class Parser(StrEnum):
     LEXML = "lexml"
     LEXML_PORTAL = "lexml_portal"
     ALMG = "almg"
+    ALEP = "alep"
     SAPL = "sapl"
     CUSTOM = "custom"
 

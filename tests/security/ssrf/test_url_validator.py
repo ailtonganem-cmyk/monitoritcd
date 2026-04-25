@@ -27,8 +27,16 @@ from monitoritcd.security.url_validator import (
 @pytest.mark.security
 class TestSchemeBlocking:
     def test_http_blocked(self) -> None:
-        with pytest.raises(UnsafeURLError, match="Scheme"):
+        # HTTP bloqueado para hosts fora da allowlist auditada
+        with pytest.raises(UnsafeURLError, match="HTTP só permitido"):
             validate_url("http://www.google.com/")
+
+    def test_http_allowed_for_audited_host(self) -> None:
+        # ALEP webservices: HTTP permitido por exceção na HTTP_ALLOWED_HOSTS
+        result = validate_url(
+            "http://webservices.assembleia.pr.leg.br/api/public/proposicao/campos"
+        )
+        assert "webservices.assembleia.pr.leg.br" in result
 
     def test_file_blocked(self) -> None:
         with pytest.raises(UnsafeURLError):

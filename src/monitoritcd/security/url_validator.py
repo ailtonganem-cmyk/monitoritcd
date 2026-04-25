@@ -28,6 +28,18 @@ from monitoritcd.core import limits
 
 ALLOWED_SCHEMES: Final[frozenset[str]] = frozenset({"https"})
 
+# Allowlist de hosts que podem ser acessados via HTTP (sem TLS).
+# Cada host nesta lista é uma exceção auditada: API governamental brasileira
+# pública (read-only, sem credenciais) que não expõe HTTPS válido.
+# Risco aceito: MITM verá conteúdo público (zero PII) e nenhum secret nosso.
+HTTP_ALLOWED_HOSTS: Final[frozenset[str]] = frozenset(
+    {
+        # ALEP — Assembleia Legislativa do Paraná
+        # API REST pública /api/public; HTTPS retorna 500 (proxy SSL handshake)
+        "webservices.assembleia.pr.leg.br",
+    }
+)
+
 # Hostnames bloqueados (cloud metadata, gateways suspeitos)
 BLOCKED_HOSTNAMES: Final[frozenset[str]] = frozenset(
     {
@@ -71,18 +83,25 @@ def validate_url(url: str) -> str:
         msg = f"URL malformada: {e}"
         raise UnsafeURLError(msg) from e
 
-    # Scheme whitelist
-    if parsed.scheme not in ALLOWED_SCHEMES:
-        msg = f"Scheme não permitido: {parsed.scheme!r} (permitidos: {sorted(ALLOWED_SCHEMES)})"
-        raise UnsafeURLError(msg)
-
-    # Host obrigatório
+    # Host obrigatório (precisamos antes de checar scheme p/ HTTP allowlist)
     host = parsed.hostname
     if not host:
         msg = "URL sem host"
         raise UnsafeURLError(msg)
 
     host_lower = host.lower()
+
+    # Scheme whitelist com exceção para HTTP em hosts auditados
+    if parsed.scheme == "http":
+        if host_lower not in HTTP_ALLOWED_HOSTS:
+            msg = (
+                f"HTTP só permitido em hosts da allowlist auditada; "
+                f"{host_lower!r} não está. Use HTTPS."
+            )
+            raise UnsafeURLError(msg)
+    elif parsed.scheme not in ALLOWED_SCHEMES:
+        msg = f"Scheme não permitido: {parsed.scheme!r} (permitidos: https)"
+        raise UnsafeURLError(msg)
 
     # Hosts bloqueados explicitamente (cloud metadata, localhost variants)
     if host_lower in BLOCKED_HOSTNAMES:

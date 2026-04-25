@@ -1,0 +1,36 @@
+id: alep-pr
+uf: PR
+nome: "ALEP — Proposições em tramitação (API JSON)"
+tipo: assembleia
+parser: alep
+url: "http://webservices.assembleia.pr.leg.br/api/public/proposicao/filtrar"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
+  dias: "365"
+  quantidade: "50"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+geo_restricted: true
+notas: |
+  ALEP — Assembleia Legislativa do Paraná.
+  API REST pública em webservices.assembleia.pr.leg.br/api/public.
+  POST /proposicao/filtrar com palavraChave + quantidade.
+
+  HTTP only (HTTPS retorna 500 - SSL handshake quebrado no proxy ALEP).
+  Host listado em HTTP_ALLOWED_HOSTS no url_validator.py — exceção
+  auditada (API pública read-only sem credenciais).
+
+  geo_restricted=true: fallback proxy_br BR se necessário.

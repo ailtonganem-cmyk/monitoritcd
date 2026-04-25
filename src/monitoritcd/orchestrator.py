@@ -49,6 +49,7 @@ import httpx
 import structlog
 
 from monitoritcd.collectors import (
+    ALEPCollector,
     ALMGCollector,
     GenericHTMLCollector,
     GenericRSSCollector,
@@ -87,6 +88,7 @@ _PARSERS_TO_COLLECTORS = {
     Parser.LEXML: LexMLCollector,
     Parser.LEXML_PORTAL: LexMLPortalCollector,
     Parser.ALMG: ALMGCollector,
+    Parser.ALEP: ALEPCollector,
     Parser.SAPL: SAPLCollector,
 }
 
