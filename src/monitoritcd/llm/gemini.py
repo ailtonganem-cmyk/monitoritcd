@@ -1,4 +1,4 @@
-"""Provedor LLM Gemini 1.5 Flash via google-genai SDK.
+"""Provedor LLM Gemini 2.5 Flash via google-genai SDK.
 
 Princípios canônicos aplicados:
 1. **API key via SecretStr** — nunca exposta em logs.
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-DEFAULT_MODEL = "gemini-1.5-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
 
 
 class GeminiProvider:

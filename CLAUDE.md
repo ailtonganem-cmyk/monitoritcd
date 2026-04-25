@@ -154,7 +154,7 @@ deve ser preservado **verbatim**, sem alterações automáticas (ver Seção 5).
 ```
 ┌──────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │ GitHub Actions   │────▶│ Collectors       │────▶│ Filter (kw+LLM) │
-│ (cron 10:13 UTC) │     │ (UFs ativas+fed) │     │ Gemini 1.5 Flash│
+│ (cron 10:13 UTC) │     │ (UFs ativas+fed) │     │ Gemini 2.5 Flash│
 └──────────────────┘     └──────────────────┘     └────────┬────────┘
                                                             │
         ┌──────────────────────┐    ┌──────────────────┐    │
@@ -190,7 +190,7 @@ deve ser preservado **verbatim**, sem alterações automáticas (ver Seção 5).
 | PDF | `pypdf` (texto embedado) → `pdfplumber` (layouts) | OCR fora do MVP. |
 | Validação | `pydantic` v2 (`SecretStr` p/ secrets) | Modelos em `core/models.py`. |
 | Retry | `tenacity` | Backoff exponencial em chamadas externas. |
-| LLM primário | Google Gemini 1.5 Flash | 15 RPM, 1.500 req/dia. **Sempre via batch.** |
+| LLM primário | Google Gemini 2.5 Flash | 15 RPM, 1.500 req/dia. **Sempre via batch.** |
 | LLM fallback | Groq (Llama 3.3) | Quando Gemini estourar cota. |
 | Storage metadados | **Firestore** (Firebase Spark) | 1 GB, 50K reads/dia, 20K writes/dia. |
 | Storage bruto | **Firebase Storage** | HTML/PDF originais. 5 GB total. |
@@ -233,7 +233,7 @@ deve ser preservado **verbatim**, sem alterações automáticas (ver Seção 5).
 
 **Princípio inegociável: o LLM NÃO modifica conteúdo original.**
 
-O LLM (Gemini 1.5 Flash, fallback Groq) é usado **apenas** para:
+O LLM (Gemini 2.5 Flash, fallback Groq) é usado **apenas** para:
 
 1. **Classificar** o tipo: `PL | Lei Sancionada | Decreto | IN | Portaria | Notícia | Jurisprudência | Doutrina`.
 2. **Pontuar** relevância de 0 a 10 → mapeia em severity tier.

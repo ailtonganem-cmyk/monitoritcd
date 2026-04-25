@@ -13,7 +13,7 @@ brasileiras em **3 áreas correlatas**:
 ## Características
 
 - 🤖 **Coleta diária** (cron 07:13 BRT via GitHub Actions) de Assembleias, SEFAZs, Diários Oficiais e tribunais superiores.
-- 🧠 **Classificação por LLM** (Gemini 1.5 Flash + Groq fallback) — preserva conteúdo verbatim.
+- 🧠 **Classificação por LLM** (Gemini 2.5 Flash + Groq fallback) — preserva conteúdo verbatim.
 - 🔔 **Notificações multi-canal** (Telegram + e-mail) com tiers de severidade.
 - 🤖 **Bot Telegram interativo** com comandos para busca, ativação de UFs, watch list.
 - 🗂️ **Schema com separação estrita** entre dados originais (write-once) e metadados gerados por LLM.
@@ -35,7 +35,7 @@ Três princípios inegociáveis (detalhados em [CLAUDE.md](CLAUDE.md#-princípio
 
 - **Linguagem**: Python 3.11+
 - **Storage**: Firebase (Firestore + Storage + audit log)
-- **LLM**: Google Gemini 1.5 Flash (primary) + Groq (fallback)
+- **LLM**: Google Gemini 2.5 Flash (primary) + Groq (fallback)
 - **Orquestração**: GitHub Actions (cron 10:13 UTC)
 - **Notificação**: Gmail SMTP + Telegram Bot API
 - **Bot**: webhook via Cloud Function
@@ -95,7 +95,7 @@ Ver [RUNBOOKS.md](RUNBOOKS.md) — passo-a-passo de:
 ```
 ┌──────────────────┐     ┌──────────────────┐     ┌─────────────────┐
 │ GitHub Actions   │────▶│ Collectors       │────▶│ Filter (kw+LLM) │
-│ (cron 10:13 UTC) │     │ (UFs ativas+fed) │     │ Gemini 1.5 Flash│
+│ (cron 10:13 UTC) │     │ (UFs ativas+fed) │     │ Gemini 2.5 Flash│
 └──────────────────┘     └──────────────────┘     └────────┬────────┘
                                                             │
         ┌──────────────────────┐    ┌──────────────────┐    │

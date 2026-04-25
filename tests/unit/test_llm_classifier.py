@@ -110,7 +110,7 @@ class TestParseLLMResponse:
             "orgao_emissor": "ALESP",
             "tags": ["itcmd", "sp"],
         }
-        result = parse_llm_response(resp, llm_model="gemini-1.5-flash")
+        result = parse_llm_response(resp, llm_model="gemini-2.5-flash")
         assert result.tipo == TipoAto.PROJETO_LEI
         assert result.relevancia == 8
         assert result.severity_tier == SeverityTier.ALTA

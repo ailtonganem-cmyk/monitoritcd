@@ -158,7 +158,7 @@ class TestLLMResult:
     def test_valid_llm_result(self) -> None:
         result = LLMResult(
             classified_at=NOW,
-            llm_model="gemini-1.5-flash",
+            llm_model="gemini-2.5-flash",
             llm_prompt_version="v1.0",
             tipo=TipoAto.PROJETO_LEI,
             relevancia=8,

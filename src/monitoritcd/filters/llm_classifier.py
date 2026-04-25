@@ -1,6 +1,6 @@
 """Classifier LLM — Filtro 2.
 
-Usa Gemini 1.5 Flash (primary) ou Groq Llama (fallback) para classificar
+Usa Gemini 2.5 Flash (primary) ou Groq Llama (fallback) para classificar
 itens pré-aprovados. Output validado por pydantic com `extra="forbid"`.
 
 Princípios canônicos materializados:
@@ -138,7 +138,7 @@ def parse_llm_response(
 
     Args:
         raw_response: dict do JSON do LLM.
-        llm_model: identificação do modelo usado (ex: "gemini-1.5-flash").
+        llm_model: identificação do modelo usado (ex: "gemini-2.5-flash").
 
     Returns:
         `LLMResult` validado.

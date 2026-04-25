@@ -51,7 +51,7 @@ def _doc(
     )
     llm = LLMResult(
         classified_at=FIXED_NOW,
-        llm_model="gemini-1.5-flash",
+        llm_model="gemini-2.5-flash",
         llm_prompt_version="v1.0",
         tipo=tipo,
         relevancia=8,
