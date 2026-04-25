@@ -54,12 +54,22 @@ def _make_backends(
     try:
         from google.cloud.firestore import AsyncClient  # noqa: PLC0415
 
+        from monitoritcd.llm.fallback import FallbackLLMProvider  # noqa: PLC0415
         from monitoritcd.llm.gemini import GeminiProvider  # noqa: PLC0415
+        from monitoritcd.llm.groq import GroqProvider  # noqa: PLC0415
         from monitoritcd.storage.firestore_store import FirestoreStorage  # noqa: PLC0415
 
         firestore_client = AsyncClient(project=settings.FIREBASE_PROJECT_ID)
         storage: Any = FirestoreStorage(firestore_client, settings.OWNER_ID)
-        llm: Any = GeminiProvider(settings.GEMINI_API_KEY)
+
+        gemini = GeminiProvider(settings.GEMINI_API_KEY)
+        if settings.GROQ_API_KEY:
+            # Wire fallback automático: Gemini → Groq em quota error
+            llm: Any = FallbackLLMProvider(
+                primary=gemini, fallback=GroqProvider(settings.GROQ_API_KEY)
+            )
+        else:
+            llm = gemini
     except (ImportError, RuntimeError) as e:
         # Defesa: se ambiente real não disponível, cai pro fake e loga
         log = structlog.get_logger("main")

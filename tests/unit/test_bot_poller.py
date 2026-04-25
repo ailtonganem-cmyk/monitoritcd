@@ -76,7 +76,7 @@ class TestSendMessage:
             )
             async with httpx.AsyncClient() as client:
                 await send_message(client, _settings(), OWNER_CHAT, big_msg)
-            assert route.call_count >= 2  # noqa: PLR2004 - split garantido
+            assert route.call_count >= 2
 
     @pytest.mark.asyncio
     async def test_http_error_loga_e_continua(self) -> None:
@@ -93,38 +93,35 @@ class TestSendMessage:
 class TestValidateAndParse:
     @pytest.mark.asyncio
     async def test_chat_id_invalido_ignora(self) -> None:
-        async with respx.mock:
-            async with httpx.AsyncClient() as client:
-                result = await _validate_and_parse(
-                    {"chat": {"id": 99999}, "text": "/status"},
-                    settings=_settings(),
-                    rate_limiter=RateLimiter(),
-                    client=client,
-                )
+        async with respx.mock, httpx.AsyncClient() as client:
+            result = await _validate_and_parse(
+                {"chat": {"id": 99999}, "text": "/status"},
+                settings=_settings(),
+                rate_limiter=RateLimiter(),
+                client=client,
+            )
         assert result is None
 
     @pytest.mark.asyncio
     async def test_sem_chat_id_ignora(self) -> None:
-        async with respx.mock:
-            async with httpx.AsyncClient() as client:
-                result = await _validate_and_parse(
-                    {"text": "/status"},
-                    settings=_settings(),
-                    rate_limiter=RateLimiter(),
-                    client=client,
-                )
+        async with respx.mock, httpx.AsyncClient() as client:
+            result = await _validate_and_parse(
+                {"text": "/status"},
+                settings=_settings(),
+                rate_limiter=RateLimiter(),
+                client=client,
+            )
         assert result is None
 
     @pytest.mark.asyncio
     async def test_comando_valido_owner(self) -> None:
-        async with respx.mock:
-            async with httpx.AsyncClient() as client:
-                result = await _validate_and_parse(
-                    {"chat": {"id": OWNER_CHAT}, "text": "/status"},
-                    settings=_settings(),
-                    rate_limiter=RateLimiter(),
-                    client=client,
-                )
+        async with respx.mock, httpx.AsyncClient() as client:
+            result = await _validate_and_parse(
+                {"chat": {"id": OWNER_CHAT}, "text": "/status"},
+                settings=_settings(),
+                rate_limiter=RateLimiter(),
+                client=client,
+            )
         assert result is not None
         chat_id, cmd = result
         assert chat_id == OWNER_CHAT
@@ -132,14 +129,13 @@ class TestValidateAndParse:
 
     @pytest.mark.asyncio
     async def test_nao_eh_comando_ignora(self) -> None:
-        async with respx.mock:
-            async with httpx.AsyncClient() as client:
-                result = await _validate_and_parse(
-                    {"chat": {"id": OWNER_CHAT}, "text": "ola, bot"},
-                    settings=_settings(),
-                    rate_limiter=RateLimiter(),
-                    client=client,
-                )
+        async with respx.mock, httpx.AsyncClient() as client:
+            result = await _validate_and_parse(
+                {"chat": {"id": OWNER_CHAT}, "text": "ola, bot"},
+                settings=_settings(),
+                rate_limiter=RateLimiter(),
+                client=client,
+            )
         assert result is None
 
     @pytest.mark.asyncio
@@ -149,7 +145,7 @@ class TestValidateAndParse:
         for _ in range(15):
             try:
                 rl.check(OWNER_CHAT)
-            except Exception:  # noqa: BLE001
+            except Exception:
                 break
         async with respx.mock:
             respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
