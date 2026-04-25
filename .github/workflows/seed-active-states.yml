@@ -1,0 +1,57 @@
+name: Seed UFs ativas (admin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ufs:
+        description: "UFs a ativar (espaço-separadas, ex: SP RJ MG RS DF)"
+        type: string
+        default: "SP RJ MG RS DF"
+      federal_active:
+        description: "Coletar fontes federais"
+        type: boolean
+        default: true
+      dry_run:
+        description: "Apenas mostra o diff (não salva)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Configurar credenciais GCP
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          chmod 600 "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Seed
+        env:
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+        run: |
+          ARGS="--ufs ${{ github.event.inputs.ufs }} --federal-active ${{ github.event.inputs.federal_active }}"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          python scripts/seed_active_states.py $ARGS
