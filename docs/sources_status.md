@@ -2,6 +2,7 @@
 
 ## ✅ Cobertura atual (validada em produção)
 
+### Federais (5 fontes)
 | Fonte | Cobertura | Volume típico |
 |---|---|---|
 | **LexML Legislação** | Federal + 27 estaduais + DF | ~56 hits ITCMD, deduped por URN |
@@ -9,10 +10,29 @@
 | **JOTA principal** | Notícias jurídicas tributárias | ~25 entries diárias |
 | **STF notícias** | Decisões STF | ~10 entries |
 | **STJ notícias** | Decisões STJ | ~100 entries |
-| **ALMG proposições** | MG (PLs, PECs, mensagens) | ~13 hits/run |
-| **ALMG legislação** | MG (Leis sancionadas) | parte dos 13 |
 
-**Total**: 7 fontes ativas. Cobertura de 27 estados + DF + federal via LexML.
+### Proposições estaduais em tramitação (14 UFs)
+
+#### Via ALMG (custom, API JSON própria — 1 UF)
+- **MG** — `dadosabertos.almg.gov.br` (proposições + legislação mineira)
+
+#### Via SAPL/Interlegis (genérico, API REST padronizada — 13 UFs)
+- **AC** — `sapl.al.ac.leg.br`
+- **AL** — `sapl.al.al.leg.br`
+- **AM** — `sapl.al.am.leg.br`
+- **CE** — `www.al.ce.leg.br/sapl`
+- **ES** — `www.al.es.leg.br/sapl`
+- **GO** — `www.al.go.leg.br/sapl`
+- **MT** — `sapl.al.mt.leg.br`
+- **PB** — `sapl.al.pb.leg.br`
+- **PE** — `www.al.pe.leg.br/sapl`
+- **PI** — `sapl.al.pi.leg.br`
+- **RO** — `sapl.al.ro.leg.br`
+- **RR** — `sapl.al.rr.leg.br`
+- **SC** — `www.al.sc.leg.br/sapl`
+
+**Total**: 19 fontes ativas. Cobertura legislativa (LexML) atinge 27 entes + federal.
+Cobertura de proposições em tramitação: 14 UFs (52%).
 
 ## 🎯 Após implementação do LexMLPortalCollector
 
@@ -27,6 +47,30 @@ urn:lex:br;federal:lei:1973-01-11;5172
 
 Resultado: **uma única fonte (LexML) cobre legislação sancionada em todos
 os entes**, sem precisar de scraper estadual individual.
+
+## ⛔ Proposições estaduais não cobertas (13 UFs)
+
+Investigado em 2026-04-25, sem API REST/SAPL pública identificada:
+
+| UF | Status | Nota |
+|---|---|---|
+| AP | Sem SAPL | Investigação adicional necessária |
+| BA | TIMEOUT | `alba.ba.gov.br` lento ou geo-restrito |
+| DF | 404 | `cl.df.gov.br` sem SAPL; investigar API própria |
+| MA | 404 | `al.ma.leg.br` sem SAPL detectado |
+| MS | TIMEOUT | `al.ms.gov.br` lento |
+| PA | TIMEOUT/404 | ALEPA com portal próprio |
+| PR | TIMEOUT | `assembleia.pr.leg.br` lento |
+| RJ | 302 | ALERJ usa Lotus Notes legado |
+| RN | TIMEOUT | `al.rn.leg.br` |
+| RS | HTML | AL/RS tem portal HTML, sem API JSON |
+| SE | TIMEOUT | `al.se.leg.br` |
+| SP | Form-based | ALESP exige VIEWSTATE/AJAX |
+| TO | TIMEOUT | `al.to.leg.br` |
+
+Para essas UFs, **leis sancionadas continuam cobertas via LexML** (legislação
+publicada no DOE estadual é indexada pelo Senado). A lacuna é apenas
+**proposições em tramitação** que ainda não viraram lei.
 
 ## ⛔ O que LexML NÃO cobre (tradeoffs aceitos)
 

@@ -1,0 +1,33 @@
+id: sapl-mt
+uf: MT
+nome: "ALEMT — Proposições em tramitação (SAPL)"
+tipo: assembleia
+parser: sapl
+url: "https://sapl.al.mt.leg.br/api/materia/materialegislativa/"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
+  dias: "365"
+  page_size: "50"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+geo_restricted: true
+notas: |
+  ALEMT via SAPL (Sistema de Apoio ao Processo Legislativo / Interlegis).
+  API REST Django padronizada. Filtro: ementa__icontains.
+  Cobre proposições em tramitação (PLs, PECs, indicações, requerimentos).
+
+  geo_restricted=true: servidor pode rejeitar IPs Azure US.
+  Fallback automático via Cloud Function proxy_br BR.
