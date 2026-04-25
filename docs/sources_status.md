@@ -11,7 +11,7 @@
 | **STF notícias** | Decisões STF | ~10 entries |
 | **STJ notícias** | Decisões STJ | ~100 entries |
 
-### Proposições estaduais em tramitação (13 UFs ativas)
+### Proposições estaduais em tramitação (14 UFs ativas)
 
 #### Via ALMG (custom, API JSON própria — 1 UF)
 - **MG** — `dadosabertos.almg.gov.br` (proposições + legislação mineira)
@@ -20,6 +20,11 @@
 - **PR** — `webservices.assembleia.pr.leg.br` (POST /proposicao/filtrar com palavraChave)
   - HTTP only (HTTPS quebrado no proxy ALEP); host listado em
     `HTTP_ALLOWED_HOSTS` no url_validator (exceção auditada)
+
+#### Via ALEPE (custom, API XML — 1 UF)
+- **PE** — `dadosabertos.alepe.pe.gov.br/api/v1/proposicoes/{tipo}` (XML por ano)
+  - 3 tipos: projetos, indicações, requerimentos
+  - Filtro por keyword feito local (servidor não filtra)
 
 #### Via SAPL/Interlegis (genérico, API REST padronizada — 11 UFs)
 Validados em smoke test 2026-04-25: 104 items reais coletados:
@@ -61,14 +66,17 @@ os entes**, sem precisar de scraper estadual individual.
 Investigação dedicada em 2026-04-25, com sondagem batch + WebFetch das
 páginas oficiais. Nenhuma API REST pública identificada.
 
-### Confirmadas sem API (investigação completa)
+### Confirmadas sem API (investigação dedicada concluída)
 
 | UF | Plataforma | Detalhe |
 |---|---|---|
 | **SP** (ALESP) | Form Struts/Java | `/spl_consultas/consultaProposicoesAction.do` rejeita params via GET; exige VIEWSTATE + AJAX. Sem RSS. |
 | **RJ** (ALERJ) | Lotus Notes legacy | `www3.alerj.rj.gov.br/lotus_notes/` — sistema antigo sem export estruturado |
-| **PE** (Alepe) | WordPress | URL `/sapl/api/` retorna HTML do CMS; SAPL real ausente |
-| **SC** (Alesc) | WordPress | Idem PE |
+| **SC** (Alesc) | WordPress + e-Legis | Portal `portalelegis.alesc.sc.gov.br` requer telefone para integração; sem API JSON pública |
+| **MA** (Alema) | Sem API (admite) | Página de transparência declara "em processo de" implementar API |
+| **BA** (ALBA) | Sistema externo | `albalegis.nopapercloud.com.br` é vendor externo sem API pública |
+| **PA** (ALEPA) | Não-legislativo | `app.alepa.pa.gov.br/api` é Whaticket SaaS (chatbot), não legislativo |
+| **AP, RN, MS, SE, TO, RS, DF** | Sem API | Sondagem batch: timeouts/404 em endpoints SAPL e dados-abertos padrão |
 
 ### Investigação ainda incompleta
 
