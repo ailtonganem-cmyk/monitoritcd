@@ -3,7 +3,7 @@ uf: _federal
 nome: "STJ — Notícias e acórdãos"
 tipo: jurisprudencia
 parser: generic_rss
-url: "https://www.stj.jus.br/sites/portalp/RSS/Noticias"
+url: "https://res.stj.jus.br/hrestp-c-portalp/RSS.xml"
 keywords_required:
   - ITCMD
   - ITCD
@@ -23,13 +23,10 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
-fragile: true
+fragile: false
 notas: |
   Feed oficial do STJ — notícias e jurisprudência.
   STJ é especialmente relevante para ITCD por consolidar entendimentos
   entre estados (recursos especiais e súmulas).
-# AVISO 2026-04-25: URL retorna 404. Verificar URL atual em:
-# https://www.stj.jus.br/sites/portalp/Inicio
-# Pode ter migrado para outro endpoint RSS.

@@ -24,7 +24,7 @@ notas: |
   LexML é a fonte federal consolidada operada pelo Senado Federal.
   API SRU oficial e estável. Recomendado como fonte primária federal.
   Doc API: https://www.loc.gov/standards/sru/
-# AVISO 2026-04-25: URL retorna 404 em testes recentes.
-# A API SRU do LexML pode ter mudado. Verificar:
-# - https://www.lexml.gov.br/api/
-# - Documentacao SRU: https://www.loc.gov/standards/sru/
+
+# AVISO 2026-04-25: API SRU descontinuada pelo Senado. LexML migrou para
+# API JSON Plone (https://projeto.lexml.gov.br/apidata/cms?Type=Document).
+# Implementacao requer collector customizado. Mantido inativo no MVP.

@@ -3,7 +3,7 @@ uf: _federal
 nome: "STF — Notícias e decisões"
 tipo: jurisprudencia
 parser: generic_rss
-url: "https://portal.stf.jus.br/noticias/rss.aspx"
+url: "https://noticias.stf.jus.br/feed/"
 keywords_required:
   - ITCMD
   - ITCD
@@ -21,13 +21,10 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
-fragile: true
+fragile: false
 notas: |
   Feed RSS oficial do STF — notícias e decisões publicadas.
   Filtragem por keywords reduz volume; STF publica muitas decisões irrelevantes.
   Verificar periodicamente se a URL do feed mudou.
-# AVISO 2026-04-25: URL retorna 403 (WAF da AWS bloqueia).
-# Tentar com User-Agent customizado ou verificar URL atual em:
-# https://portal.stf.jus.br/
