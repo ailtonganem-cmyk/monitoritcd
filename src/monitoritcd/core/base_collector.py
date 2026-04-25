@@ -206,9 +206,10 @@ class BaseCollector(ABC):
             msg = "proxy não configurado mas chamado"
             raise CollectorError(msg)
 
-        proxy_url = (
-            f"{self._proxy_br_url.rstrip('/')}?url={httpx.QueryParams({'url': target})['url']}"
-        )
+        # urllib quote em vez de httpx.QueryParams — mais robusto para URLs longas
+        from urllib.parse import quote  # noqa: PLC0415
+
+        proxy_url = f"{self._proxy_br_url.rstrip('/')}?url={quote(target, safe='')}"
         try:
             response = await self._client.get(
                 proxy_url,
@@ -219,7 +220,18 @@ class BaseCollector(ABC):
         except httpx.HTTPError as e:
             msg = f"proxy fetch falhou: {type(e).__name__}"
             raise CollectorError(msg) from e
-        return response.text
+
+        # response.content + decode explícito é mais robusto que response.text:
+        # alguns proxies retornam Content-Type sem charset, o que faz httpx
+        # cair em 'ascii' decode e silenciosamente perder bytes não-ASCII.
+        body_bytes = response.content
+        logger.info(
+            "fetch.proxy_response",
+            source=self.source.id,
+            bytes=len(body_bytes),
+            content_type=response.headers.get("content-type", "")[:50],
+        )
+        return body_bytes.decode("utf-8", errors="replace")
 
         # Inalcançável (reraise=True acima sempre relança em última falha).
         msg = f"Fetch falhou após retries: {target}"  # pragma: no cover
