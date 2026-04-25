@@ -65,6 +65,13 @@ class Settings(BaseSettings):
     HEALTHCHECKS_URL: HttpUrl | None = None
 
     # ─────────────────────────────────────────────────────────────────────
+    # Proxy BR (Cloud Function southamerica-east1) — fallback para fontes
+    # geo-restringidas que GitHub runners US não acessam.
+    # ─────────────────────────────────────────────────────────────────────
+    PROXY_BR_URL: HttpUrl | None = None
+    PROXY_BR_TOKEN: SecretStr | None = None
+
+    # ─────────────────────────────────────────────────────────────────────
     # Backup
     # ─────────────────────────────────────────────────────────────────────
     AGE_PUBLIC_KEY: str | None = None

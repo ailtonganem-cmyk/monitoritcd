@@ -114,18 +114,28 @@ class RunReport:
         return (self.finished_at - self.started_at).total_seconds()
 
 
-def make_collector(source: Source) -> BaseCollector:
+def make_collector(
+    source: Source,
+    *,
+    proxy_br_url: str | None = None,
+    proxy_br_token: str | None = None,
+) -> BaseCollector:
     """Factory: constrói o coletor apropriado para a fonte."""
     cls = _PARSERS_TO_COLLECTORS.get(source.parser)
     if cls is None:  # pragma: no cover - extra parser
         msg = f"Parser não suportado: {source.parser}"
         raise ValueError(msg)
-    return cls(source)
+    return cls(source, proxy_br_url=proxy_br_url, proxy_br_token=proxy_br_token)
 
 
-async def collect_from_source(source: Source) -> list[RawItem]:
+async def collect_from_source(
+    source: Source,
+    *,
+    proxy_br_url: str | None = None,
+    proxy_br_token: str | None = None,
+) -> list[RawItem]:
     """Coleta items de uma fonte. Encapsula context manager + erros."""
-    collector = make_collector(source)
+    collector = make_collector(source, proxy_br_url=proxy_br_url, proxy_br_token=proxy_br_token)
     async with collector as c:
         return await c.collect()
 
@@ -423,10 +433,16 @@ async def _collect_all(
     sources: list[Source],
     report: RunReport,
     bound: structlog.BoundLogger,
+    *,
+    proxy_br_url: str | None = None,
+    proxy_br_token: str | None = None,
 ) -> list[tuple[Source, RawItem]]:
     """Coleta paralela; isola falhas por fonte."""
     raw_items: list[tuple[Source, RawItem]] = []
-    tasks = [collect_from_source(s) for s in sources]
+    tasks = [
+        collect_from_source(s, proxy_br_url=proxy_br_url, proxy_br_token=proxy_br_token)
+        for s in sources
+    ]
     results = await asyncio.gather(*tasks, return_exceptions=True)
     for source, result in zip(sources, results, strict=True):
         report.sources_consulted += 1
@@ -476,8 +492,16 @@ async def run_pipeline(
     )
     bound.info("run.sources_filtered", total=len(sources_to_run))
 
-    # 2. Coleta paralela
-    raw_items = await _collect_all(sources_to_run, report, bound)
+    # 2. Coleta paralela (com fallback via proxy BR para fontes geo_restricted)
+    proxy_url = str(settings.PROXY_BR_URL) if settings.PROXY_BR_URL else None
+    proxy_token = settings.PROXY_BR_TOKEN.get_secret_value() if settings.PROXY_BR_TOKEN else None
+    raw_items = await _collect_all(
+        sources_to_run,
+        report,
+        bound,
+        proxy_br_url=proxy_url,
+        proxy_br_token=proxy_token,
+    )
     bound.info("run.collected", count=len(raw_items))
 
     # 3. Filtro 1: keywords

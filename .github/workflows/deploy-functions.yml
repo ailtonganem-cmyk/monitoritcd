@@ -1,0 +1,69 @@
+name: Deploy Cloud Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/**'
+      - '.github/workflows/deploy-functions.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-functions
+  cancel-in-progress: false
+
+jobs:
+  deploy-proxy-br:
+    name: Deploy proxy_br (southamerica-east1)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar credenciais GCP
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          chmod 600 "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Setup gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Setup gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy proxy_br
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          PROXY_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
+        run: |
+          gcloud functions deploy proxy_br \
+            --gen2 \
+            --runtime=python311 \
+            --region=southamerica-east1 \
+            --source=functions/proxy_br \
+            --entry-point=proxy_br \
+            --trigger-http \
+            --allow-unauthenticated \
+            --memory=256MB \
+            --timeout=60s \
+            --max-instances=10 \
+            --set-env-vars=PROXY_TOKEN=$PROXY_TOKEN \
+            --project=$PROJECT_ID
+
+      - name: Print URL
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          gcloud functions describe proxy_br \
+            --gen2 \
+            --region=southamerica-east1 \
+            --project=$PROJECT_ID \
+            --format='value(serviceConfig.uri)'

@@ -161,6 +161,88 @@ class TestFetchSuccess:
 
 
 @pytest.mark.unit
+class TestProxyFallback:
+    """Fallback automático via Cloud Function proxy_br em ConnectTimeout."""
+
+    def _geo_src(self) -> Source:
+        return Source(
+            id="geo-test",
+            uf="MG",
+            nome="Geo restricted",
+            tipo=TipoFonte.ASSEMBLEIA,
+            parser=Parser.GENERIC_RSS,
+            url="https://www.lexml.gov.br/feed.xml",
+            geo_restricted=True,
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_proxy_no_fallback_on_timeout(self) -> None:
+        """Sem proxy configurado: ConnectTimeout sobe (comportamento antigo)."""
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.ConnectTimeout("connect timeout"),
+            )
+            async with _StubCollector(self._geo_src()) as c:
+                with pytest.raises(httpx.ConnectTimeout):
+                    await c.fetch()
+
+    @pytest.mark.asyncio
+    async def test_proxy_used_on_connect_timeout(self) -> None:
+        """ConnectTimeout direto + proxy configurado → re-fetch via proxy."""
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.ConnectTimeout("blocked"),
+            )
+            respx.get(url__startswith="https://proxy.example.com/").mock(
+                return_value=httpx.Response(200, text="<via-proxy/>"),
+            )
+            collector = _StubCollector(
+                self._geo_src(),
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                text = await c.fetch()
+                assert text == "<via-proxy/>"
+
+    @pytest.mark.asyncio
+    async def test_proxy_not_used_for_non_geo_sources(self) -> None:
+        """Source não-geo: ConnectTimeout sobe mesmo com proxy configurado."""
+        non_geo = self._geo_src().model_copy(update={"geo_restricted": False})
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.ConnectTimeout("timeout"),
+            )
+            collector = _StubCollector(
+                non_geo,
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                with pytest.raises(httpx.ConnectTimeout):
+                    await c.fetch()
+
+    @pytest.mark.asyncio
+    async def test_proxy_failure_raises_collector_error(self) -> None:
+        """Proxy também falha → CollectorError."""
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.ConnectTimeout("blocked"),
+            )
+            respx.get(url__startswith="https://proxy.example.com/").mock(
+                return_value=httpx.Response(502, text="bad gateway"),
+            )
+            collector = _StubCollector(
+                self._geo_src(),
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                with pytest.raises(CollectorError, match="proxy fetch falhou"):
+                    await c.fetch()
+
+
+@pytest.mark.unit
 class TestMakeRawItem:
     @pytest.mark.asyncio
     async def test_make_raw_item_includes_hash(self) -> None:

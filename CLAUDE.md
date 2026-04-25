@@ -774,7 +774,7 @@ GitHub Secrets:
 
 ## 15. Armadilhas conhecidas
 
-- **GH Actions runners US-based**: alguns sites .gov.br bloqueiam. Diagnóstico: 403/timeout em cron + sucesso local. **Solução implementada (2026-04-25)**: campo `geo_restricted: true` no YAML da fonte. CI roda com `--skip-geo-restricted`; worker local Windows (Task Scheduler via `scripts/install_local_monitor_task.ps1`) roda diariamente com `--only-geo-restricted`. Plano B (futuro): Cloud Function em região southamerica-east1 como proxy HTTPS reverso, fallback automático quando local não disponível.
+- **GH Actions runners US-based**: alguns sites .gov.br bloqueiam. Diagnóstico: 403/timeout em cron + sucesso local. **Solução implementada (2026-04-25)**: campo `geo_restricted: true` no YAML da fonte. Em ConnectTimeout/ConnectError direto, `BaseCollector.fetch()` faz fallback automático para Cloud Function `proxy_br` em região `southamerica-east1` (deploy via `.github/workflows/deploy-functions.yml`). A Cloud Function valida whitelist (`.gov.br`, `.jus.br`, `.leg.br`) + auth via `X-Proxy-Token`. **Reserva técnica**: worker local Windows (`scripts/install_local_monitor_task.ps1`) roda `--only-geo-restricted` diariamente quando proxy não disponível.
 - **ASP.NET com VIEWSTATE**: muitos portais legislativos. Pode exigir Playwright (pesado) ou parsing manual do form.
 - **`feedparser` engasga em RSS mal-formado**: try/except e fallback para HTML scraping.
 - **Gemini retorna JSON malformado** em ~3%: `response_mime_type="application/json"` + try/except + retry.

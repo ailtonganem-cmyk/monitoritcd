@@ -104,10 +104,15 @@ class BaseCollector(ABC):
         self,
         source: Source,
         http_client: httpx.AsyncClient | None = None,
+        *,
+        proxy_br_url: str | None = None,
+        proxy_br_token: str | None = None,
     ) -> None:
         self.source = source
         self._client = http_client
         self._owns_client = http_client is None
+        self._proxy_br_url = proxy_br_url
+        self._proxy_br_token = proxy_br_token
 
     async def __aenter__(self) -> Self:
         if self._client is None:
@@ -143,7 +148,11 @@ class BaseCollector(ABC):
         """
 
     async def fetch(self, url: str | None = None) -> str:
-        """Fetch URL com validação anti-SSRF, rate limit e retry."""
+        """Fetch URL com validação anti-SSRF, rate limit e retry.
+
+        Para fontes `geo_restricted=True`, em ConnectTimeout direto faz
+        fallback automático via Cloud Function proxy (PROXY_BR_URL).
+        """
         target = url or self.source.url
         validate_url(target)  # anti-SSRF; pode levantar UnsafeURLError
 
@@ -154,18 +163,63 @@ class BaseCollector(ABC):
         domain = _domain_of(target)
         await _DomainRateLimiter.acquire(domain, limits.DOMAIN_REQUESTS_INTERVAL_SECONDS)
 
+        try:
+            return await self._fetch_direct(target)
+        except (httpx.ConnectTimeout, httpx.ConnectError) as e:
+            # Fallback proxy só se: source é geo_restricted E proxy configurado
+            if not self.source.geo_restricted or not self._proxy_br_url:
+                raise
+            logger.info(
+                "fetch.fallback_via_proxy",
+                source=self.source.id,
+                target=target,
+                reason=type(e).__name__,
+            )
+            return await self._fetch_via_proxy(target)
+
+    async def _fetch_direct(self, target: str) -> str:
+        """Fetch direto com retry exponencial."""
+        if self._client is None:  # pragma: no cover - defensive, __aenter__ garante
+            msg = "client não inicializado"
+            raise CollectorError(msg)
+        client = self._client
         retryer = AsyncRetrying(
             stop=stop_after_attempt(limits.RETRY_MAX_ATTEMPTS),
             wait=wait_exponential(multiplier=1, min=2, max=20),
             retry=retry_if_exception_type((httpx.HTTPError, asyncio.TimeoutError)),
             reraise=True,
         )
-
         async for attempt in retryer:
             with attempt:
-                response = await self._client.get(target)
+                response = await client.get(target)
                 response.raise_for_status()
                 return response.text
+        msg = f"Fetch falhou após retries: {target}"  # pragma: no cover
+        raise CollectorError(msg)  # pragma: no cover
+
+    async def _fetch_via_proxy(self, target: str) -> str:
+        """Fetch através do Cloud Function proxy_br (sem retry — proxy já é o retry)."""
+        if self._client is None:  # pragma: no cover - defensive
+            msg = "client não inicializado"
+            raise CollectorError(msg)
+        if not self._proxy_br_url or not self._proxy_br_token:  # pragma: no cover - guarded acima
+            msg = "proxy não configurado mas chamado"
+            raise CollectorError(msg)
+
+        proxy_url = (
+            f"{self._proxy_br_url.rstrip('/')}?url={httpx.QueryParams({'url': target})['url']}"
+        )
+        try:
+            response = await self._client.get(
+                proxy_url,
+                headers={"X-Proxy-Token": self._proxy_br_token},
+                timeout=httpx.Timeout(limits.HTTP_TIMEOUT_SECONDS * 2),
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as e:
+            msg = f"proxy fetch falhou: {type(e).__name__}"
+            raise CollectorError(msg) from e
+        return response.text
 
         # Inalcançável (reraise=True acima sempre relança em última falha).
         msg = f"Fetch falhou após retries: {target}"  # pragma: no cover

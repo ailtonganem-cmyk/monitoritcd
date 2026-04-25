@@ -78,6 +78,29 @@
 - Mensagens de erro genéricas para o cliente; detalhe técnico apenas em log estruturado.
 - `pydantic.SecretStr` em todos os campos sensíveis.
 
+### T9: Cloud Function `proxy_br` (anti-SSRF)
+**Estado**: ativo (2026-04-25).
+
+Função HTTPS em `southamerica-east1` (São Paulo) usada para contornar
+ConnectTimeout em servidores `.gov.br` quando rodamos no GitHub Actions
+runner US. Por ser ponto de entrada HTTP autenticado, é alvo SSRF natural.
+
+**Mitigações em camadas**:
+
+1. **Whitelist de hosts**: apenas hostnames terminando em `.gov.br`,
+   `.jus.br` ou `.leg.br` são proxiados. Tudo mais → HTTP 403.
+   Anti-trickery: lookalikes como `gov.br.evil.com` rejeitados (suffix
+   match correto, não substring).
+2. **Whitelist de schemes**: apenas `https`. `http`, `file`, `gopher` → 403.
+3. **Auth via token compartilhado**: header `X-Proxy-Token` precisa bater
+   com env var `PROXY_TOKEN` (configurada no deploy via secret
+   `PROXY_BR_TOKEN`). Sem token / errado → 401.
+4. **MAX_BYTES**: resposta do upstream limitada a 5 MB.
+5. **Timeout**: 30s para conexão e leitura.
+6. **Logging**: cada request loga host alvo (sem token, sem path query).
+
+Localização: `functions/proxy_br/main.py`. Testes em `test_main.py`.
+
 ### T8: Honeytokens
 **Estado**: ativo (2026-04-25).
 
