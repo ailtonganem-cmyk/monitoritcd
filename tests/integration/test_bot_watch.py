@@ -66,7 +66,8 @@ class TestObservarAdicionar:
         ctx = await _ctx()
         # Single arg "ab" -> implicit add path -> pattern "ab" (2 chars) < MIN_PATTERN_LENGTH
         result = await handle_observar(
-            ctx, ParsedCommand(name="observar", args=["ab"]),
+            ctx,
+            ParsedCommand(name="observar", args=["ab"]),
         )
         assert result.is_error
         assert "curto" in result.text.lower()
@@ -76,7 +77,8 @@ class TestObservarAdicionar:
         ctx = await _ctx()
         # Cria watch via comando direto (sem subcomando — o termo é o argumento)
         result = await handle_observar(
-            ctx, ParsedCommand(name="observar", args=["holding", "familiar", "SP"]),
+            ctx,
+            ParsedCommand(name="observar", args=["holding", "familiar", "SP"]),
         )
         assert not result.is_error
         assert "Watch criado" in result.text
@@ -92,7 +94,8 @@ class TestObservarRemover:
     async def test_remover_id_inexistente(self) -> None:
         ctx = await _ctx()
         result = await handle_observar(
-            ctx, ParsedCommand(name="observar", args=["remover", "abc123"]),
+            ctx,
+            ParsedCommand(name="observar", args=["remover", "abc123"]),
         )
         assert result.is_error
         assert "não encontrado" in result.text
@@ -108,7 +111,8 @@ class TestObservarRemover:
         wid_prefix = watches[0].watch_id[:8]
         # Remove
         result = await handle_observar(
-            ctx, ParsedCommand(name="observar", args=["remover", wid_prefix]),
+            ctx,
+            ParsedCommand(name="observar", args=["remover", wid_prefix]),
         )
         assert "removido" in result.text.lower()
         # Lista deve ser zero
@@ -119,6 +123,7 @@ class TestObservarRemover:
     async def test_remover_sem_id(self) -> None:
         ctx = await _ctx()
         result = await handle_observar(
-            ctx, ParsedCommand(name="observar", args=["remover"]),
+            ctx,
+            ParsedCommand(name="observar", args=["remover"]),
         )
         assert result.is_error

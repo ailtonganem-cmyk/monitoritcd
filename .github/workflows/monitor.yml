@@ -52,6 +52,16 @@ jobs:
         run: |
           curl -fsS -m 10 "${HEALTHCHECKS_URL}/start" || true
 
+      - name: Configurar credenciais GCP
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Escreve service account em arquivo temporário e exporta GOOGLE_APPLICATION_CREDENTIALS
+          # google.auth.default() requer caminho de arquivo, não string JSON
+          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          chmod 600 "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
       - name: Run pipeline
         env:
           OWNER_ID: ${{ secrets.OWNER_ID }}

@@ -11,6 +11,7 @@ Em CI: chamado por workflow `pages.yml` após cada cron.
 Lê dados do Firestore se disponível, senão gera dashboard "vazio" com
 template padrão.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -49,15 +50,15 @@ def load_metrics() -> dict[str, Any]:
     for r in rows:
         for t in (r.get("llm") or {}).get("topics", []):
             by_topic[t] += 1
-    by_severity = Counter(
-        (r.get("llm") or {}).get("severity_tier", "n/a") for r in rows
-    )
+    by_severity = Counter((r.get("llm") or {}).get("severity_tier", "n/a") for r in rows)
 
     last_7d = sum(
         1
         for r in rows
         if r.get("original", {}).get("fetched_at")
-        and (now - datetime.fromisoformat(str(r["original"]["fetched_at"]).replace("Z", "+00:00"))).days
+        and (
+            now - datetime.fromisoformat(str(r["original"]["fetched_at"]).replace("Z", "+00:00"))
+        ).days
         <= 7  # noqa: PLR2004
     )
 
@@ -178,9 +179,9 @@ def _bar_chart(data: dict[str, int], max_value: int) -> str:
         pct = int(100 * count / max_value) if max_value else 0
         rows.append(
             f'<div class="bar-row">'
-            f'<div>{label}</div>'
+            f"<div>{label}</div>"
             f'<div class="bar"><div class="bar-fill" style="width:{pct}%"></div></div>'
-            f'<div>{count}</div>'
+            f"<div>{count}</div>"
             f"</div>"
         )
     return "\n".join(rows)
@@ -195,15 +196,11 @@ def _recent_table(items: list[dict[str, Any]]) -> str:
         rows.append(
             f"<tr>"
             f'<td><span class="tier-{tier}">{tier}</span></td>'
-            f"<td>{it.get('uf','?')}</td>"
-            f"<td><a href=\"{it.get('url','#')}\" target=\"_blank\" rel=\"noopener\">{it['titulo']}</a></td>"
+            f"<td>{it.get('uf', '?')}</td>"
+            f'<td><a href="{it.get("url", "#")}" target="_blank" rel="noopener">{it["titulo"]}</a></td>'
             f"</tr>"
         )
-    return (
-        "<table><tr><th>Tier</th><th>UF</th><th>Titulo</th></tr>"
-        + "".join(rows)
-        + "</table>"
-    )
+    return "<table><tr><th>Tier</th><th>UF</th><th>Titulo</th></tr>" + "".join(rows) + "</table>"
 
 
 def render_html(metrics: dict[str, Any]) -> str:

@@ -28,6 +28,22 @@ tarefas devem ser **explicitamente listadas e justificadas** ao dono.
 
 Decisões registradas em CLAUDE.md/PLAN.md/IDEAS.md são vinculantes para sessões futuras.
 
+## 🇧🇷 Idioma da conversa
+
+**Toda comunicação com o dono é em Português Brasileiro (PT-BR).** Inclui:
+
+- Mensagens em chat (respostas, perguntas, status reports).
+- Mensagens de commit, PR descriptions, issue comments.
+- Comentários em código quando úteis (raros, conforme princípio "comments só quando o WHY não é óbvio").
+- Logs de erro voltados ao usuário, mensagens do bot Telegram.
+
+**Permanece em inglês**: identificadores de código (variáveis, funções, classes,
+módulos), nomes de tipos/enums internos, mensagens de erro técnicas que vão para
+stack traces, dependências de bibliotecas externas em inglês.
+
+Ao gerar mensagens de exceção que serão exibidas ao dono (ex: handlers de bot,
+relatórios de pipeline), priorizar PT-BR.
+
 ---
 
 ## 🛡️ Princípios Canônicos (Fontes da Verdade)
