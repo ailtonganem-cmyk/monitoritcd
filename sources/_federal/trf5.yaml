@@ -1,0 +1,20 @@
+id: trf5-noticias
+uf: _federal
+nome: "TRF5 — Tribunal Regional Federal da 5ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www5.trf5.jus.br/feeds/noticias.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF5 cobre PE, AL, CE, PB, RN, SE.
+  Verificar URL do feed antes de ativar.

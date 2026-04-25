@@ -1,0 +1,22 @@
+id: trf1-noticias
+uf: _federal
+nome: "TRF1 — Tribunal Regional Federal da 1ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://portal.trf1.jus.br/portaltrf1/comunicacao-social/imprensa/noticias/rss/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF1 cobre DF, AC, AM, AP, BA, GO, MA, MT, MG, PA, PI, RO, RR, TO.
+  ITCD é tributo estadual — TRF aparece quando há disputa federal-estadual
+  ou execução fiscal envolvendo herdeiros pessoa física.
+  Verificar URL do feed antes de ativar (`fragile: true`).

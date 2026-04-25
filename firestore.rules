@@ -1,0 +1,29 @@
+// MonitorITCD — Firestore Security Rules
+//
+// Princípio: deny all. Acesso somente via Admin SDK (service account),
+// que ignora estas rules legitimamente.
+//
+// Mesmo single-user, manter rules estritas é defense-in-depth:
+// se a chave SDK do client web vazar acidentalmente, ninguém consegue
+// acessar dados pelo lado cliente.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Deny por default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Caso futuro: se houver UI/dashboard com auth, permitir leitura
+    // do dono autenticado (request.auth.uid == OWNER_AUTH_UID).
+    // Mantido como referência — não ativo por enquanto.
+    //
+    // match /documento/{docId} {
+    //   allow read: if request.auth != null
+    //               && request.auth.uid == resource.data.owner_id;
+    // }
+  }
+}

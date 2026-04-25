@@ -1,0 +1,202 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "monitoritcd"
+version = "0.1.0"
+description = "Sistema autônomo de monitoramento ITCD/ITCMD/ITD multi-estadual"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "MonitorITCD Owner" }]
+
+dependencies = [
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+    "lxml>=5.2.0",
+    "bleach>=6.1.0",
+    "feedparser>=6.0.10",
+    "pypdf>=4.2.0",
+    "pdfplumber>=0.11.0",
+    "pydantic[email]>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "email-validator>=2.1.0",
+    "tenacity>=8.3.0",
+    "google-genai>=0.3.0",
+    "groq>=0.5.0",
+    "firebase-admin>=6.5.0",
+    "google-cloud-firestore>=2.16.0",
+    "google-cloud-storage>=2.16.0",
+    "jinja2>=3.1.4",
+    "python-telegram-bot[webhooks]>=21.0",
+    "structlog>=24.1.0",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=5.0.0",
+    "pytest-recording>=0.13.0",
+    "pytest-mock>=3.12.0",
+    "hypothesis>=6.100.0",
+    "syrupy>=4.6.0",
+    "respx>=0.21.0",
+    "ruff>=0.4.0",
+    "mypy>=1.10.0",
+    "bandit[toml]>=1.7.8",
+    "pip-audit>=2.7.0",
+    "detect-secrets>=1.5.0",
+    "pre-commit>=3.7.0",
+    "coverage[toml]>=7.5.0",
+    "mutmut>=2.5.0",
+    "interrogate>=1.7.0",
+    "vulture>=2.11",
+    "types-PyYAML>=6.0",
+    "types-bleach>=6.1",
+]
+
+[project.scripts]
+monitoritcd = "monitoritcd.main:cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["monitoritcd*"]
+
+[tool.setuptools.package-data]
+monitoritcd = ["notifiers/templates/*.j2", "py.typed"]
+
+# ---------------------------------------------------------------------------
+# Ruff (lint + format)
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+extend-exclude = ["tests/cassettes", "docs", "scripts/migrations"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "S",   # flake8-bandit (security)
+    "UP",  # pyupgrade
+    "ANN", # flake8-annotations
+    "ASYNC", # flake8-async
+    "C4",  # comprehensions
+    "DTZ", # datetime
+    "RET", # return
+    "SIM", # simplify
+    "RUF", # ruff-specific
+    "PL",  # pylint
+    "TCH", # type-checking imports
+]
+ignore = [
+    "PLR0913", # too many arguments (sometimes needed)
+    "S101",    # assert (allowed in tests via per-file-ignores)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ANN", "PLR2004"]
+"scripts/**/*.py" = ["ANN", "S603", "S607"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["monitoritcd"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+# ---------------------------------------------------------------------------
+# Mypy (strict em módulos críticos)
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unused_ignores = true
+warn_return_any = true
+disallow_any_unimported = true
+no_implicit_reexport = true
+# Apenas módulos já implementados. Conforme novas fases adicionarem código,
+# expandir esta lista (filters, notifiers, storage, bot, etc.).
+files = [
+    "src/monitoritcd/core",
+    "src/monitoritcd/security",
+]
+
+[[tool.mypy.overrides]]
+module = ["feedparser", "bleach", "pdfplumber", "pypdf"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# Pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = [
+    "-v",
+    "--strict-markers",
+    "--strict-config",
+    "--tb=short",
+]
+markers = [
+    "unit: Fast unit tests with no external dependencies",
+    "integration: Integration tests using cassettes/emulators",
+    "security: Security-specific tests (sanitization, SSRF, injection)",
+    "templates: Snapshot tests for notification templates",
+    "e2e: End-to-end tests with Firebase emulator",
+    "slow: Tests that take > 1s",
+]
+
+# ---------------------------------------------------------------------------
+# Coverage
+# ---------------------------------------------------------------------------
+[tool.coverage.run]
+source = ["src/monitoritcd"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/__init__.py",
+    "*/main.py",  # entry point é coberto por e2e
+    # Backends de produção testados com emulator/integração (Fase 9):
+    "*/storage/firestore_store.py",
+    "*/storage/base.py",  # Protocol stubs — sem execução real
+    "*/llm/gemini.py",  # SDK real do Google — testado manualmente em dev
+]
+
+[tool.coverage.report]
+fail_under = 95
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@overload",
+    "if __name__ == .__main__.:",
+]
+
+# ---------------------------------------------------------------------------
+# Bandit
+# ---------------------------------------------------------------------------
+[tool.bandit]
+exclude_dirs = ["tests", "scripts/migrations"]
+skips = ["B101"]  # assert in tests
+
+# ---------------------------------------------------------------------------
+# Interrogate (docstring coverage)
+# ---------------------------------------------------------------------------
+[tool.interrogate]
+fail-under = 80
+exclude = ["tests", "scripts", "docs"]
+ignore-init-method = true
+ignore-magic = true
+ignore-private = true
+verbose = 1

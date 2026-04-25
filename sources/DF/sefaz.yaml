@@ -1,0 +1,22 @@
+id: sefaz-df
+uf: DF
+nome: "SEFAZ-DF — Atos normativos ITCD"
+tipo: sefaz
+parser: generic_html
+url: "https://www.fazenda.df.gov.br/area.cfm?id_area=146"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.legislacao-item"
+  titulo: "a.titulo"
+  link: "a.titulo@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  SEFAZ-DF — Atos sobre ITCD-DF.

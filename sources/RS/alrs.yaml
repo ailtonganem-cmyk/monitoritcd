@@ -1,0 +1,25 @@
+id: alrs-pls
+uf: RS
+nome: "ALRS — Projetos de Lei"
+tipo: assembleia
+parser: generic_html
+url: "https://www.al.rs.gov.br/legislativo/projetosdelei.aspx"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+selectors:
+  item: "table.proposicoes tr"
+  titulo: "td.titulo a"
+  link: "td.titulo a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  ALRS — Assembleia Legislativa do RS.
+  ⚠️ Selectors a validar.

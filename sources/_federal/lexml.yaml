@@ -1,0 +1,26 @@
+id: lexml-federal
+uf: _federal
+nome: "LexML — Atos federais sobre ITCD/ITCMD"
+tipo: jurisprudencia
+parser: lexml
+url: "https://www.lexml.gov.br/busca/SRU"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "causa-mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+selectors:
+  query: 'ITCMD or ITCD or "causa mortis"'
+  max_records: "50"
+  record_schema: "dc"
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  LexML é a fonte federal consolidada operada pelo Senado Federal.
+  API SRU oficial e estável. Recomendado como fonte primária federal.
+  Doc API: https://www.loc.gov/standards/sru/

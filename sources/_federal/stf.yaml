@@ -1,0 +1,30 @@
+id: stf-noticias
+uf: _federal
+nome: "STF — Notícias e decisões"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://portal.stf.jus.br/noticias/rss.aspx"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - testamento
+  - "regime de bens"
+  - "pacto antenupcial"
+  - "Súmula 377"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  Feed RSS oficial do STF — notícias e decisões publicadas.
+  Filtragem por keywords reduz volume; STF publica muitas decisões irrelevantes.
+  Verificar periodicamente se a URL do feed mudou.

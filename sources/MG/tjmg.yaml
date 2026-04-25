@@ -1,0 +1,21 @@
+id: tjmg-noticias
+uf: MG
+nome: "TJMG — Tribunal de Justiça de MG (notícias)"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.tjmg.jus.br/portal-tjmg/noticias/rss/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TJMG — MG mantém alíquota fixa de 5% sobre ITCMD.
+  Disputas comuns: base de cálculo (valor de mercado vs valor venal).

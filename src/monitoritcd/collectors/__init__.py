@@ -1,0 +1,13 @@
+"""Coletores de fontes (RSS, HTML, LexML, custom)."""
+
+from __future__ import annotations
+
+from monitoritcd.collectors.generic_html import GenericHTMLCollector
+from monitoritcd.collectors.generic_rss import GenericRSSCollector
+from monitoritcd.collectors.lexml import LexMLCollector
+
+__all__ = [
+    "GenericHTMLCollector",
+    "GenericRSSCollector",
+    "LexMLCollector",
+]

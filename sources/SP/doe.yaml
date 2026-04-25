@@ -1,0 +1,26 @@
+id: doe-sp
+uf: SP
+nome: "DOE-SP — Diário Oficial do Estado de SP"
+tipo: doe
+parser: generic_html
+url: "https://www.imprensaoficial.com.br/PortalIO/DO/BuscaDO2001Documento_11_4.aspx"
+keywords_required:
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - "Imposto sobre Transmissão"
+selectors:
+  item: "div.docCitacaoBox"
+  titulo: "a.titulo"
+  link: "a.titulo@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  DOE-SP — Imprensa Oficial.
+  ⚠️ Acesso pode requerer formulário de busca POST. Considerar:
+  - API oficial se houver
+  - Filtro por data atual em URL
+  - Alternative: parsing de PDF do DOE diário

@@ -1,0 +1,20 @@
+id: trf2-noticias
+uf: _federal
+nome: "TRF2 — Tribunal Regional Federal da 2ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www10.trf2.jus.br/portal/rss-noticias/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF2 cobre RJ e ES.
+  Verificar URL do feed antes de ativar.

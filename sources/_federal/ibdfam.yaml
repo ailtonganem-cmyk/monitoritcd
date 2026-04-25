@@ -1,0 +1,28 @@
+id: ibdfam-noticias
+uf: _federal
+nome: "IBDFAM — Instituto Brasileiro de Direito de Família"
+tipo: doutrina
+parser: generic_rss
+url: "https://ibdfam.org.br/rss/noticias"
+keywords_required:
+  - sucessão
+  - herança
+  - inventário
+  - testamento
+  - "regime de bens"
+  - "pacto antenupcial"
+  - "união estável"
+  - divórcio
+  - "ITCMD"
+  - "doação"
+topics:
+  - sucessoes
+  - regime_bens
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  IBDFAM é referência em Direito de Família e Sucessões.
+  Cobre os 3 tópicos do sistema (sucessões, regime de bens, e ITCD eventualmente).
+  Verificar URL do RSS antes de ativar.

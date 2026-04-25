@@ -1,0 +1,22 @@
+id: tjrj-noticias
+uf: RJ
+nome: "TJRJ — Tribunal de Justiça do RJ (notícias)"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.tjrj.jus.br/web/guest/feeds/noticias"
+keywords_required:
+  - ITD
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TJRJ — RJ adota nomenclatura "ITD" (Imposto sobre Transmissão e Doação).
+  Alíquota progressiva (4-8%). Frequente disputa sobre base de cálculo.

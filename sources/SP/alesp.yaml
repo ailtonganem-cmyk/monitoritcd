@@ -1,0 +1,26 @@
+id: alesp-pls
+uf: SP
+nome: "ALESP — Projetos de Lei"
+tipo: assembleia
+parser: generic_html
+url: "https://www.al.sp.gov.br/alesp/pesquisa-proposicoes/?direction=inicio"
+keywords_required:
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+selectors:
+  item: "div.lista-proposicoes article"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  ALESP — Assembleia Legislativa de SP.
+  ⚠️ Selectors precisam ser validados — portal usa ASP.NET com VIEWSTATE.
+  Considerar API oficial se disponível: https://www.al.sp.gov.br/repositorioDados/

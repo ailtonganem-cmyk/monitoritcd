@@ -1,0 +1,27 @@
+id: alerj-pls
+uf: RJ
+nome: "ALERJ — Projetos de Lei"
+tipo: assembleia
+parser: generic_html
+url: "https://www.alerj.rj.gov.br/Visualizar/PesquisaProposicaoCompleta"
+keywords_required:
+  - ITD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+selectors:
+  item: "table.proposicoes tr.linha"
+  titulo: "td.titulo a"
+  link: "td.titulo a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  ALERJ — Assembleia Legislativa do RJ.
+  RJ usa nomenclatura ITD. Alíquota progressiva 4-8%.
+  ⚠️ Selectors a validar; portal usa ASP.NET.

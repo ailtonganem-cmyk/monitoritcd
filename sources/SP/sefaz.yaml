@@ -1,0 +1,25 @@
+id: sefaz-sp
+uf: SP
+nome: "SEFAZ-SP — Atos normativos ITCMD"
+tipo: sefaz
+parser: generic_html
+url: "https://portal.fazenda.sp.gov.br/servicos/itcmd/Paginas/Legislacao.aspx"
+keywords_required:
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - "valor venal de referência"
+  - "GIA-ITCMD"
+selectors:
+  item: "div.legislacao-list article, div.lista-atos > div"
+  titulo: "h3 a, .titulo-ato a"
+  link: "h3 a@href, .titulo-ato a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  SEFAZ-SP — Portal de legislação ITCMD.
+  Alíquota SP: 4% fixa (Lei 10.705/2000). Discussões sobre progressividade ativas.
+  ⚠️ Verificar selectors após mudanças de layout (frequente em SP).

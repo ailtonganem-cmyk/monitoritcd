@@ -1,0 +1,14 @@
+// MonitorITCD — Firebase Storage Security Rules
+//
+// Princípio: deny all. Acesso somente via Admin SDK.
+// HTML/PDF brutos são gravados pelo cron via service account.
+// Leitura externa não é necessária no MVP.
+
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

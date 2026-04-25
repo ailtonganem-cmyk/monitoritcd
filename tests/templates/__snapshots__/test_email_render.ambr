@@ -1,0 +1,64 @@
+# serializer version: 1
+# name: TestEmailRender.test_snapshot_simple_digest
+  '''
+  <!doctype html>
+  <html lang="pt-BR">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+    <title>[MonitorITCD] Diário — 1 novidades</title>
+  </head>
+  <body style="margin:0; padding:0; background:#f5f5f7; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;">
+      <tr>
+        <td align="center" style="padding:24px 12px;">
+          <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+            <tr>
+              <td style="padding:24px 24px 8px 24px; border-bottom:1px solid #ececec;">
+                <h1 style="margin:0; font-size:18px; color:#111;">📊 MonitorITCD — Diário</h1>
+                <p style="margin:6px 0 0 0; font-size:13px; color:#666;">24/04/2026 07:13 · 1 novidade</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 24px; background:#fff8e1;">
+                <strong style="font-size:14px; color:#7a5c00;">⭐ Destaques</strong>
+                <ul style="margin:8px 0 0 0; padding-left:20px; color:#333; font-size:13px;">
+                  <li style="margin-bottom:4px;">PL 1234/2026 — ITCMD progressivo SP</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 24px; border-bottom:1px solid #f0f0f0;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align:top;">
+                      <div style="font-size:11px; color:#999; margin-bottom:4px;">
+                        <span style="background:#f57c00; color:#fff; padding:2px 6px; border-radius:3px; font-weight:600;">
+                          🟠 Alta
+                        </span>
+                        &nbsp;·&nbsp;SP&nbsp;·&nbsp;Projeto de Lei
+  &nbsp;·&nbsp;24/04/2026                    </div>
+                      <h2 style="margin:0 0 6px 0; font-size:15px; line-height:1.4; color:#111;">
+                        <a href="https://www.example.gov.br/pl-1234" style="color:#0066cc; text-decoration:none;">PL 1234/2026 — ITCMD progressivo SP</a>
+                      </h2>
+                      <p style="margin:0; font-size:13px; color:#444; line-height:1.5;">Projeto institui alíquota progressiva de ITCMD em SP.</p>
+                      <p style="margin:6px 0 0 0; font-size:11px; color:#999;">Fonte: ALESP</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:16px 24px; text-align:center; font-size:11px; color:#999;">
+                Enviado por MonitorITCD · 24/04/2026 07:13<br>
+                Sistema de uso pessoal — não responder a este e-mail.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  '''
+# ---

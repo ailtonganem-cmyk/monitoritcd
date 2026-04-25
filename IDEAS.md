@@ -1,0 +1,639 @@
+# IDEAS.md — 500 sugestões de funcionalidades
+
+> **Premissa absoluta**: TODAS as ideias listadas devem ser implementáveis usando exclusivamente
+> recursos gratuitos (free tiers, ferramentas open source, APIs públicas sem custo).
+> Nenhuma envolve gasto financeiro recorrente.
+
+> **Status**: backlog de ideias. Nem tudo entrará no MVP nem em qualquer fase específica —
+> serve como cardápio para priorização. Ver Seção 16 do CLAUDE.md (critérios de "pronto")
+> antes de adicionar ao escopo de trabalho.
+
+## Índice
+
+| # | Categoria | Itens | Faixa |
+|---|---|---|---|
+| 1 | Coleta & Fontes | 50 | 1–50 |
+| 2 | Processamento & Classificação | 45 | 51–95 |
+| 3 | Notificação por E-mail | 25 | 96–120 |
+| 4 | Notificação por Telegram | 25 | 121–145 |
+| 5 | Notificação Multi-Canal | 25 | 146–170 |
+| 6 | Bot Telegram — Comandos | 50 | 171–220 |
+| 7 | Análise & Inteligência | 35 | 221–255 |
+| 8 | Busca & Navegação | 25 | 256–280 |
+| 9 | Watch List & Observadores | 25 | 281–305 |
+| 10 | Segurança & Auditoria | 35 | 306–340 |
+| 11 | Observabilidade & Métricas | 25 | 341–365 |
+| 12 | Gestão de Fontes | 25 | 366–390 |
+| 13 | Templates & Renderização | 15 | 391–405 |
+| 14 | Retenção & Backup | 15 | 406–420 |
+| 15 | Reprocessamento & Migração | 15 | 421–435 |
+| 16 | Integrações Externas | 25 | 436–460 |
+| 17 | Testes & Qualidade | 25 | 461–485 |
+| 18 | Documentação | 15 | 486–500 |
+| | **TOTAL** | **500** | |
+
+---
+
+## 1. Coleta & Fontes (1–50)
+
+1. [ ] Coletor para ALEAC — Assembleia Legislativa do Acre.
+2. [ ] Coletor para ALEAL — Alagoas.
+3. [ ] Coletor para ALAP — Amapá.
+4. [ ] Coletor para ALEAM — Amazonas.
+5. [ ] Coletor para ALBA — Bahia.
+6. [ ] Coletor para ALECE — Ceará.
+7. [ ] Coletor para CLDF — Câmara Legislativa do DF.
+8. [ ] Coletor para ALES — Espírito Santo.
+9. [ ] Coletor para ALEGO — Goiás.
+10. [ ] Coletor para ALEMA — Maranhão.
+11. [ ] Coletor para ALMT — Mato Grosso.
+12. [ ] Coletor para ALMS — Mato Grosso do Sul.
+13. [ ] Coletor para ALMG — Minas Gerais.
+14. [ ] Coletor para ALEPA — Pará.
+15. [ ] Coletor para ALPB — Paraíba.
+16. [ ] Coletor para ALEP — Paraná.
+17. [ ] Coletor para ALEPE — Pernambuco.
+18. [ ] Coletor para ALEPI — Piauí.
+19. [ ] Coletor para ALERJ — Rio de Janeiro.
+20. [ ] Coletor para ALRN — Rio Grande do Norte.
+21. [ ] Coletor para ALRS — Rio Grande do Sul.
+22. [ ] Coletor para ALERO — Rondônia.
+23. [ ] Coletor para ALE-RR — Roraima.
+24. [ ] Coletor para ALESC — Santa Catarina.
+25. [ ] Coletor para ALESP — São Paulo.
+26. [ ] Coletor para ALESE — Sergipe.
+27. [ ] Coletor para ALETO — Tocantins.
+28. [ ] Coletor para SEFAZ de cada UF (27 fontes — atos normativos/portarias).
+29. [ ] Coletor para Diário Oficial de cada UF (incluindo formato PDF).
+30. [ ] Integração com LexML SRU API (busca federal consolidada).
+31. [ ] Coletor STF — RSS de jurisprudência e súmulas.
+32. [ ] Coletor STJ — RSS de acórdãos e súmulas.
+33. [ ] Coletor CNJ — atos administrativos relevantes.
+34. [ ] Coletor Receita Federal — atos relacionados a sucessão/doação.
+35. [ ] Coletor CONFAZ — convênios e protocolos.
+36. [ ] Coletor Câmara dos Deputados — PLs federais relevantes a ITCD.
+37. [ ] Coletor Senado Federal — PLSs e PECs.
+38. [ ] Coletor TJ-SP, TJ-RJ, TJ-MG (3 maiores tribunais estaduais).
+39. [ ] Coletor de Tribunais de Impostos e Taxas (TIT) estaduais.
+40. [ ] Coletor Conjur — RSS principal e de tributário.
+41. [ ] Coletor Migalhas — RSS.
+42. [ ] Coletor JOTA — RSS.
+43. [ ] Coletor Valor Econômico — filtragem de RSS público.
+44. [ ] Coletor Folha de S.Paulo / Estadão — RSS público.
+45. [ ] Coletor IBET — Instituto Brasileiro de Estudos Tributários.
+46. [ ] Coletor IBPT — Instituto Brasileiro de Planejamento Tributário.
+47. [ ] Coletor SciELO — artigos acadêmicos sobre tributação sucessória.
+48. [ ] Coletor BDTD CAPES — teses e dissertações.
+49. [ ] Coletor Google Scholar — alertas via RSS-like (scholar.google.com/scholar_alerts).
+50. [ ] Coletor de pareceres da PGFN, AGU, e procuradorias estaduais.
+
+---
+
+## 2. Processamento & Classificação (51–95)
+
+51. [ ] Pré-score por densidade de keywords no texto.
+52. [ ] Pré-score por autoridade da fonte (oficial > especializado > genérico).
+53. [ ] Pré-score por frescor (quanto mais recente, maior peso).
+54. [ ] Pré-score por presença de número de ato extraível (`Lei nº X/AAAA`).
+55. [ ] Cache de classificações por hash do conteúdo (evita reclassificar).
+56. [ ] Detecção de "atualização" vs "novo ato" pelo número.
+57. [ ] Cluster de itens similares (mesmo tema, fontes diferentes, mesmo dia).
+58. [ ] Topic modeling com BERTopic offline (CPU, sem custo).
+59. [ ] Detecção de mudança de alíquota via regex + tabela.
+60. [ ] Extração estruturada de tabelas em PDF de DOE.
+61. [ ] Detecção de "sanção" vs "veto" no texto da lei.
+62. [ ] Identificação automática do relator de PLs.
+63. [ ] Tracking de tramitação (estágio atual mudou desde última coleta).
+64. [ ] Histórico de versões de Instrução Normativa.
+65. [ ] Diff automático entre versões (palavras adicionadas/removidas).
+66. [ ] Detecção de revogação (`"revoga a Lei X"`).
+67. [ ] Construção de grafo de citações entre normas e decisões.
+68. [ ] Identificação de "leading case" em jurisprudência.
+69. [ ] Sentiment analysis simples (pro-fisco vs pro-contribuinte).
+70. [ ] Extração de jurisprudência citada na fundamentação.
+71. [ ] Identificação de magistrado/desembargador relator.
+72. [ ] Descoberta de palavras-chave dinâmicas (term-frequency em docs aprovados).
+73. [ ] Score de "polêmica" pelo volume de cobertura jornalística.
+74. [ ] Detecção de embargos infringentes / RE / REsp.
+75. [ ] Identificação de matéria submetida a regime de repetitivo.
+76. [ ] Tracking de "Tema" STF/STJ por número.
+77. [ ] Cross-reference com legislação anterior citada.
+78. [ ] Extração de valores monetários no texto (impacto fiscal).
+79. [ ] Detecção de "planejamento sucessório" como tema central.
+80. [ ] Detecção de "holding familiar" como veículo discutido.
+81. [ ] Detecção de "doação com reserva de usufruto".
+82. [ ] Detecção de "testamento" como tema.
+83. [ ] Análise de jurisprudência sobre offshore/exterior.
+84. [ ] Detecção de discussão sobre alíquota progressiva.
+85. [ ] Tracking de PEC sobre ITCD federal (com unificação nacional).
+86. [ ] Análise de pareceres da PGFN sobre o tema.
+87. [ ] Detecção de "modulação de efeitos" em decisões.
+88. [ ] Reclassificação semanal automática com prompt revisado.
+89. [ ] Comparação Gemini vs Groq (medida de consistência da classificação).
+90. [ ] Detecção de inconsistências entre fontes (mesmo ato, dados divergentes).
+91. [ ] Identificação do "fato gerador" no texto.
+92. [ ] Identificação da "base de cálculo".
+93. [ ] Identificação de "isenção" como tema.
+94. [ ] Identificação de "imunidade" tributária como tema.
+95. [ ] Detecção de menções a GIA-ITCMD e outras obrigações acessórias.
+
+---
+
+## 3. Notificação por E-mail (96–120)
+
+96. [ ] E-mail HTML com CSS inline (compatibilidade Gmail/Outlook).
+97. [ ] Modo dark/light auto via `prefers-color-scheme`.
+98. [ ] Tabela de conteúdos (TOC) clicável para digests longos.
+99. [ ] Seção "destaques da semana".
+100. [ ] Digest diário (configurável horário via env).
+101. [ ] Digest semanal (todo domingo 18h).
+102. [ ] Digest mensal (último dia do mês).
+103. [ ] Ranking dos itens mais relevantes do período.
+104. [ ] Gráfico de tendências inline (PNG base64 via matplotlib).
+105. [ ] Anexo PDF do digest (gerado com WeasyPrint).
+106. [ ] Anexo CSV dos itens.
+107. [ ] Anexo JSON estruturado.
+108. [ ] Footer com links úteis (bot, dashboard, repo).
+109. [ ] Header com data e contagem de novidades.
+110. [ ] Subject configurável com variáveis (`{count}`, `{date}`).
+111. [ ] Template "compacto" — uma linha por item.
+112. [ ] Template "executivo" — resumo + top 5 itens.
+113. [ ] Template "detalhado" — todos os itens com resumo completo.
+114. [ ] Template "newsletter" — formato editorial com seções.
+115. [ ] Botão "ver no bot" (link para Telegram).
+116. [ ] Botão "marcar como lido" (mailto com subject especial).
+117. [ ] Personalização de saudação por horário.
+118. [ ] Pluralização correta ("1 novidade" vs "5 novidades").
+119. [ ] Footer de unsubscribe (boa prática mesmo single-user).
+120. [ ] Reply-to configurável (caixa de entrada separada para feedback ao bot).
+
+---
+
+## 4. Notificação por Telegram (121–145)
+
+121. [ ] Botões inline (callback data) para ações rápidas.
+122. [ ] Pinning automático de itens críticos.
+123. [ ] Disable de preview de URL para reduzir ruído visual.
+124. [ ] Markdown V2 estrito com escape automático de chars especiais.
+125. [ ] Emojis padronizados por severity tier (🔴🟠🟡🟢).
+126. [ ] Poll integrado: "li / não li / arquivar".
+127. [ ] Agrupamento por UF na mensagem.
+128. [ ] Agrupamento por tipo (PL, decreto, jurisprudência).
+129. [ ] Flag visual "novo desde sua última leitura".
+130. [ ] Snooze: silenciar próximas notificações até hora X.
+131. [ ] Modo "do not disturb" noturno automático (22h–7h BRT).
+132. [ ] Mensagem editável (editar in-place ao chegar item correlato).
+133. [ ] Botão "expandir resumo" (mostra mais texto on-demand).
+134. [ ] Botão "abrir original" (link para fonte).
+135. [ ] Botão "marcar com tag rápida" (predefinida).
+136. [ ] Sequência paginada de mensagens em digest grande.
+137. [ ] Threading via `reply_to_message_id` para agrupar correlatos.
+138. [ ] Status "digitando…" durante geração de respostas demoradas.
+139. [ ] Sticker para casos especiais (ex: emoji custom para mudança de alíquota).
+140. [ ] Reaction button (heart/fire/seen) com tracking.
+141. [ ] Quote message para destacar trecho original.
+142. [ ] Forwarding entre canais (se houver canal só pra leitura).
+143. [ ] Bot menu (`/setcommands` no BotFather) com sugestões.
+144. [ ] Bot description em PT-BR (visible quando alguém abre o bot).
+145. [ ] Bot photo customizada com identidade do projeto.
+
+---
+
+## 5. Notificação Multi-Canal (146–170)
+
+146. [ ] Discord webhook em servidor pessoal (free).
+147. [ ] ntfy.sh — push grátis e self-hostable.
+148. [ ] Pushover — free para uso pessoal (após one-time setup).
+149. [ ] Slack webhook em workspace pessoal (free).
+150. [ ] Mastodon — auto-post em conta pessoal.
+151. [ ] Bluesky — auto-post via AT Protocol.
+152. [ ] Matrix.org — mensagens em room privada.
+153. [ ] RSS feed pessoal auto-hospedado em GitHub Pages.
+154. [ ] Atom feed por UF.
+155. [ ] Atom feed por tipo de ato.
+156. [ ] Atom feed por relevância mínima.
+157. [ ] JSON Feed (auto-host).
+158. [ ] Calendar.ics com prazos legislativos extraídos.
+159. [ ] Google Calendar via API (free) para eventos importantes.
+160. [ ] ICS subscribable (URL pública para apps de calendário).
+161. [ ] Webhook genérico configurável (POST JSON para URL).
+162. [ ] Apple Push via Pushcut (free tier para indivíduos).
+163. [ ] Home Assistant integration via webhook (LAN, free).
+164. [ ] KDE Connect via shared LAN (Linux/Android).
+165. [ ] ntfy push direto para Android sem app (subscribe pelo browser).
+166. [ ] Email forwarding rules (Gmail filters → Telegram via IFTTT).
+167. [ ] IFTTT applets (free tier — 5 applets).
+168. [ ] Pushbullet (free para uso pessoal).
+169. [ ] Join (Joaoapps) — free para uso doméstico.
+170. [ ] Tasker (Android) integration via HTTP request action.
+
+---
+
+## 6. Bot Telegram — Comandos (171–220)
+
+171. [ ] `/start` — saudação personalizada + lista comandos.
+172. [ ] `/help` — help dinâmico, dividido por categoria.
+173. [ ] `/status` — última coleta, fontes ativas/falhando, cota LLM/Firestore.
+174. [ ] `/buscar <termo>` — busca em todo histórico.
+175. [ ] `/buscar UF=SP` — filtro por UF.
+176. [ ] `/buscar tipo=PL` — filtro por tipo.
+177. [ ] `/buscar periodo=30d` — filtro temporal.
+178. [ ] `/buscar relevancia>=8` — filtro por score.
+179. [ ] `/buscar tag=critico` — filtro por tag.
+180. [ ] `/observar <termo>` — adiciona à watch list.
+181. [ ] `/observar PL=1234/2026` — observa PL específico.
+182. [ ] `/observar listar` — lista watches ativos.
+183. [ ] `/observar remover <id>` — remove watch.
+184. [ ] `/observar exportar` — CSV/JSON dos watches.
+185. [ ] `/silenciar UF=SP 7d` — mute UF por X dias.
+186. [ ] `/silenciar tipo=noticia` — mute tipo.
+187. [ ] `/silenciar tag=baixa` — mute tag.
+188. [ ] `/silenciar listar` — silenciamentos ativos.
+189. [ ] `/silenciar remover <id>` — cancela silêncio.
+190. [ ] `/marcar <doc_id> <tag>` — tag pessoal num doc.
+191. [ ] `/desmarcar <doc_id> <tag>` — remove tag.
+192. [ ] `/tags listar` — todas as tags usadas.
+193. [ ] `/tags renomear <old> <new>` — renomeia em massa.
+194. [ ] `/favoritar <doc_id>` — adiciona aos favoritos.
+195. [ ] `/favoritos` — lista favoritos.
+196. [ ] `/arquivo mes=2026-04` — todos docs do mês.
+197. [ ] `/arquivo UF=SP` — arquivo por UF.
+198. [ ] `/relatorio diario` — gera digest do dia sob demanda.
+199. [ ] `/relatorio semanal` — digest semanal.
+200. [ ] `/relatorio mensal` — digest mensal.
+201. [ ] `/relatorio anual` — retrospectiva.
+202. [ ] `/estados listar` — UFs ativas/desativadas.
+203. [ ] `/estados ativar <UF>` — adiciona à coleta.
+204. [ ] `/estados desativar <UF>` — remove da coleta.
+205. [ ] `/fontes listar` — todas as fontes do sistema.
+206. [ ] `/fontes status` — saúde por fonte.
+207. [ ] `/fontes ativar <id>` — habilita fonte.
+208. [ ] `/fontes desativar <id>` — desabilita fonte.
+209. [ ] `/reprocessar <since>` — reclassifica período (com confirmação).
+210. [ ] `/backup manual` — dispara backup imediato.
+211. [ ] `/export csv <since>` — CSV do período.
+212. [ ] `/export json <since>` — JSON do período.
+213. [ ] `/quota uso` — uso atual de cotas (Firestore, LLM, Storage).
+214. [ ] `/coleta agora` — força execução manual.
+215. [ ] `/diff <doc1> <doc2>` — compara dois documentos.
+216. [ ] `/historico <doc_id>` — versões/reprocessamentos do doc.
+217. [ ] `/comentar <doc_id> <texto>` — anotação pessoal.
+218. [ ] `/lembrar <texto> <data>` — alarme manual.
+219. [ ] `/confirmar <token>` — confirma operação destrutiva.
+220. [ ] `/cancelar` — cancela operação pendente.
+
+---
+
+## 7. Análise & Inteligência (221–255)
+
+221. [ ] Dashboard estático em GitHub Pages com métricas atualizadas.
+222. [ ] Gráfico itens por UF/mês (Plotly, JSON estático).
+223. [ ] Gráfico relevância média por UF.
+224. [ ] Trending topics — last 7d, 30d, 90d.
+225. [ ] Detecção de outliers em volume de coleta.
+226. [ ] Comparativo período atual vs anterior.
+227. [ ] Wordcloud das keywords mais frequentes.
+228. [ ] Heatmap de atividade por dia da semana × hora.
+229. [ ] Top fontes por relevância média entregue.
+230. [ ] Top UFs por volume.
+231. [ ] Análise de gap (UFs sem novidades em N dias).
+232. [ ] Velocidade média de tramitação de PL por UF.
+233. [ ] Taxa de aprovação de PLs sobre ITCD por UF.
+234. [ ] Tempo médio entre PL inicial → sanção.
+235. [ ] Detecção de "movimentos sincronizados" entre UFs no mesmo tema.
+236. [ ] Análise de cobertura jornalística (volume + diversidade).
+237. [ ] Análise de divergência entre fontes sobre o mesmo ato.
+238. [ ] Tracking de citações cruzadas (PL X cita Lei Y de outra UF).
+239. [ ] Mapa de conexões entre normas (graph DOT/Mermaid gerado).
+240. [ ] Linha do tempo interativa (HTML estático, vis.js).
+241. [ ] Tabela comparativa de alíquotas atualizada.
+242. [ ] Comparativo de regimes (progressivo × proporcional × híbrido).
+243. [ ] Estimativa de impacto fiscal (a partir de valores no texto).
+244. [ ] Estatísticas de keywords (frequência, tendência, sazonalidade).
+245. [ ] "Vencedores e perdedores" em jurisprudência (fisco × contribuinte).
+246. [ ] Detecção de mudanças de orientação jurisprudencial.
+247. [ ] Análise de teses repetitivas (STF/STJ).
+248. [ ] Score de "maturidade legislativa" por UF.
+249. [ ] Detecção de tendência regional (Norte × Sul × etc.).
+250. [ ] Score de proatividade da SEFAZ por UF (frequência de IN).
+251. [ ] Score de atualidade da legislação (idade média da norma vigente).
+252. [ ] Predição simples de relevância futura (Prophet local, sem Cloud ML).
+253. [ ] Detecção de sazonalidade (final de ano fiscal, etc.).
+254. [ ] Análise de correlação entre eventos legislativos.
+255. [ ] Comparativo Brasil × Internacional (briefing manual, contextualizado).
+
+---
+
+## 8. Busca & Navegação (256–280)
+
+256. [ ] Busca full-text local (SQLite FTS5 mirror do Firestore para queries rápidas).
+257. [ ] Busca semântica via embeddings (sentence-transformers local, sem custo).
+258. [ ] Busca por similaridade cosine.
+259. [ ] Busca facetada (UF + tipo + data + relevância simultâneos).
+260. [ ] Highlight de termos no resultado.
+261. [ ] Busca por número de ato com normalização (`Lei 1234/2026` ≡ `Lei nº 1.234, de 2026`).
+262. [ ] Busca por órgão emissor.
+263. [ ] Busca por relator/magistrado.
+264. [ ] Salvamento de buscas favoritas.
+265. [ ] Histórico de buscas.
+266. [ ] Autocomplete de termos baseado em uso anterior.
+267. [ ] Busca booleana (AND / OR / NOT).
+268. [ ] Busca fuzzy (Levenshtein) para typos.
+269. [ ] Busca temporal ("últimos 30d", "abril 2026", "Q1 2026").
+270. [ ] Export do resultado (CSV/JSON).
+271. [ ] URL compartilhável de busca (link encoded).
+272. [ ] Bookmark de busca recorrente.
+273. [ ] Busca em texto integral de PDF (após extração).
+274. [ ] Busca em comentários/anotações pessoais.
+275. [ ] Busca por tag.
+276. [ ] Busca por modelo LLM usado (filtra docs classificados por X).
+277. [ ] Busca por versão de prompt (filtra docs classificados com prompt vN).
+278. [ ] "Mais como este" — similaridade entre docs.
+279. [ ] CLI `monitoritcd search "termo"` para uso local.
+280. [ ] Busca regex avançada para usuário poweruser.
+
+---
+
+## 9. Watch List & Observadores (281–305)
+
+281. [ ] Watch por termo livre (texto).
+282. [ ] Watch por número de PL específico.
+283. [ ] Watch por UF + tema combinado.
+284. [ ] Watch por relator/parlamentar.
+285. [ ] Watch por tribunal.
+286. [ ] Watch com regex.
+287. [ ] Watch com expressão lógica (AND/OR/NOT).
+288. [ ] Watch com janela temporal (válido só nesta semana).
+289. [ ] Watch com expiração automática.
+290. [ ] Watch com prioridade (sobrepõe silêncios).
+291. [ ] Watch que dispara só em alta relevância.
+292. [ ] Watch que dispara em qualquer match.
+293. [ ] Watch com cooldown (não disparar 2x mesmo tema em 24h).
+294. [ ] Watch compartilhável (URL/JSON para clonar).
+295. [ ] Watch derivado de busca (transformar busca recorrente em watch).
+296. [ ] Watch por hash exato de título.
+297. [ ] Watch por similaridade > 0.85.
+298. [ ] Watch por tipo (só decretos, só sanções, só PLs aprovados).
+299. [ ] Watch por mudança de alíquota.
+300. [ ] Watch por revogação.
+301. [ ] Watch por modulação de efeitos.
+302. [ ] Watch por cluster (agrupado por tema).
+303. [ ] Watch por sequência (PL → comissão → plenário → sanção).
+304. [ ] Notificação de "estágio mudou" no PL observado.
+305. [ ] Templates de watch (presets: "alíquota SP", "holding familiar", etc.).
+
+---
+
+## 10. Segurança & Auditoria (306–340)
+
+306. [ ] Audit log de toda mutation no Firestore.
+307. [ ] Audit log de toda chamada ao LLM (com tokens).
+308. [ ] Audit log de todo comando do bot.
+309. [ ] Audit log de toda notificação enviada.
+310. [ ] Audit log de toda mudança de config.
+311. [ ] Imutabilidade do audit log (writes only, sem updates).
+312. [ ] Rotação para Storage após 90 dias (com hash).
+313. [ ] Hash chain do audit log (cada entry referencia hash da anterior).
+314. [ ] CLI para verificar integridade do hash chain.
+315. [ ] Alerta em comandos vindos de `chat_id` desconhecido.
+316. [ ] Alerta em rate limit excedido (mesmo do dono).
+317. [ ] Alerta em pico de atividade incomum.
+318. [ ] Alerta em falha de assert de `owner_id`.
+319. [ ] Alerta em SAST findings novos (CI).
+320. [ ] Alerta em deps com vuln nova (Dependabot/pip-audit).
+321. [ ] Alerta em commit com secret detectado.
+322. [ ] Alerta em mudança em `firestore.rules`.
+323. [ ] Honeytokens em arquivos de seed/example.
+324. [ ] Honeytokens com Canarytokens (free) — alerta em uso real.
+325. [ ] Bloqueio automático em Cloud Function de IP que tentou acesso.
+326. [ ] CSP headers em e-mails HTML.
+327. [ ] SBOM gerado em build (cyclonedx-bom).
+328. [ ] Dependabot ativo no GitHub (free).
+329. [ ] Renovate bot (free) com auto-merge para patches.
+330. [ ] Branch protection rules (mesmo single-user, evita pushes acidentais).
+331. [ ] Required reviews (auto-aprovação para si mesmo, mas obriga PR).
+332. [ ] Status checks obrigatórios.
+333. [ ] Pre-commit instalado e validado em CI.
+334. [ ] Commit signing GPG/SSH.
+335. [ ] Verificação de signed commits no CI.
+336. [ ] SOPS para configs cifradas no repo (chave em GH Secret).
+337. [ ] Mascaramento de PII em logs (regex CPF/CNPJ).
+338. [ ] Detecção de tentativa de injection (SQL/NoSQL/XSS/SSRF).
+339. [ ] Threat model documentado em `SECURITY.md`.
+340. [ ] Tabletop exercises documentados (cenários "e se").
+
+---
+
+## 11. Observabilidade & Métricas (341–365)
+
+341. [ ] Métrica: itens coletados por execução.
+342. [ ] Métrica: itens classificados.
+343. [ ] Métrica: itens descartados (relevância < 5).
+344. [ ] Métrica: itens notificados.
+345. [ ] Métrica: tempo de cada coletor.
+346. [ ] Métrica: error rate por coletor.
+347. [ ] Métrica: tokens LLM consumidos por execução.
+348. [ ] Métrica: cota Firestore reads/writes usada (% do free tier).
+349. [ ] Métrica: cota Storage usada (MB).
+350. [ ] Métrica: tempo total da execução.
+351. [ ] Métrica: tempo do classifier batch.
+352. [ ] Métrica: tamanho médio de payload por fonte.
+353. [ ] Métrica: idade média dos itens coletados.
+354. [ ] Métrica: cobertura de UFs (quantas tiveram itens hoje).
+355. [ ] Dashboard estático em GH Pages com Plotly.
+356. [ ] Dashboard atualizado a cada cron run.
+357. [ ] Métricas em formato Prometheus (texto exportado, sem hosting).
+358. [ ] JSON feed de métricas.
+359. [ ] `/healthcheck` no bot.
+360. [ ] Smoke test integrado ao cron.
+361. [ ] Trace ID por execução (correlation_id propagado nos logs).
+362. [ ] Latência por etapa do pipeline.
+363. [ ] Memória peak por execução (psutil).
+364. [ ] SLO/SLI tracking (success rate, latência p95).
+365. [ ] Status page estática em GH Pages com histórico de incidentes.
+
+---
+
+## 12. Gestão de Fontes (366–390)
+
+366. [ ] Toggle de fonte via PR no YAML (mantém auditoria git).
+367. [ ] Validação de YAML em CI (schema pydantic).
+368. [ ] Lint específico para YAML de fontes (regras de domínio).
+369. [ ] Auto-disable de fonte após N falhas seguidas.
+370. [ ] Auto-reativação ao voltar a funcionar.
+371. [ ] Health score por fonte (success rate, freshness).
+372. [ ] Calendário de revisão (cada 30d revisar todas).
+373. [ ] Sugestão automática de novas fontes via LLM (prompt periódico).
+374. [ ] Validador de URL (HEAD request, content-type esperado).
+375. [ ] Detecção de mudança de layout (parsing rate cai abruptamente).
+376. [ ] Auto-fallback entre múltiplas URLs por fonte.
+377. [ ] Mirror cached em Storage para resiliência.
+378. [ ] Versionamento de selectors CSS (histórico de mudanças).
+379. [ ] Anotação "última revisão manual" por fonte.
+380. [ ] Tag "fragile" para fontes instáveis (alerta extra em falhas).
+381. [ ] Tag "trusted" para fontes oficiais.
+382. [ ] Tag "secondary" para fontes de mídia.
+383. [ ] Hierarquia de confiança configurável.
+384. [ ] Pesos diferentes na pré-classificação por confiança.
+385. [ ] Histórico de mudanças por fonte.
+386. [ ] Métrica "novidades por mês" por fonte.
+387. [ ] Métrica "false positives" por fonte (descartados pelo LLM).
+388. [ ] Detecção de mudança de domínio (redirect 301 persistente).
+389. [ ] Auto-discovery de RSS em sites (feed link tag).
+390. [ ] Detecção de `sitemap.xml` para descoberta de URLs.
+
+---
+
+## 13. Templates & Renderização (391–405)
+
+391. [ ] Template "compacto" — 1 linha por item.
+392. [ ] Template "detalhado" — resumo + link + metadados.
+393. [ ] Template "executivo" — resumo + top 5.
+394. [ ] Template "newsletter" — seções editoriais.
+395. [ ] Template Markdown puro (para outras integrações).
+396. [ ] Template HTML otimizado para gerar PDF (WeasyPrint).
+397. [ ] Skin claro/escuro para email (auto via media query).
+398. [ ] Localização BR (data DD/MM/YYYY, número 1.234,56).
+399. [ ] Tema customizável (variáveis CSS).
+400. [ ] Logo configurável (URL pública estática).
+401. [ ] Footer customizável.
+402. [ ] Header customizável.
+403. [ ] Versão "telegrama" — resumo super conciso < 280 chars.
+404. [ ] Personalização de tom (formal/casual via prompt).
+405. [ ] A/B test de templates (rotação semanal, métricas de engajamento).
+
+---
+
+## 14. Retenção & Backup (406–420)
+
+406. [ ] Backup mensal automático (GH Action 1º do mês).
+407. [ ] Backup semanal opcional (configurável).
+408. [ ] Cifragem com `age` (chave em GH Secret).
+409. [ ] Verificação de integridade (checksum SHA-256).
+410. [ ] Restauração via CLI (`monitoritcd restore <backup>`).
+411. [ ] Backup incremental (apenas diff).
+412. [ ] Múltiplos destinos (Drive + GitHub Releases).
+413. [ ] Retention policy configurável (12 meses default).
+414. [ ] Auto-archive de itens antigos para Storage (Firestore enxuto).
+415. [ ] Soft delete (recuperável em janela de 30 dias).
+416. [ ] Audit log com retention separado (1 ano).
+417. [ ] Snapshot completo do projeto (Drive ou GH release).
+418. [ ] Compressão antes de Storage (gzip → ~80% redução).
+419. [ ] Deduplicação no Storage por hash (MD5/SHA-256).
+420. [ ] Notificação de backup OK/falho (Telegram ao final).
+
+---
+
+## 15. Reprocessamento & Migração (421–435)
+
+421. [ ] Reprocessar todos os itens de uma UF.
+422. [ ] Reprocessar período específico.
+423. [ ] Reprocessar com prompt diferente (A/B).
+424. [ ] Comparar dois LLMs (Gemini × Groq) no mesmo conjunto.
+425. [ ] Reprocessar relevância < N (segunda chance com prompt melhor).
+426. [ ] Migração de schema versão N → N+1.
+427. [ ] CLI para rodar migração específica.
+428. [ ] Dry-run de migração (mostra diff sem aplicar).
+429. [ ] Rollback de migração.
+430. [ ] Backfill ao adicionar fonte nova (re-coleta última semana).
+431. [ ] Re-extração de metadados sem re-classificação.
+432. [ ] Re-render de notificações (se template mudou).
+433. [ ] Re-deduplicação após mudança de strategy.
+434. [ ] Recompute de severity tier sem chamar LLM.
+435. [ ] Schema validator em CI (todos docs conformes ao schema atual).
+
+---
+
+## 16. Integrações Externas (436–460)
+
+436. [ ] Export para Google Drive (PDF mensal automatizado).
+437. [ ] Export para Notion (free workspace pessoal).
+438. [ ] Sincronização com Obsidian vault local (markdown).
+439. [ ] Sincronização com Logseq.
+440. [ ] Export para Anki deck (flashcards das normas mais relevantes).
+441. [ ] Integração com Zotero (referências jurídicas, free).
+442. [ ] Bookmarklet para enviar URL ao bot (1-click clip).
+443. [ ] Webhook genérico (POST JSON para URL configurável).
+444. [ ] n8n.io self-hosted (Docker, free) para automações.
+445. [ ] Trello via webhook (cartão por item observado).
+446. [ ] GitHub Issues — criar issue de PL observado (audit pessoal).
+447. [ ] Calendar.ics subscribe URL (qualquer cliente de calendário).
+448. [ ] NextCloud (self-host opcional) para arquivamento.
+449. [ ] Mastodon — auto-post em conta pessoal técnica.
+450. [ ] Bluesky — auto-post.
+451. [ ] Matrix.org — sala privada com bot.
+452. [ ] IRC bot (Libera/OFTC, free).
+453. [ ] XMPP bot (servidor público gratuito).
+454. [ ] IFTTT applets (5 grátis).
+455. [ ] Pushbullet (free pessoal).
+456. [ ] Apple Shortcuts integration (iOS/macOS via webhook).
+457. [ ] Discord rich presence (status visual).
+458. [ ] Slack workspace pessoal (free).
+459. [ ] Webhook para Home Assistant (LAN, total controle).
+460. [ ] SMTP forwarding configurável (encaminhar digest a outras contas).
+
+---
+
+## 17. Testes & Qualidade (461–485)
+
+461. [ ] Property-based testing com `hypothesis` em parsers/sanitizers.
+462. [ ] Mutation testing semanal com `mutmut`.
+463. [ ] Chaos testing — derrubar fontes propositalmente em ambiente teste.
+464. [ ] Smoke tests pós-deploy.
+465. [ ] Synthetic data tests (geração de fixtures via Faker).
+466. [ ] Snapshot tests para todos os templates (`syrupy`).
+467. [ ] Regression suite executada antes de cada release.
+468. [ ] Performance baseline (rodar e comparar com histórico).
+469. [ ] Memory leak tests (`pytest-memray` ou similar).
+470. [ ] Security scan completo automatizado em CI.
+471. [ ] Linter customizado para regras do projeto (ex: validar uso de `SecretStr`).
+472. [ ] Pre-merge gate strict (sem merge se algum check falhar).
+473. [ ] Code review checklist auto-gerado por tipo de PR.
+474. [ ] Coverage badge no README.
+475. [ ] Build status badge.
+476. [ ] License compliance check (`pip-licenses`).
+477. [ ] Dependency drift report (semanal).
+478. [ ] Stale code detector (`vulture`).
+479. [ ] Flaky test detector (relatório de testes intermitentes).
+480. [ ] Test history report (tendência de duração).
+481. [ ] Coverage delta por PR (não pode cair).
+482. [ ] Mutation score badge.
+483. [ ] Code complexity report (`radon`).
+484. [ ] Cyclomatic complexity gate (max 10 por função).
+485. [ ] Documentation coverage check (`interrogate`).
+
+---
+
+## 18. Documentação (486–500)
+
+486. [ ] README com badges (build, coverage, license, security).
+487. [ ] CONTRIBUTING.md (padrões para você + Claude Code).
+488. [ ] SECURITY.md com threat model completo.
+489. [ ] ARCHITECTURE.md com diagramas C4 (level 1, 2, 3).
+490. [ ] RUNBOOKS.md — procedimentos operacionais (rotação de secret, restauração de backup, etc.).
+491. [ ] CHANGELOG.md mantido com convenção (Keep a Changelog).
+492. [ ] ADRs (Architecture Decision Records) em `docs/adr/`.
+493. [ ] Tabela completa das 27 UFs no README (status + alíquota + regime).
+494. [ ] Glossário tributário em `docs/glossario.md`.
+495. [ ] Tutorial "como adicionar uma fonte" passo a passo.
+496. [ ] Tutorial "como rotacionar um secret".
+497. [ ] Tutorial "como restaurar de backup".
+498. [ ] FAQ (perguntas que você terá daqui a 6 meses).
+499. [ ] Diagrama de fluxo de dados (DFD).
+500. [ ] Postmortem template em `docs/templates/postmortem.md`.
+
+---
+
+## Notas de uso deste backlog
+
+- **Prioridade ≠ ordem na lista.** Estas estão numeradas para referência cruzada, não por importância.
+- **MVP enxuto** (definido no CLAUDE.md Seção 4) não precisa cobrir nem 10% disso.
+- **Antes de implementar uma ideia desta lista**: verifique se entra no escopo atual,
+  se respeita os princípios canônicos, se cabe nas cotas free tier do dia.
+- **Sugestão de priorização** ao avaliar uma ideia:
+  1. Resolve uma dor real e atual? (não "será útil um dia")
+  2. Custo de implementação proporcional ao valor?
+  3. Não cria dívida operacional (não precisa de manutenção contínua)?
+  4. Compatível com os princípios canônicos (Seção 🛡️ do CLAUDE.md)?
+- **Atualize este arquivo** marcando ideias implementadas com ✅ e a data.
+- Ideias **descartadas** (não vão acontecer): mover para `IDEAS_DESCARTADAS.md` com motivo.

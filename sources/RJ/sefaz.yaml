@@ -1,0 +1,25 @@
+id: sefaz-rj
+uf: RJ
+nome: "SEFAZ-RJ — Atos normativos ITD"
+tipo: sefaz
+parser: generic_html
+url: "https://www.fazenda.rj.gov.br/sefaz/faces/oracle/webcenter/portalapp/pages/legislacao-tributaria/itd.jspx"
+keywords_required:
+  - ITD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - resolução
+  - portaria
+selectors:
+  item: "div.legislacao-item"
+  titulo: "a.titulo-ato"
+  link: "a.titulo-ato@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  SEFAZ-RJ — Atos sobre ITD (RJ usa essa nomenclatura).
+  Alíquotas progressivas: 4% (até R$ 70k), 4,5%, 5%, 6%, 7%, 8% (>R$ 700k).

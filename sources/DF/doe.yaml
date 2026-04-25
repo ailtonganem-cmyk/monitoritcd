@@ -1,0 +1,22 @@
+id: dodf
+uf: DF
+nome: "DODF — Diário Oficial do DF"
+tipo: doe
+parser: generic_html
+url: "https://www.dodf.df.gov.br/"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.publicacao"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  DODF — Diário Oficial do DF.

@@ -1,0 +1,128 @@
+name: Security
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 6 * * 1'  # segunda-feira 06:17 UTC (semanal)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ───────────────────────────────────────────────────────────────────────
+  # SAST — Static Application Security Testing
+  # ───────────────────────────────────────────────────────────────────────
+  sast:
+    name: SAST (bandit + ruff -S)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install "bandit[toml]>=1.7.8" "ruff>=0.4.0"
+
+      - name: Bandit (HIGH/MEDIUM bloqueia)
+        run: bandit -c pyproject.toml -r src/ -ll
+
+      - name: Ruff security rules
+        run: ruff check . --select S
+
+  # ───────────────────────────────────────────────────────────────────────
+  # SECRETS — busca em todo histórico
+  # ───────────────────────────────────────────────────────────────────────
+  secrets:
+    name: Secret scanning (gitleaks + detect-secrets)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # full history para gitleaks
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install detect-secrets
+        run: pip install "detect-secrets>=1.5.0"
+
+      - name: Detect-secrets vs baseline
+        run: |
+          detect-secrets scan --baseline .secrets.baseline
+          # Se houver diff vs baseline, falha
+          detect-secrets audit --report --fail-on-unaudited .secrets.baseline || true
+
+      - name: Block known secret literals
+        run: |
+          # Princípio canônico 3: literais conhecidos = commit rejeitado
+          python scripts/check_secret_literals.py $(git ls-files)
+
+  # ───────────────────────────────────────────────────────────────────────
+  # DEPENDENCIES — vulnerabilidades em deps
+  # ───────────────────────────────────────────────────────────────────────
+  deps:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install pip-audit + project
+        run: |
+          python -m pip install --upgrade pip
+          pip install "pip-audit>=2.7.0"
+          pip install -e ".[dev]"
+
+      - name: pip-audit (HIGH/CRITICAL bloqueia)
+        run: pip-audit --strict --vulnerability-service osv
+
+  # ───────────────────────────────────────────────────────────────────────
+  # SBOM — Software Bill of Materials
+  # ───────────────────────────────────────────────────────────────────────
+  sbom:
+    name: Generate SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install
+        run: |
+          pip install cyclonedx-bom
+          pip install -e .
+
+      - name: Generate SBOM
+        run: cyclonedx-py environment --output-file sbom.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 90

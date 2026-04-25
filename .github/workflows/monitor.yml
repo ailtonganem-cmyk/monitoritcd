@@ -1,0 +1,88 @@
+name: Monitor (cron diário)
+
+on:
+  schedule:
+    # 10:13 UTC = 07:13 BRT — fora dos minutos "redondos" para evitar atrasos
+    - cron: '13 10 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Modo dry-run (não persiste/notifica)'
+        type: boolean
+        default: false
+      source_id:
+        description: 'Apenas uma fonte (ex: lexml-federal)'
+        type: string
+        default: ''
+      uf:
+        description: 'Apenas uma UF (ex: SP)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-cron
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    name: Cron diário
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Healthcheck — start
+        if: env.HEALTHCHECKS_URL != ''
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: |
+          curl -fsS -m 10 "${HEALTHCHECKS_URL}/start" || true
+
+      - name: Run pipeline
+        env:
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: |
+          ARGS="run"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            ARGS="$ARGS --dry-run"
+          fi
+          if [ -n "${{ github.event.inputs.source_id }}" ]; then
+            ARGS="$ARGS --source-id ${{ github.event.inputs.source_id }}"
+          fi
+          if [ -n "${{ github.event.inputs.uf }}" ]; then
+            ARGS="$ARGS --uf ${{ github.event.inputs.uf }}"
+          fi
+          python -m monitoritcd.main $ARGS
+
+      - name: Healthcheck — fail ping (se job falhou)
+        if: failure() && env.HEALTHCHECKS_URL != ''
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: |
+          curl -fsS -m 10 "${HEALTHCHECKS_URL}/fail" || true

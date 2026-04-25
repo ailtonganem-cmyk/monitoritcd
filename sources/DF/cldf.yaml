@@ -1,0 +1,25 @@
+id: cldf-pls
+uf: DF
+nome: "CLDF — Câmara Legislativa do DF"
+tipo: assembleia
+parser: generic_html
+url: "https://www.cl.df.gov.br/proposicoes"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+selectors:
+  item: "div.proposicao-item"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  CLDF — Câmara Legislativa do Distrito Federal.
+  DF tem alíquotas progressivas (4-6%).

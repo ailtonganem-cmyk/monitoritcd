@@ -1,0 +1,23 @@
+id: doe-mg
+uf: MG
+nome: "Jornal Minas Gerais — Diário Oficial de MG"
+tipo: doe
+parser: generic_html
+url: "https://www.jornalminasgerais.mg.gov.br/"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.lista-publicacoes article"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Jornal Minas Gerais — DOE-MG.
+  ⚠️ Layout pode ter mudado em 2024-2026; verificar selectors.

@@ -1,0 +1,32 @@
+id: stj-noticias
+uf: _federal
+nome: "STJ — Notícias e acórdãos"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.stj.jus.br/sites/portalp/RSS/Noticias"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - herdeiros
+  - "regime de bens"
+  - "Súmula 377"
+  - "união estável"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  Feed oficial do STJ — notícias e jurisprudência.
+  STJ é especialmente relevante para ITCD por consolidar entendimentos
+  entre estados (recursos especiais e súmulas).

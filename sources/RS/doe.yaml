@@ -1,0 +1,23 @@
+id: doe-rs
+uf: RS
+nome: "DOE-RS — Diário Oficial do RS"
+tipo: doe
+parser: generic_html
+url: "https://www.doe.rs.gov.br/"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "article.publicacao"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  DOE-RS — Companhia Rio-Grandense de Comunicação.
+  ⚠️ Verificar URL e selectors.

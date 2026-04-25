@@ -1,0 +1,23 @@
+id: sefaz-rs
+uf: RS
+nome: "SEFAZ-RS — Atos normativos ITCD"
+tipo: sefaz
+parser: generic_html
+url: "https://www.fazenda.rs.gov.br/inicial"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.publicacao-item"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  SEFAZ-RS — RICMS-RS Cap. ITCD.
+  Alíquotas progressivas RS: variam 3-7% conforme valor.

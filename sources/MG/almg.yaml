@@ -1,0 +1,23 @@
+id: almg-pls
+uf: MG
+nome: "ALMG — Projetos de Lei"
+tipo: assembleia
+parser: generic_rss
+url: "https://www.almg.gov.br/atividade-parlamentar/proposicoes/rss-pl.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  ALMG — Assembleia Legislativa de Minas Gerais.
+  ALMG tem dados estruturados (LexML/SRU). Verificar se RSS está disponível,
+  ou usar API SOAP/REST oficial: https://dadosabertos.almg.gov.br/

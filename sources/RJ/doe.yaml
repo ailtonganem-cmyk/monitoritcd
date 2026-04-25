@@ -1,0 +1,24 @@
+id: doe-rj
+uf: RJ
+nome: "DOERJ — Diário Oficial do RJ"
+tipo: doe
+parser: generic_html
+url: "https://www.ioerj.com.br/portal/modules/conteudoonline/"
+keywords_required:
+  - ITD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.publicacao"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  DOERJ — Imprensa Oficial RJ.
+  ⚠️ Considera login pode ser necessário para busca avançada.
+  PDFs publicados diariamente.

@@ -1,0 +1,20 @@
+id: trf4-noticias
+uf: _federal
+nome: "TRF4 — Tribunal Regional Federal da 4ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www2.trf4.jus.br/trf4/controlador.php?acao=noticia_rss"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF4 cobre RS, PR, SC.
+  Verificar URL do feed antes de ativar.

@@ -1,0 +1,20 @@
+id: trf6-noticias
+uf: _federal
+nome: "TRF6 — Tribunal Regional Federal da 6ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.trf6.jus.br/noticias/rss"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF6 cobre Minas Gerais (criado em 2022, o mais novo TRF).
+  Verificar URL do feed antes de ativar.

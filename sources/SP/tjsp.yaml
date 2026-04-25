@@ -1,0 +1,22 @@
+id: tjsp-noticias
+uf: SP
+nome: "TJSP — Tribunal de Justiça de SP (notícias)"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.tjsp.jus.br/Rss/RssNoticias"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TJSP — câmaras de Direito Público julgam ITCMD em SP.
+  ITCMD-SP pacificado em diversas teses (alíquota progressiva, etc.).
+  Verificar URL do feed antes de ativar.

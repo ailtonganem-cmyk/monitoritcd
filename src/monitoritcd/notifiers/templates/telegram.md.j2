@@ -1,0 +1,14 @@
+*📊 MonitorITCD — {{ digest_label }}*
+_{{ data_geracao }} · {{ items|length }} {% if items|length == 1 %}novidade{% else %}novidades{% endif %}_
+{% if items|length == 0 %}
+
+Sem novidades relevantes neste período\.
+{% else %}
+{% for item in items %}
+
+{{ item.tier_emoji }} *{{ item.titulo }}*
+{{ item.uf }} · {{ item.tipo_label }}{% if item.data_pub %} · {{ item.data_pub }}{% endif %}
+{{ item.resumo }}
+[Abrir original]({{ item.url }})
+{% endfor %}
+{% endif %}

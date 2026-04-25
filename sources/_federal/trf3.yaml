@@ -1,0 +1,20 @@
+id: trf3-noticias
+uf: _federal
+nome: "TRF3 — Tribunal Regional Federal da 3ª Região"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://web.trf3.jus.br/noticias/rss"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  TRF3 cobre SP e MS.
+  Verificar URL do feed antes de ativar.

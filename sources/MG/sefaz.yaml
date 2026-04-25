@@ -1,0 +1,23 @@
+id: sefaz-mg
+uf: MG
+nome: "SEFAZ-MG — Atos normativos ITCD"
+tipo: sefaz
+parser: generic_html
+url: "https://www.fazenda.mg.gov.br/empresas/legislacao_tributaria/itcd/"
+keywords_required:
+  - ITCD
+  - ITCMD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.legislacao li, table.atos tr"
+  titulo: "a.titulo, td.titulo a"
+  link: "a.titulo@href, td.titulo a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  SEFAZ-MG — Atos sobre ITCD em MG.
+  Alíquota MG: 5% fixa (Lei 14.941/2003).
