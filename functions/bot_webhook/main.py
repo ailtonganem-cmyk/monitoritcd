@@ -47,50 +47,57 @@ from monitoritcd.storage.firestore_store import FirestoreStorage
 logger = logging.getLogger("bot_webhook")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-# Globais reutilizadas entre invocações (Cloud Run keep-warm reutiliza)
+# Settings + RateLimiter podem ser singletons (não dependem de event loop).
+# Storage gRPC NÃO pode — guarda referência ao loop e quebra com "Event loop is closed"
+# em invocações subsequentes do Cloud Run. Criamos novo client a cada call.
 _rate_limiter: RateLimiter | None = None
 _settings = None
-_storage: FirestoreStorage | None = None
 _confirmation: TwoStepConfirmation | None = None
 
 
-def _ensure_initialized() -> None:
-    """Inicializa estado singleton (lazy, primeira invocação)."""
-    global _settings, _storage, _rate_limiter, _confirmation  # noqa: PLW0603
+def _get_globals() -> tuple:
+    """Retorna (settings, rate_limiter, confirmation) — singletons seguros."""
+    global _settings, _rate_limiter, _confirmation  # noqa: PLW0603
     if _settings is None:
         _settings = get_settings()
     if _rate_limiter is None:
         _rate_limiter = RateLimiter()
     if _confirmation is None:
         _confirmation = TwoStepConfirmation()
-    if _storage is None:
-        from google.cloud.firestore import AsyncClient  # noqa: PLC0415 - lazy
-
-        client = AsyncClient(project=_settings.FIREBASE_PROJECT_ID)
-        _storage = FirestoreStorage(client, _settings.OWNER_ID)
+    return _settings, _rate_limiter, _confirmation
 
 
 async def _process_update(update: dict) -> None:
-    """Wrapper async para chamar handle_update do poller."""
-    _ensure_initialized()
-    assert _settings is not None
-    assert _storage is not None
-    assert _rate_limiter is not None
-    assert _confirmation is not None
+    """Wrapper async — cria cliente Firestore novo a cada invocação.
+
+    O cliente gRPC do Firestore é vinculado ao event loop ativo. Como
+    asyncio.run() cria loop novo por invocação, reusar cliente entre
+    chamadas falha com "Event loop is closed".
+    """
+    settings, rate_limiter, confirmation = _get_globals()
+
+    from google.cloud.firestore import AsyncClient  # noqa: PLC0415 - lazy
+
+    fs_client = AsyncClient(project=settings.FIREBASE_PROJECT_ID)
+    storage = FirestoreStorage(fs_client, settings.OWNER_ID)
 
     ctx = BotContext(
-        settings=_settings,
-        storage=_storage,
-        confirmation=_confirmation,
+        settings=settings,
+        storage=storage,
+        confirmation=confirmation,
     )
-    async with httpx.AsyncClient() as client:
-        await handle_update(
-            update,
-            settings=_settings,
-            ctx=ctx,
-            rate_limiter=_rate_limiter,
-            client=client,
-        )
+    try:
+        async with httpx.AsyncClient() as client:
+            await handle_update(
+                update,
+                settings=settings,
+                ctx=ctx,
+                rate_limiter=rate_limiter,
+                client=client,
+            )
+    finally:
+        # Fecha cliente Firestore explicitamente para liberar recursos gRPC
+        fs_client.close()
 
 
 @functions_framework.http
