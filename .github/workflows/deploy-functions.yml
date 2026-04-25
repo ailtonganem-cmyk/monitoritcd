@@ -39,6 +39,36 @@ jobs:
       - name: Setup gcloud CLI
         uses: google-github-actions/setup-gcloud@v2
 
+      - name: Habilitar APIs necessarias
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          # Cloud Functions Gen2 = Cloud Run subjacente + Artifact Registry
+          gcloud services enable \
+            cloudfunctions.googleapis.com \
+            cloudbuild.googleapis.com \
+            artifactregistry.googleapis.com \
+            run.googleapis.com \
+            eventarc.googleapis.com \
+            --project=$PROJECT_ID 2>&1 | tee /tmp/enable.log
+
+          # Detecta se erro foi por falta de billing (requer plano Blaze)
+          if grep -q "BILLING_DISABLED\|requires billing" /tmp/enable.log; then
+            echo ""
+            echo "===================================================="
+            echo "BILLING REQUIRED: este projeto Firebase precisa estar"
+            echo "no plano Blaze (pay-as-you-go) para deploy de Cloud"
+            echo "Functions Gen2."
+            echo ""
+            echo "Acoes manuais (impossivel automatizar):"
+            echo "1. https://console.firebase.google.com/project/$PROJECT_ID/usage/details"
+            echo "2. Modify plan -> Blaze"
+            echo "3. Confirme cartao de credito"
+            echo "4. Re-dispare este workflow"
+            echo "===================================================="
+            exit 1
+          fi
+
       - name: Deploy proxy_br
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
