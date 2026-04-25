@@ -47,6 +47,9 @@ ALLOWLIST_PATHS = frozenset(
     {
         "tests/security/test_log_redactor.py",  # fixtures para testar o redactor
         "tests\\security\\test_log_redactor.py",  # variante Windows
+        ".gitleaks.toml",  # config do gitleaks com pattern AKIAIOSFODNN7EXAMPLE
+        "scripts/check_secret_literals.py",  # este proprio arquivo (auto-referencia)
+        "scripts\\check_secret_literals.py",
     }
 )
 
