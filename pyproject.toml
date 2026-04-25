@@ -169,6 +169,7 @@ omit = [
     "*/storage/firestore_store.py",
     "*/storage/base.py",  # Protocol stubs — sem execução real
     "*/llm/gemini.py",  # SDK real do Google — testado manualmente em dev
+    "*/bot/poller.py",  # I/O loop Telegram — handlers testados em integration
 ]
 
 [tool.coverage.report]
