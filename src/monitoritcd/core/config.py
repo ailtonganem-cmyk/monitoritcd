@@ -57,7 +57,9 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────
     FIREBASE_PROJECT_ID: Annotated[str, Field(min_length=1, max_length=64)]
     FIREBASE_STORAGE_BUCKET: Annotated[str, Field(min_length=1, max_length=128)]
-    FIREBASE_SERVICE_ACCOUNT_JSON: SecretStr
+    # Em Cloud Functions, credenciais vêm via Application Default Credentials
+    # (metadata service GCP) — JSON explícito só é necessário em CI/local.
+    FIREBASE_SERVICE_ACCOUNT_JSON: SecretStr | None = None
 
     # ─────────────────────────────────────────────────────────────────────
     # Observabilidade

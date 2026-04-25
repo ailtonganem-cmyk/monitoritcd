@@ -120,12 +120,25 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           # Bot webhook reusa todo o pacote monitoritcd (instalado via git+https)
-          # Memory mais alta porque importa pacote inteiro + Firestore async
+          # Em Cloud Function: usa Application Default Credentials (metadata),
+          # sem precisar de FIREBASE_SERVICE_ACCOUNT_JSON multilinhas.
+          # Usar --env-vars-file pra evitar problemas com chars especiais nos values
+          cat > /tmp/env.yaml <<EOY
+          OWNER_ID: "$OWNER_ID"
+          OWNER_EMAIL: "$OWNER_EMAIL"
+          GEMINI_API_KEY: "$GEMINI_API_KEY"
+          GMAIL_USER: "$GMAIL_USER"
+          GMAIL_APP_PASSWORD: "$GMAIL_APP_PASSWORD"
+          TELEGRAM_BOT_TOKEN: "$TELEGRAM_BOT_TOKEN"
+          TELEGRAM_OWNER_CHAT_ID: "$TELEGRAM_OWNER_CHAT_ID"
+          TELEGRAM_WEBHOOK_SECRET: "$TELEGRAM_WEBHOOK_SECRET"
+          FIREBASE_PROJECT_ID: "$PROJECT_ID"
+          FIREBASE_STORAGE_BUCKET: "$FIREBASE_STORAGE_BUCKET"
+          EOY
+
           gcloud functions deploy bot_webhook \
             --gen2 \
             --runtime=python311 \
@@ -137,7 +150,7 @@ jobs:
             --memory=512MB \
             --timeout=60s \
             --max-instances=3 \
-            --set-env-vars="OWNER_ID=$OWNER_ID,OWNER_EMAIL=$OWNER_EMAIL,GEMINI_API_KEY=$GEMINI_API_KEY,GMAIL_USER=$GMAIL_USER,GMAIL_APP_PASSWORD=$GMAIL_APP_PASSWORD,TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN,TELEGRAM_OWNER_CHAT_ID=$TELEGRAM_OWNER_CHAT_ID,TELEGRAM_WEBHOOK_SECRET=$TELEGRAM_WEBHOOK_SECRET,FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID,FIREBASE_STORAGE_BUCKET=$FIREBASE_STORAGE_BUCKET,FIREBASE_SERVICE_ACCOUNT_JSON=$FIREBASE_SERVICE_ACCOUNT_JSON" \
+            --env-vars-file=/tmp/env.yaml \
             --project=$PROJECT_ID
 
       - name: Print URLs
