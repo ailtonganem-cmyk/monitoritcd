@@ -25,12 +25,5 @@ trusted: true
 fragile: false
 geo_restricted: true
 notas: |
-  ALESC via SAPL (Sistema de Apoio ao Processo Legislativo / Interlegis).
-  API REST Django padronizada. Filtro: ementa__icontains.
-  Cobre proposições em tramitação (PLs, PECs, indicações, requerimentos).
-
-  geo_restricted=true: servidor pode rejeitar IPs Azure US.
-  Fallback automático via Cloud Function proxy_br BR.
-
-# AVISO 2026-04-25: caminho /sapl/api/ retorna HTML do CMS, N�O eh SAPL real.
-# Marcado inativo. Investigar URL alternativa em fase futura.
+  ALESC: caminho /sapl/api/ retorna HTML do CMS, NÃO é SAPL real.
+  Marcado inativo em 2026-04-25. Investigar URL alternativa em fase futura.
