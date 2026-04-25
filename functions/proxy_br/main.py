@@ -97,8 +97,12 @@ def proxy_br(request: Request) -> Response:
         logger.warning("blocked target=%s reason=%s", target_url[:200], reason)
         return Response(f"forbidden: {reason}", status=403)
 
+    # User-Agent realista de browser brasileiro: alguns sites .gov.br bloqueiam
+    # User-Agents desconhecidos (mesmo que tecnicamente legais).
     user_agent = request.headers.get(
-        "User-Agent", "MonitorITCD-Proxy/1.0 (+https://github.com/ailtonganem-cmyk/monitoritcd)"
+        "User-Agent",
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
     )
 
     parsed = urlparse(target_url)
@@ -110,7 +114,14 @@ def proxy_br(request: Request) -> Response:
             follow_redirects=True,
             max_redirects=5,
         ) as client:
-            upstream = client.get(target_url, headers={"User-Agent": user_agent})
+            upstream = client.get(
+                target_url,
+                headers={
+                    "User-Agent": user_agent,
+                    "Accept": "*/*",
+                    "Accept-Language": "pt-BR,pt;q=0.9",
+                },
+            )
     except httpx.ConnectTimeout:
         return Response("upstream connect timeout", status=504)
     except httpx.ReadTimeout:
@@ -121,4 +132,11 @@ def proxy_br(request: Request) -> Response:
 
     body = upstream.content[:MAX_BYTES]
     content_type = upstream.headers.get("content-type", "application/octet-stream")
+    logger.info(
+        "proxy result host=%s status=%d bytes=%d content_type=%s",
+        parsed.hostname,
+        upstream.status_code,
+        len(body),
+        content_type[:50],
+    )
     return Response(body, status=upstream.status_code, content_type=content_type)
