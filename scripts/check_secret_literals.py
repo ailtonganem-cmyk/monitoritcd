@@ -50,6 +50,10 @@ ALLOWLIST_PATHS = frozenset(
         ".gitleaks.toml",  # config do gitleaks com pattern AKIAIOSFODNN7EXAMPLE
         "scripts/check_secret_literals.py",  # este proprio arquivo (auto-referencia)
         "scripts\\check_secret_literals.py",
+        # Honeytoken placeholder (decoy AWS) — comentado, não-funcional. Quando
+        # ativado com canarytoken real, ainda fica neste arquivo de propósito.
+        "scripts/legacy_aws_loader.py",
+        "scripts\\legacy_aws_loader.py",
     }
 )
 
