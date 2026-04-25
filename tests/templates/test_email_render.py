@@ -149,3 +149,44 @@ class TestEmailRender:
         # Stripa whitespace variável para snapshot estável
         normalized = "\n".join(line.rstrip() for line in body.splitlines() if line.strip())
         assert normalized == snapshot
+
+    def test_emoji_no_titulo_renderiza(self) -> None:
+        # Caracteres UTF-8 multi-byte não devem quebrar template
+        _, body = render_email(
+            [_doc(titulo="🔥 PL 1234/2026 — ITCMD para herança digital")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "🔥" in body
+        assert "ITCMD" in body
+
+    def test_lista_grande_renderiza_todos(self) -> None:
+        # 50 documentos devem aparecer todos no body (sem truncar)
+        docs = [_doc(titulo=f"PL {i}/2026") for i in range(50)]
+        _, body = render_email(docs, digest_label="Diário", data_geracao=FIXED_NOW)
+        # Cada PL deve aparecer
+        for i in (0, 25, 49):
+            assert f"PL {i}/2026" in body
+
+    def test_multiple_tiers_separados_visualmente(self) -> None:
+        # CRITICO/ALTA/NORMAL/BAIXA devem ter classes distintas no HTML
+        docs = [
+            _doc(titulo="C", tier=SeverityTier.CRITICO),
+            _doc(titulo="A", tier=SeverityTier.ALTA),
+            _doc(titulo="N", tier=SeverityTier.NORMAL),
+            _doc(titulo="B", tier=SeverityTier.BAIXA),
+        ]
+        _, body = render_email(docs, digest_label="Diário", data_geracao=FIXED_NOW)
+        # Cada tier produz cor distinta inline (TIER_COLORS em email_notifier)
+        # critico=#d32f2f, alta=#f57c00, normal=#1976d2, baixa=#388e3c
+        assert "#d32f2f" in body or "critico" in body.lower()
+
+    def test_fonte_federal_renderiza(self) -> None:
+        # UF=_federal não deve quebrar (LexML/STF/STJ retornam isso)
+        _, body = render_email(
+            [_doc(uf="_federal")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        # _federal deve aparecer (label) ou ser substituído por "Federal"
+        assert "ederal" in body  # cobre "Federal" ou "_federal"

@@ -34,6 +34,7 @@ def _doc(
     titulo: str = "PL 1234/2026 — ITCMD progressivo (SP)",
     resumo: str = "Resumo factual.",
     tier: SeverityTier = SeverityTier.ALTA,
+    uf: str = "SP",
 ) -> Documento:
     raw = RawItem(
         source_id="src",
@@ -45,7 +46,7 @@ def _doc(
     )
     src = Source(
         id="src",
-        uf="SP",
+        uf=uf,
         nome="ALESP",
         tipo=TipoFonte.ASSEMBLEIA,
         parser=Parser.GENERIC_HTML,
@@ -118,6 +119,32 @@ class TestTelegramRender:
         )
         assert "1 novidade" in single
         assert "2 novidades" in multiple
+
+    def test_emoji_no_titulo(self) -> None:
+        text = render_telegram(
+            [_doc(titulo="🔥 PL 1234/2026 ITCMD")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "🔥" in text
+        assert "PL 1234" in text
+
+    def test_lista_grande_telegrampossivelmente_split(self) -> None:
+        # 30 docs deve gerar texto grande mas single rendered (split é separado)
+        docs = [_doc(titulo=f"PL {i}") for i in range(30)]
+        text = render_telegram(docs, digest_label="Diário", data_geracao=FIXED_NOW)
+        for i in (0, 15, 29):
+            assert f"PL {i}" in text
+
+    def test_uf_federal_na_renderizacao(self) -> None:
+        text = render_telegram(
+            [_doc(uf="_federal")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        # UF=_federal: aparece como `(\_federal)` ou tratamento equivalente
+        # Underscore escapado em MarkdownV2
+        assert "ederal" in text  # cobre "Federal" ou "_federal"
 
 
 @pytest.mark.templates
