@@ -147,7 +147,8 @@ class TestLexMLPortalCollector:
             <html><body>
             <div class="docHit"><table>
                 <tr><td>1</td><td><b>Localidade</b></td><td>São Paulo</td><td></td></tr>
-                <tr><td></td><td><b>Título</b></td><td><a href="/x">Lei sem URN</a></td><td></td></tr>
+                <tr><td></td><td><b>Título</b></td>
+                    <td><a href="/x">Lei sem URN</a></td><td></td></tr>
             </table></div>
             </body></html>
         """
