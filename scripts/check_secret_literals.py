@@ -41,9 +41,25 @@ SECRET_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
 ]
 
 
+# Arquivos com fixtures de teste intencionalmente contendo padrões fake.
+# Verificados manualmente para garantir que NÃO contêm secrets reais.
+ALLOWLIST_PATHS = frozenset(
+    {
+        "tests/security/test_log_redactor.py",  # fixtures para testar o redactor
+        "tests\\security\\test_log_redactor.py",  # variante Windows
+    }
+)
+
+
 def scan_file(path: Path) -> list[tuple[int, str, str]]:
     """Retorna lista de (linha, padrão_nome, trecho_match) encontrados."""
     findings: list[tuple[int, str, str]] = []
+
+    # Pula allowlist (test fixtures conhecidos)
+    posix_path = str(path).replace("\\", "/")
+    if any(posix_path.endswith(allowed) for allowed in ALLOWLIST_PATHS):
+        return findings
+
     try:
         content = path.read_text(encoding="utf-8", errors="replace")
     except OSError:
@@ -74,7 +90,7 @@ def main(argv: list[str]) -> int:
         findings = scan_file(path)
         if findings:
             any_found = True
-            print(f"\n❌ {path}: secret literal detected")
+            print(f"\n[!] {path}: secret literal detected")
             for line_num, name, masked in findings:
                 print(f"   line {line_num}: {name} → {masked}")
 
