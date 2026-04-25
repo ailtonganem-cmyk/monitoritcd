@@ -1,0 +1,68 @@
+name: Configurar webhook Telegram (admin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Acao"
+        type: choice
+        options:
+          - set
+          - delete
+          - info
+        default: info
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Auth gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Buscar URL da Cloud Function
+        id: url
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          URL=$(gcloud functions describe bot_webhook \
+            --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
+            --format='value(serviceConfig.uri)')
+          echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "Bot webhook URL: $URL"
+
+      - name: Set webhook
+        if: github.event.inputs.action == 'set'
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          URL: ${{ steps.url.outputs.url }}
+        run: |
+          RESP=$(curl -sS -X POST "https://api.telegram.org/bot${TOKEN}/setWebhook" \
+            -d "url=${URL}" \
+            -d "secret_token=${SECRET}" \
+            -d "drop_pending_updates=true")
+          echo "Set webhook resposta: $RESP"
+          echo "$RESP" | grep -q '"ok":true' || (echo "ERRO: setWebhook falhou" && exit 1)
+
+      - name: Delete webhook
+        if: github.event.inputs.action == 'delete'
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          RESP=$(curl -sS -X POST "https://api.telegram.org/bot${TOKEN}/deleteWebhook" \
+            -d "drop_pending_updates=true")
+          echo "Delete webhook resposta: $RESP"
+
+      - name: Get webhook info
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        run: |
+          curl -sS "https://api.telegram.org/bot${TOKEN}/getWebhookInfo" | python3 -m json.tool
