@@ -1,0 +1,80 @@
+name: Grant Service Account Roles (admin)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grant:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Auth gcloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Grant Service Usage Admin ao próprio SA
+        env:
+          PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # Extrai email do service account do JSON
+          SA_EMAIL=$(echo "$SA_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['client_email'])")
+          echo "SA target: $SA_EMAIL"
+          echo "Project:   $PROJECT_ID"
+
+          # Roles necessárias para deploy de Cloud Functions Gen2:
+          # - serviceusage.serviceUsageAdmin: habilitar APIs
+          # - cloudfunctions.developer: deploy
+          # - run.admin: Cloud Run subjacente
+          # - iam.serviceAccountUser: passar SA pro CF runtime
+          # - artifactregistry.admin: Gen2 usa Artifact Registry
+          # - cloudbuild.builds.editor: build do source
+
+          for ROLE in \
+            roles/serviceusage.serviceUsageAdmin \
+            roles/cloudfunctions.admin \
+            roles/run.admin \
+            roles/iam.serviceAccountUser \
+            roles/artifactregistry.admin \
+            roles/cloudbuild.builds.editor
+          do
+            echo ""
+            echo "Granting $ROLE..."
+            gcloud projects add-iam-policy-binding $PROJECT_ID \
+              --member="serviceAccount:$SA_EMAIL" \
+              --role=$ROLE \
+              --condition=None 2>&1 | tee /tmp/iam.log || true
+
+            if grep -q "PERMISSION_DENIED" /tmp/iam.log; then
+              echo ""
+              echo "===================================================="
+              echo "PERMISSION_DENIED para $ROLE"
+              echo ""
+              echo "O service account atual nao tem permissao para"
+              echo "modificar IAM policies (resourcemanager.projects.setIamPolicy)."
+              echo ""
+              echo "Solucao manual (UMA UNICA VEZ):"
+              echo "1. https://console.cloud.google.com/iam-admin/iam?project=$PROJECT_ID"
+              echo "2. Encontrar: $SA_EMAIL"
+              echo "3. Adicionar roles abaixo (Edit -> Add Another Role):"
+              echo "   - Service Usage Admin (roles/serviceusage.serviceUsageAdmin)"
+              echo "   - Cloud Functions Admin (roles/cloudfunctions.admin)"
+              echo "   - Cloud Run Admin (roles/run.admin)"
+              echo "   - Service Account User (roles/iam.serviceAccountUser)"
+              echo "   - Artifact Registry Administrator (roles/artifactregistry.admin)"
+              echo "   - Cloud Build Editor (roles/cloudbuild.builds.editor)"
+              echo "4. Save"
+              echo "5. Re-dispare o workflow Deploy Cloud Functions"
+              echo "===================================================="
+              exit 1
+            fi
+          done
+
+          echo ""
+          echo "OK - todas as roles concedidas. Re-dispare deploy-functions.yml."
