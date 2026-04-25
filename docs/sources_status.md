@@ -51,25 +51,30 @@ urn:lex:br;federal:lei:1973-01-11;5172
 Resultado: **uma única fonte (LexML) cobre legislação sancionada em todos
 os entes**, sem precisar de scraper estadual individual.
 
-## ⛔ Proposições estaduais não cobertas (13 UFs)
+## ⛔ Proposições estaduais não cobertas (15 UFs)
 
-Investigado em 2026-04-25, sem API REST/SAPL pública identificada:
+Investigação dedicada em 2026-04-25, com sondagem batch + WebFetch das
+páginas oficiais. Nenhuma API REST pública identificada.
 
-| UF | Status | Nota |
+### Confirmadas sem API (investigação completa)
+
+| UF | Plataforma | Detalhe |
 |---|---|---|
-| AP | Sem SAPL | Investigação adicional necessária |
-| BA | TIMEOUT | `alba.ba.gov.br` lento ou geo-restrito |
-| DF | 404 | `cl.df.gov.br` sem SAPL; investigar API própria |
-| MA | 404 | `al.ma.leg.br` sem SAPL detectado |
-| MS | TIMEOUT | `al.ms.gov.br` lento |
-| PA | TIMEOUT/404 | ALEPA com portal próprio |
-| PR | TIMEOUT | `assembleia.pr.leg.br` lento |
-| RJ | 302 | ALERJ usa Lotus Notes legado |
-| RN | TIMEOUT | `al.rn.leg.br` |
-| RS | HTML | AL/RS tem portal HTML, sem API JSON |
-| SE | TIMEOUT | `al.se.leg.br` |
-| SP | Form-based | ALESP exige VIEWSTATE/AJAX |
-| TO | TIMEOUT | `al.to.leg.br` |
+| **SP** (ALESP) | Form Struts/Java | `/spl_consultas/consultaProposicoesAction.do` rejeita params via GET; exige VIEWSTATE + AJAX. Sem RSS. |
+| **RJ** (ALERJ) | Lotus Notes legacy | `www3.alerj.rj.gov.br/lotus_notes/` — sistema antigo sem export estruturado |
+| **PE** (Alepe) | WordPress | URL `/sapl/api/` retorna HTML do CMS; SAPL real ausente |
+| **SC** (Alesc) | WordPress | Idem PE |
+
+### Investigação ainda incompleta
+
+| UF | Última verificação |
+|---|---|
+| AP, BA, DF, MA, MS, PA, PR, RN, RS, SE, TO | TIMEOUT/404 em URLs SAPL padrão. Cada uma exige WebFetch dedicado para ler portal de transparência. |
+
+**Importante**: para todas essas 15 UFs, **leis sancionadas** continuam
+cobertas via LexML (são publicadas no DOE estadual e indexadas pelo
+Senado). A lacuna é apenas **proposições EM TRAMITAÇÃO** que ainda não
+viraram lei sancionada.
 
 Para essas UFs, **leis sancionadas continuam cobertas via LexML** (legislação
 publicada no DOE estadual é indexada pelo Senado). A lacuna é apenas
