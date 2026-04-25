@@ -77,10 +77,17 @@ jobs:
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        env:
+          # Settings adicional repassado pelo BaseCollector para fallback
+          # automatico em fontes geo_restricted (Cloud Function proxy_br BR)
+          PROXY_BR_URL: ${{ secrets.PROXY_BR_URL }}
+          PROXY_BR_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
         run: |
-          # Em CI sempre pulamos fontes geo_restricted (bloqueadas no IP runner US).
-          # Worker local Windows coleta essas separado.
-          ARGS="run --skip-geo-restricted"
+          # Com PROXY_BR_URL configurado, fontes geo_restricted (ex: ALMG)
+          # fazem fallback automatico via Cloud Function southamerica-east1.
+          # Sem proxy, BaseCollector levanta ConnectTimeout e fonte falha
+          # isolada. Worker local Windows continua disponivel como reserva.
+          ARGS="run"
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi
