@@ -107,6 +107,7 @@ async def cmd_run(args: argparse.Namespace) -> int:
         sources_dir=SOURCES_DIR,
         only_source_id=args.source_id,
         only_uf=args.uf,
+        notify=not args.dry_run,
     )
 
     log.info(
@@ -130,6 +131,43 @@ async def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+async def cmd_reprocess(args: argparse.Namespace) -> int:
+    """Subcomando `reprocess` — reclassifica documentos existentes."""
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from monitoritcd.orchestrator import reprocess_documents  # noqa: PLC0415
+
+    settings = get_settings()
+    configure_logging(settings.LOG_LEVEL)
+    log = structlog.get_logger("main")
+
+    since: datetime | None = None
+    if args.since:
+        try:
+            since = datetime.fromisoformat(args.since).replace(tzinfo=UTC)
+        except ValueError:
+            log.error("cli.reprocess.invalid_since", value=args.since)
+            return 1
+
+    storage, llm = _make_backends(settings, dry_run=False)
+
+    log.info("cli.reprocess.start", since=str(since), uf=args.uf, limit=args.limit)
+    report = await reprocess_documents(
+        storage=storage,
+        llm_provider=llm,
+        since=since,
+        uf=args.uf,
+        limit=args.limit,
+    )
+    log.info(
+        "cli.reprocess.done",
+        run_id=report.run_id,
+        classified=report.items_classified,
+        duration_s=report.duration_seconds,
+    )
+    return 0
+
+
 def cli(argv: list[str] | None = None) -> int:
     """Entry point do CLI."""
     parser = argparse.ArgumentParser(
@@ -143,10 +181,27 @@ def cli(argv: list[str] | None = None) -> int:
     run_p.add_argument("--source-id", type=str, default=None, help="Apenas uma fonte")
     run_p.add_argument("--uf", type=str, default=None, help="Apenas UFs específicas")
 
+    rep_p = sub.add_parser("reprocess", help="Reclassifica documentos existentes (LLM apenas)")
+    rep_p.add_argument(
+        "--since",
+        type=str,
+        default=None,
+        help="Data inicial (ISO 8601: YYYY-MM-DD)",
+    )
+    rep_p.add_argument("--uf", type=str, default=None, help="Apenas uma UF")
+    rep_p.add_argument(
+        "--limit",
+        type=int,
+        default=200,
+        help="Máximo de documentos a reprocessar",
+    )
+
     args = parser.parse_args(argv)
 
     if args.cmd == "run":
         return asyncio.run(cmd_run(args))
+    if args.cmd == "reprocess":
+        return asyncio.run(cmd_reprocess(args))
 
     parser.print_help()  # pragma: no cover
     return 1  # pragma: no cover

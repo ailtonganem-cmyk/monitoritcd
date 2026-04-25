@@ -1,0 +1,62 @@
+name: Dashboard (GitHub Pages)
+
+on:
+  schedule:
+    # 30 min apos o cron diario (ja terao novos dados)
+    - cron: '43 10 * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Monitor (cron diário)"]
+    types: [completed]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+
+      - name: Build dashboard
+        env:
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
+        run: |
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > /tmp/sa.json
+          python scripts/build_dashboard.py \
+            --output docs/dashboard/index.html \
+            --metrics-json docs/dashboard/metrics.json
+          rm -f /tmp/sa.json
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/dashboard
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

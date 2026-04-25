@@ -32,6 +32,7 @@ DURATION_REGEX = re.compile(limits.DURATION_REGEX)
 
 MAX_BOT_ARGS = 10
 MIN_ARGS_WITH_UF = 2  # subcomando + UF
+MIN_PATTERN_LENGTH = 3  # termo mínimo de watch list
 
 
 @dataclass
@@ -271,6 +272,95 @@ async def handle_confirmar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Watch list
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+async def _watch_listar(ctx: BotContext) -> HandlerResult:
+    watches = await ctx.storage.list_watches()
+    if not watches:
+        return HandlerResult(text="📋 Nenhum watch ativo.")
+    lines = [f"📋 {len(watches)} watch(es) ativo(s):"]
+    for w in watches[:20]:
+        lines.append(
+            f"• [{w.watch_id[:8]}] '{w.pattern}' ({w.pattern_type}, rel≥{w.relevancia_min})"
+        )
+    return HandlerResult(text="\n".join(lines))
+
+
+async def _watch_adicionar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(
+            text="❌ Uso: /observar <termo>\nEx: /observar holding familiar SP",
+            is_error=True,
+        )
+    pattern = " ".join(cmd.args[1:])
+    if len(pattern) < MIN_PATTERN_LENGTH:
+        return HandlerResult(text="❌ Termo muito curto (mínimo 3 chars).", is_error=True)
+
+    from datetime import UTC, datetime  # noqa: PLC0415
+    from uuid import uuid4  # noqa: PLC0415
+
+    from monitoritcd.core.models import Watch  # noqa: PLC0415
+
+    watch = Watch(
+        owner_id=ctx.settings.OWNER_ID,
+        watch_id=uuid4().hex[:16],
+        pattern=pattern,
+        pattern_type="term",
+        relevancia_min=5,
+        cooldown_hours=24,
+        created_at=datetime.now(UTC),
+    )
+    try:
+        await ctx.storage.save_watch(watch)
+    except (ValueError, RuntimeError) as e:
+        return HandlerResult(text=f"❌ Erro: {e}", is_error=True)
+    return HandlerResult(
+        text=f"✅ Watch criado: '{pattern}' (id={watch.watch_id[:8]})",
+    )
+
+
+async def _watch_remover(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(text="❌ Uso: /observar remover <id>", is_error=True)
+    watch_id_prefix = cmd.args[1]
+    watches = await ctx.storage.list_watches()
+    matches = [w for w in watches if w.watch_id.startswith(watch_id_prefix)]
+    if not matches:
+        return HandlerResult(text=f"❌ Watch não encontrado: {watch_id_prefix}", is_error=True)
+    if len(matches) > 1:
+        return HandlerResult(
+            text=f"❌ Ambíguo: {len(matches)} matches. Use prefixo maior.",
+            is_error=True,
+        )
+    await ctx.storage.delete_watch(matches[0].watch_id)
+    return HandlerResult(text=f"✅ Watch removido: '{matches[0].pattern}'")
+
+
+_OBSERVAR_SUBHANDLERS = {
+    "listar": lambda ctx, _cmd: _watch_listar(ctx),
+    "remover": _watch_remover,
+}
+
+
+async def handle_observar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """`/observar <termo>` cria; `/observar listar`; `/observar remover <id>`."""
+    if not cmd.args:
+        return HandlerResult(
+            text="❌ Uso: /observar <termo> | /observar listar | /observar remover <id>",
+            is_error=True,
+        )
+    sub = cmd.args[0].lower()
+    if sub in _OBSERVAR_SUBHANDLERS:
+        return await _OBSERVAR_SUBHANDLERS[sub](ctx, cmd)
+    # Default: o argumento eh o termo (criacao implicita)
+    return await _watch_adicionar(
+        ctx, ParsedCommand(name="observar", args=["adicionar", *cmd.args])
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatch
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -283,6 +373,7 @@ HANDLERS = {
     "topicos": handle_topicos,
     "estados": handle_estados,
     "confirmar": handle_confirmar,
+    "observar": handle_observar,
 }
 
 

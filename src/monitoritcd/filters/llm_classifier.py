@@ -103,6 +103,9 @@ MAX_ITEM_TEXT_FOR_LLM: int = 3000
 class LLMProvider(Protocol):
     """Interface mínima de um provedor de LLM."""
 
+    name: str
+    """Identificação do modelo (ex: `gemini-2.5-flash`). Vai parar em `LLMResult.llm_model`."""
+
     async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
         """Recebe lista de textos, retorna lista de dicts (um por item)."""
         ...

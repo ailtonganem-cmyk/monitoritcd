@@ -55,6 +55,7 @@ from monitoritcd.collectors import (
 )
 from monitoritcd.core.models import (
     Documento,
+    NotificacaoStatus,
     Parser,
     SeverityTier,
     StatusDocumento,
@@ -64,6 +65,8 @@ from monitoritcd.dedup import assign_clusters
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, matches_keywords
 from monitoritcd.filters.llm_classifier import classify_with_provider
 from monitoritcd.filters.prescore import passes_cutoff, prescore
+from monitoritcd.notifiers.email_notifier import EmailNotifier
+from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
 from monitoritcd.storage.audit_log import AuditLog
 
 if TYPE_CHECKING:
@@ -228,6 +231,145 @@ async def classify_and_store(
     return docs_saved
 
 
+async def reprocess_documents(
+    *,
+    storage: StorageProtocol,
+    llm_provider: LLMProvider,
+    since: datetime | None = None,
+    uf: str | None = None,
+    limit: int = 200,
+) -> RunReport:
+    """Reclassifica documentos existentes com prompt/modelo atual.
+
+    Não modifica `original.*` (write-once) — só sobrescreve `llm.*`.
+    Útil quando o prompt é melhorado ou modelo é trocado.
+    """
+    from monitoritcd.core import limits as _lim  # noqa: PLC0415
+
+    run_id = str(uuid.uuid4())
+    report = RunReport(run_id=run_id, started_at=datetime.now(UTC))
+    bound = logger.bind(run_id=run_id)
+    bound.info("reprocess.start", since=str(since) if since else None, uf=uf)
+
+    docs = await storage.list_documentos(since=since, uf=uf, limit=limit)
+    bound.info("reprocess.docs_loaded", count=len(docs))
+
+    if not docs:
+        report.finished_at = datetime.now(UTC)
+        return report
+
+    for batch_start in range(0, len(docs), _lim.MAX_BATCH_LLM):
+        batch = docs[batch_start : batch_start + _lim.MAX_BATCH_LLM]
+        try:
+            llm_results = await classify_with_provider(
+                [d.original for d in batch],
+                llm_provider,
+                llm_model=llm_provider.name,
+            )
+        except (ValueError, TimeoutError) as e:
+            bound.exception("reprocess.classify_failed", error=str(e))
+            report.errors.append(f"reprocess_classify: {e}")
+            continue
+
+        for doc, new_llm in zip(batch, llm_results, strict=True):
+            try:
+                await storage.update_llm(doc.doc_id, new_llm)
+                report.items_classified += 1
+            except (ValueError, RuntimeError) as e:
+                bound.warning("reprocess.update_failed", doc_id=doc.doc_id, error=str(e))
+
+    report.finished_at = datetime.now(UTC)
+    bound.info("reprocess.complete", classified=report.items_classified)
+    return report
+
+
+async def notify_documents(
+    docs: list[Documento],
+    *,
+    settings: Settings,
+    storage: StorageProtocol,
+    report: RunReport,
+    digest_label: str = "Diário",
+) -> None:
+    """Envia notificações: push imediato para CRITICO, digest para o resto.
+
+    Estratégia:
+    - Itens com `severity_tier=CRITICO` → push imediato no Telegram (cada um).
+    - Demais (ALTA/NORMAL/BAIXA) → consolidados num digest (Telegram + Email).
+    - DESCARTADO já foi removido em `classify_and_store`.
+
+    Princípios canônicos:
+    - Falha em um canal não impede o outro.
+    - Exceções não derrubam pipeline (capturadas e logadas).
+    """
+    if not docs:
+        return
+
+    now = datetime.now(UTC)
+
+    criticos = [d for d in docs if d.llm and d.llm.severity_tier == SeverityTier.CRITICO]
+    digest_docs = [d for d in docs if d.llm and d.llm.severity_tier != SeverityTier.CRITICO]
+
+    # 1. Push imediato dos CRITICO (1 mensagem por item)
+    if criticos:
+        try:
+            async with TelegramNotifier(settings) as tg:
+                for doc in criticos:
+                    await tg.send_digest([doc], digest_label="🔴 CRÍTICO", data_geracao=now)
+                    report.items_notified_telegram += 1
+                    await storage.update_notificacao(
+                        doc.doc_id,
+                        NotificacaoStatus(
+                            enviada=True,
+                            enviada_em=now,
+                            canais=["telegram"],
+                        ),
+                    )
+                    await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
+        except Exception as e:  # last-resort - notif não pode derrubar pipeline
+            logger.exception("notify.critico_failed", error=str(e))
+            report.errors.append(f"notify_critico: {e}")
+
+    # 2. Digest consolidado (Telegram + Email) para o resto
+    if digest_docs:
+        # Telegram
+        try:
+            async with TelegramNotifier(settings) as tg:
+                await tg.send_digest(digest_docs, digest_label=digest_label, data_geracao=now)
+                report.items_notified_telegram += len(digest_docs)
+        except Exception as e:
+            logger.exception("notify.digest_telegram_failed", error=str(e))
+            report.errors.append(f"notify_digest_telegram: {e}")
+
+        # Email (digest único)
+        try:
+            email_notifier = EmailNotifier(settings)
+            await email_notifier.send_digest(
+                digest_docs,
+                digest_label=digest_label,
+                data_geracao=now,
+            )
+            report.items_notified_email += len(digest_docs)
+        except Exception as e:
+            logger.exception("notify.digest_email_failed", error=str(e))
+            report.errors.append(f"notify_digest_email: {e}")
+
+        # Marca como notificado
+        for doc in digest_docs:
+            try:
+                await storage.update_notificacao(
+                    doc.doc_id,
+                    NotificacaoStatus(
+                        enviada=True,
+                        enviada_em=now,
+                        canais=["telegram", "email"],
+                    ),
+                )
+                await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
+            except (ValueError, RuntimeError) as e:
+                logger.warning("notify.status_update_failed", doc_id=doc.doc_id, error=str(e))
+
+
 async def ping_healthcheck(settings: Settings, *, success: bool = True) -> None:
     """Faz GET ao endpoint Healthchecks.io. Falha silenciosa (best-effort)."""
     if settings.HEALTHCHECKS_URL is None:
@@ -242,24 +384,14 @@ async def ping_healthcheck(settings: Settings, *, success: bool = True) -> None:
         logger.warning("healthcheck.failed", error=str(e))
 
 
-async def run_pipeline(
-    settings: Settings,
-    *,
-    storage: StorageProtocol,
-    llm_provider: LLMProvider,
+async def _select_sources(
     sources_dir: Path,
-    only_source_id: str | None = None,
-    only_uf: str | None = None,
-) -> RunReport:
-    """Executa pipeline completa. Retorna `RunReport`."""
-    run_id = str(uuid.uuid4())
-    report = RunReport(run_id=run_id, started_at=datetime.now(UTC))
-    audit = AuditLog(storage)
-
-    bound = logger.bind(run_id=run_id)
-    bound.info("run.start")
-
-    # 1. Filtra sources por active_states + flags
+    storage: StorageProtocol,
+    *,
+    only_source_id: str | None,
+    only_uf: str | None,
+) -> list[Source]:
+    """Filtra fontes ativas por active_states + flags de execução."""
     all_sources = load_all_sources(sources_dir, ativo_only=True)
     active = await storage.get_active_states()
     active_ufs = set(active.active_uf) if active else set()
@@ -276,14 +408,19 @@ async def run_pipeline(
                 sources_to_run.append(s)
         elif s.uf in active_ufs:
             sources_to_run.append(s)
+    return sources_to_run
 
-    bound.info("run.sources_filtered", total=len(sources_to_run))
 
-    # 2. Coleta paralela
+async def _collect_all(
+    sources: list[Source],
+    report: RunReport,
+    bound: structlog.BoundLogger,
+) -> list[tuple[Source, RawItem]]:
+    """Coleta paralela; isola falhas por fonte."""
     raw_items: list[tuple[Source, RawItem]] = []
-    tasks = [collect_from_source(s) for s in sources_to_run]
+    tasks = [collect_from_source(s) for s in sources]
     results = await asyncio.gather(*tasks, return_exceptions=True)
-    for source, result in zip(sources_to_run, results, strict=True):
+    for source, result in zip(sources, results, strict=True):
         report.sources_consulted += 1
         if isinstance(result, BaseException):
             report.sources_failed += 1
@@ -298,6 +435,37 @@ async def run_pipeline(
         for item in result:
             raw_items.append((source, item))
     report.items_collected = len(raw_items)
+    return raw_items
+
+
+async def run_pipeline(
+    settings: Settings,
+    *,
+    storage: StorageProtocol,
+    llm_provider: LLMProvider,
+    sources_dir: Path,
+    only_source_id: str | None = None,
+    only_uf: str | None = None,
+    notify: bool = True,
+) -> RunReport:
+    """Executa pipeline completa. Retorna `RunReport`."""
+    run_id = str(uuid.uuid4())
+    report = RunReport(run_id=run_id, started_at=datetime.now(UTC))
+    audit = AuditLog(storage)
+    bound = logger.bind(run_id=run_id)
+    bound.info("run.start")
+
+    # 1. Selecionar fontes ativas
+    sources_to_run = await _select_sources(
+        sources_dir,
+        storage,
+        only_source_id=only_source_id,
+        only_uf=only_uf,
+    )
+    bound.info("run.sources_filtered", total=len(sources_to_run))
+
+    # 2. Coleta paralela
+    raw_items = await _collect_all(sources_to_run, report, bound)
     bound.info("run.collected", count=len(raw_items))
 
     # 3. Filtro 1: keywords
@@ -314,8 +482,9 @@ async def run_pipeline(
     bound.info("run.filtered", new=len(new_items))
 
     # 6. Classify + store
+    docs_saved: list[Documento] = []
     if new_items:
-        await classify_and_store(
+        docs_saved = await classify_and_store(
             new_items,
             llm_provider=llm_provider,
             storage=storage,
@@ -323,7 +492,16 @@ async def run_pipeline(
             report=report,
         )
 
-    # 7. Audit
+    # 7. Notificações (push CRITICO imediato + digest)
+    if notify and docs_saved:
+        await notify_documents(
+            docs_saved,
+            settings=settings,
+            storage=storage,
+            report=report,
+        )
+
+    # 8. Audit
     try:
         await audit.append(
             actor="system:cron",
@@ -337,7 +515,7 @@ async def run_pipeline(
     except (ValueError, RuntimeError) as e:
         bound.warning("audit.failed", error=str(e))
 
-    # 8. Healthcheck ping (sucesso)
+    # 9. Healthcheck ping (sucesso)
     await ping_healthcheck(settings, success=True)
 
     report.finished_at = datetime.now(UTC)

@@ -24,5 +24,6 @@ trusted: true
 fragile: true
 notas: |
   IBDFAM é referência em Direito de Família e Sucessões.
-  Cobre os 3 tópicos do sistema (sucessões, regime de bens, e ITCD eventualmente).
-  Verificar URL do RSS antes de ativar.
+  AVISO 2026-04-25: site IBDFAM não publica feed RSS público.
+  Endpoints testados (Joomla padrão, raiz, /noticias) retornam HTML sem RSS.
+  Não-implementável sem scraping HTML. Pendência registrada em PLAN.md.

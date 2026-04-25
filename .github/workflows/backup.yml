@@ -25,10 +25,10 @@ jobs:
           python-version: '3.11'
           cache: pip
 
-      - name: Install age
+      - name: Install age (apt)
         run: |
-          curl -L https://github.com/FiloSottile/age/releases/latest/download/age-v1.2.1-linux-amd64.tar.gz | tar xz
-          sudo mv age/age age/age-keygen /usr/local/bin/
+          sudo apt-get update -qq
+          sudo apt-get install -y age
 
       - name: Install Python deps
         run: |
@@ -63,9 +63,10 @@ jobs:
           rm -f ~/.config/rclone/rclone.conf
 
       - name: Upload as artifact (fallback)
-        if: always()
+        if: always() && env.BACKUP_NAME != ''
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.BACKUP_NAME }}
           path: ${{ env.BACKUP_NAME }}
           retention-days: 90
+          if-no-files-found: warn

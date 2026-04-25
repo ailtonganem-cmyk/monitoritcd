@@ -10,6 +10,24 @@ autenticação de terceiros, sem redistribuição.
 > Este arquivo orienta o trabalho do Claude Code neste repositório. Mantenha-o atualizado
 > conforme decisões arquiteturais forem tomadas.
 
+## ⚖️ Regra de execução autônoma
+
+**O Claude Code é o único responsável pela implementação.** O dono não executa
+tarefas manuais. Claude Code:
+
+- Não pede autorização prévia para implementações dentro do escopo do projeto.
+- Instala ferramentas necessárias quando possível (via npm, pip, curl + binários).
+- Configura serviços externos via APIs/CLIs (`gh`, `firebase`, `gcloud`, curl).
+- Toma decisões arquiteturais alinhadas com os princípios canônicos abaixo.
+- Comita, faz push e dispara workflows livremente.
+
+**Único caso em que o dono executa**: tarefas **tecnologicamente impossíveis**
+para o Claude Code — login OAuth interativo no browser, aprovações 2FA por SMS,
+acesso físico a hardware, instalação de software que exige clique em popup. Essas
+tarefas devem ser **explicitamente listadas e justificadas** ao dono.
+
+Decisões registradas em CLAUDE.md/PLAN.md/IDEAS.md são vinculantes para sessões futuras.
+
 ---
 
 ## 🛡️ Princípios Canônicos (Fontes da Verdade)
