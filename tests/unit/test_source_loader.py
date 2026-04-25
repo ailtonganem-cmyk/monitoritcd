@@ -159,8 +159,10 @@ class TestLoadAllSources:
         lexml_yaml = repo_root / "sources" / "_federal" / "lexml.yaml"
         if lexml_yaml.exists():
             src = load_source(lexml_yaml)
-            assert src.id == "lexml-federal"
-            assert src.parser.value == "lexml"
+            # Era lexml-federal (parser SRU) → migrou para lexml-portal (HTML)
+            # após API SRU ser descontinuada em 2025.
+            assert src.id == "lexml-portal"
+            assert src.parser.value == "lexml_portal"
             assert src.uf == "_federal"
 
     def test_loads_all_real_sources(self) -> None:
@@ -176,7 +178,7 @@ class TestLoadAllSources:
         # Sanity: temos ≥ 1 fonte e ≥ LexML
         assert len(sources) >= 1
         ids = {s.id for s in sources}
-        assert "lexml-federal" in ids
+        assert "lexml-portal" in ids
 
     def test_real_tribunais_yamls_present(self) -> None:
         """Verifica que YAMLs de tribunais foram criados."""

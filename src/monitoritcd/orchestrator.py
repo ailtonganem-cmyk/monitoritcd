@@ -53,6 +53,7 @@ from monitoritcd.collectors import (
     GenericHTMLCollector,
     GenericRSSCollector,
     LexMLCollector,
+    LexMLPortalCollector,
 )
 from monitoritcd.core.models import (
     Documento,
@@ -83,6 +84,7 @@ _PARSERS_TO_COLLECTORS = {
     Parser.GENERIC_RSS: GenericRSSCollector,
     Parser.GENERIC_HTML: GenericHTMLCollector,
     Parser.LEXML: LexMLCollector,
+    Parser.LEXML_PORTAL: LexMLPortalCollector,
     Parser.ALMG: ALMGCollector,
 }
 

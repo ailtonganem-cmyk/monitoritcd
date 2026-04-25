@@ -1,9 +1,14 @@
-id: lexml-federal
+id: lexml-portal
 uf: _federal
-nome: "LexML — Atos federais sobre ITCD/ITCMD"
+nome: "LexML Brasil — Legislação federal e estadual (todos os entes)"
 tipo: jurisprudencia
-parser: lexml
-url: "https://www.lexml.gov.br/busca/SRU"
+parser: lexml_portal
+url: "https://www.lexml.gov.br/busca/search"
+selectors:
+  palavras_chave: "ITCMD|ITCD|causa mortis|sucessão|inventário|regime de bens"
+  tipo_documento: "Legislação"
+  # localidades vazio = aceita TODOS os entes (federal + 27 estados)
+  localidades: ""
 keywords_required:
   - ITCMD
   - ITCD
@@ -13,18 +18,22 @@ keywords_required:
   - sucessão
   - inventário
   - espólio
-selectors:
-  query: 'ITCMD or ITCD or "causa mortis"'
-  max_records: "50"
-  record_schema: "dc"
-ativo: false
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
 trusted: true
-fragile: true
+fragile: false
+geo_restricted: true
 notas: |
-  LexML é a fonte federal consolidada operada pelo Senado Federal.
-  API SRU oficial e estável. Recomendado como fonte primária federal.
-  Doc API: https://www.loc.gov/standards/sru/
+  LexML Brasil — fonte canônica federal e estadual de atos normativos.
+  Operado pelo Senado Federal, indexa atos de TODOS os 27 entes
+  federativos via URNs estruturadas (urn:lex:br;{uf}:{esfera}:...).
 
-# AVISO 2026-04-25: API SRU descontinuada pelo Senado. LexML migrou para
-# API JSON Plone (https://projeto.lexml.gov.br/apidata/cms?Type=Document).
-# Implementacao requer collector customizado. Mantido inativo no MVP.
+  API SRU oficial descontinuada em ~2025 (404). Fonte primária agora é
+  o portal HTML em /busca/search, parseado por LexMLPortalCollector.
+
+  geo_restricted=true: servidor lexml.gov.br rejeita IPs Azure US do
+  GitHub Actions runner. Fallback automatico via proxy_br BR.

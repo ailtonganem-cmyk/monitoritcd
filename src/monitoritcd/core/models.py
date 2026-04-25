@@ -79,6 +79,7 @@ class Parser(StrEnum):
     GENERIC_RSS = "generic_rss"
     GENERIC_HTML = "generic_html"
     LEXML = "lexml"
+    LEXML_PORTAL = "lexml_portal"
     ALMG = "almg"
     CUSTOM = "custom"
 

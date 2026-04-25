@@ -1,0 +1,30 @@
+id: lexml-jurisprudencia
+uf: _federal
+nome: "LexML Brasil — Jurisprudência (STF, STJ, TJs)"
+tipo: jurisprudencia
+parser: lexml_portal
+url: "https://www.lexml.gov.br/busca/search"
+selectors:
+  palavras_chave: "ITCMD|ITCD|causa mortis|sucessão|inventário|regime de bens"
+  tipo_documento: "Jurisprudência"
+  localidades: ""
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+geo_restricted: true
+notas: |
+  Jurisprudência consolidada via LexML (STF, STJ, TJs estaduais).
+  Complementa as fontes RSS diretas de STF/STJ ao trazer também
+  decisões de TJs. ~21 hits para ITCMD em 2026-04.
