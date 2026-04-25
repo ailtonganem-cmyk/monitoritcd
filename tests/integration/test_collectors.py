@@ -608,7 +608,9 @@ class TestALMGCollector:
     @pytest.mark.asyncio
     async def test_proposicao_skips_item_without_required_fields(self) -> None:
         src = _almg_source(modo="proposicoes")
-        bad_response = """{"resultado": {"listaItem": [{"numeroDoc": "X", "siglaTipoProjeto": "PL"}]}}"""
+        bad_response = (
+            '{"resultado": {"listaItem": [{"numeroDoc": "X", "siglaTipoProjeto": "PL"}]}}'
+        )
         async with respx.mock:
             respx.get(url__startswith="https://dadosabertos.almg.gov.br/").mock(
                 return_value=httpx.Response(200, text=bad_response),
