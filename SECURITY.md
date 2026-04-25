@@ -79,9 +79,27 @@
 - `pydantic.SecretStr` em todos os campos sensíveis.
 
 ### T8: Honeytokens
-**Estado**: planejados (fase 2).
-**Plano**: plantar credenciais falsas via [Canarytokens.org](https://canarytokens.org/).
-Detecção em ms se alguém tentar usar.
+**Estado**: ativo (2026-04-25).
+
+**Token plantado**:
+- Tipo: AWS API Key (Canarytokens.org)
+- Localização: `scripts/legacy_aws_loader.py`
+- Memo no provedor: `MonitorITCD repo / scripts/legacy_aws_loader.py`
+- Notificação: e-mail do dono (`ailtonganemcarro@gmail.com`)
+- Allowlists: `.gitleaks.toml` + `scripts/check_secret_literals.py` (decoy
+  intencional, scanners locais devem ignorar para não criar ruído).
+
+**Comportamento esperado**:
+- Atacante encontra a string `AKIA...` em `git grep aws_access_key`.
+- Tenta autenticar com `aws sts get-caller-identity` ou similar.
+- Canarytokens.org detecta a chamada à AWS e dispara e-mail em segundos.
+- Resposta: rotacionar todos os secrets reais, auditar acessos recentes,
+  reescrever histórico Git se necessário (ver "Resposta a incidente" abaixo).
+
+**Operacional**:
+- O honeytoken NÃO concede privilégios reais — é detectivo, não preventivo.
+- Para desativar/rotacionar: apagar token em canarytokens.org (via e-mail
+  de gerência recebido na criação), depois remover/substituir no arquivo.
 
 ## Pre-commit checks
 
