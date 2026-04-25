@@ -1,0 +1,32 @@
+id: jota-principal
+uf: _federal
+nome: "JOTA — Jornalismo jurídico (feed principal)"
+tipo: noticia
+parser: generic_rss
+url: "https://www.jota.info/feed"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - "regime de bens"
+  - herdeiros
+  - "Súmula 377"
+  - "união estável"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: false
+fragile: false
+notas: |
+  JOTA — feed principal validado em 2026-04-25 com 25 entries, status 200.
+  Mídia jurídica especializada; cobertura tributária e civil de qualidade.
+  Filtro por keywords reduz volume (feed geral, não tributário-específico).

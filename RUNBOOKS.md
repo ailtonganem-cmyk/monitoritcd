@@ -15,6 +15,33 @@ atualizar após cada incidente ou nova tarefa operacional.
 8. [Investigar fonte que parou de coletar](#investigar-fonte-que-parou-de-coletar)
 9. [Cron silenciou (sem ping em healthchecks)](#cron-silenciou)
 10. [Quota Firestore esgotada](#quota-firestore-esgotada)
+11. [Iniciar bot interativo (polling worker)](#iniciar-bot-interativo-polling-worker)
+
+---
+
+## Iniciar bot interativo (polling worker)
+
+Bot por padrão é **outbound-only** (cron envia digests). Para usar comandos
+interativos (`/status`, `/buscar`, etc.), rode o polling worker:
+
+```bash
+# Foreground
+python -m monitoritcd.bot.poller
+
+# Background (Linux/macOS)
+nohup python -m monitoritcd.bot.poller > bot.log 2>&1 &
+
+# Windows (separar console)
+start /B pythonw -m monitoritcd.bot.poller
+```
+
+O worker faz long-poll de 30s a `getUpdates`, valida `chat_id`, despacha
+para handlers e responde via Bot API. Stop com Ctrl+C ou `kill <pid>`.
+
+Para deixar rodando 24/7 num server pessoal:
+- Linux: criar serviço systemd em `/etc/systemd/system/monitoritcd-bot.service`
+- macOS: launchd plist em `~/Library/LaunchAgents/`
+- Windows: Task Scheduler com "Run whether user is logged on or not"
 
 ---
 
