@@ -21,10 +21,13 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: true
-fragile: false
+fragile: true
 notas: |
   Feed RSS oficial do STF — notícias e decisões publicadas.
   Filtragem por keywords reduz volume; STF publica muitas decisões irrelevantes.
   Verificar periodicamente se a URL do feed mudou.
+# AVISO 2026-04-25: URL retorna 403 (WAF da AWS bloqueia).
+# Tentar com User-Agent customizado ou verificar URL atual em:
+# https://portal.stf.jus.br/

@@ -23,10 +23,13 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: true
-fragile: false
+fragile: true
 notas: |
   Feed oficial do STJ — notícias e jurisprudência.
   STJ é especialmente relevante para ITCD por consolidar entendimentos
   entre estados (recursos especiais e súmulas).
+# AVISO 2026-04-25: URL retorna 404. Verificar URL atual em:
+# https://www.stj.jus.br/sites/portalp/Inicio
+# Pode ter migrado para outro endpoint RSS.

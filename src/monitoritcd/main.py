@@ -118,7 +118,16 @@ async def cmd_run(args: argparse.Namespace) -> int:
         items_stored=report.items_stored,
     )
 
-    return 0 if report.sources_failed == 0 else 1
+    # Exit code semantics:
+    # - 0: pelo menos uma fonte rodou (sucesso parcial e aceitavel - sites oscilam)
+    # - 1: nenhuma fonte rodou OU todas falharam (config/rede grave)
+    if report.sources_consulted == 0:
+        log.error("cli.run.no_sources", reason="nenhuma fonte ativa encontrada")
+        return 1
+    if report.sources_failed == report.sources_consulted:
+        log.error("cli.run.all_sources_failed", failed=report.failed_sources)
+        return 1
+    return 0
 
 
 def cli(argv: list[str] | None = None) -> int:

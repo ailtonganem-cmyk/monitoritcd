@@ -17,10 +17,14 @@ selectors:
   query: 'ITCMD or ITCD or "causa mortis"'
   max_records: "50"
   record_schema: "dc"
-ativo: true
+ativo: false
 trusted: true
-fragile: false
+fragile: true
 notas: |
   LexML é a fonte federal consolidada operada pelo Senado Federal.
   API SRU oficial e estável. Recomendado como fonte primária federal.
   Doc API: https://www.loc.gov/standards/sru/
+# AVISO 2026-04-25: URL retorna 404 em testes recentes.
+# A API SRU do LexML pode ter mudado. Verificar:
+# - https://www.lexml.gov.br/api/
+# - Documentacao SRU: https://www.loc.gov/standards/sru/
