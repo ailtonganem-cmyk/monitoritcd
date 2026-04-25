@@ -392,6 +392,8 @@ async def _select_sources(
     *,
     only_source_id: str | None,
     only_uf: str | None,
+    skip_geo_restricted: bool = False,
+    only_geo_restricted: bool = False,
 ) -> list[Source]:
     """Filtra fontes ativas por active_states + flags de execução."""
     all_sources = load_all_sources(sources_dir, ativo_only=True)
@@ -404,6 +406,10 @@ async def _select_sources(
         if only_source_id and s.id != only_source_id:
             continue
         if only_uf and s.uf != only_uf:
+            continue
+        if skip_geo_restricted and s.geo_restricted:
+            continue
+        if only_geo_restricted and not s.geo_restricted:
             continue
         if s.uf == "_federal":
             if federal_active:
@@ -448,6 +454,8 @@ async def run_pipeline(
     sources_dir: Path,
     only_source_id: str | None = None,
     only_uf: str | None = None,
+    skip_geo_restricted: bool = False,
+    only_geo_restricted: bool = False,
     notify: bool = True,
 ) -> RunReport:
     """Executa pipeline completa. Retorna `RunReport`."""
@@ -463,6 +471,8 @@ async def run_pipeline(
         storage,
         only_source_id=only_source_id,
         only_uf=only_uf,
+        skip_geo_restricted=skip_geo_restricted,
+        only_geo_restricted=only_geo_restricted,
     )
     bound.info("run.sources_filtered", total=len(sources_to_run))
 

@@ -78,7 +78,9 @@ jobs:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
           HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
         run: |
-          ARGS="run"
+          # Em CI sempre pulamos fontes geo_restricted (bloqueadas no IP runner US).
+          # Worker local Windows coleta essas separado.
+          ARGS="run --skip-geo-restricted"
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             ARGS="$ARGS --dry-run"
           fi

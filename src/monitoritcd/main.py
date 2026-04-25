@@ -107,6 +107,8 @@ async def cmd_run(args: argparse.Namespace) -> int:
         sources_dir=SOURCES_DIR,
         only_source_id=args.source_id,
         only_uf=args.uf,
+        skip_geo_restricted=args.skip_geo_restricted,
+        only_geo_restricted=args.only_geo_restricted,
         notify=not args.dry_run,
     )
 
@@ -180,6 +182,17 @@ def cli(argv: list[str] | None = None) -> int:
     run_p.add_argument("--dry-run", action="store_true", help="Não persiste nem notifica")
     run_p.add_argument("--source-id", type=str, default=None, help="Apenas uma fonte")
     run_p.add_argument("--uf", type=str, default=None, help="Apenas UFs específicas")
+    geo = run_p.add_mutually_exclusive_group()
+    geo.add_argument(
+        "--skip-geo-restricted",
+        action="store_true",
+        help="Pula fontes geo_restricted=true (default em CI / GitHub runner)",
+    )
+    geo.add_argument(
+        "--only-geo-restricted",
+        action="store_true",
+        help="Coleta APENAS fontes geo_restricted=true (worker local Windows)",
+    )
 
     rep_p = sub.add_parser("reprocess", help="Reclassifica documentos existentes (LLM apenas)")
     rep_p.add_argument(

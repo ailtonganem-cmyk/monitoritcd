@@ -157,6 +157,13 @@ class Source(StrictModel):
     ativo: bool = True
     fragile: bool = False
     trusted: bool = False
+    geo_restricted: bool = False
+    """True quando o servidor da fonte rejeita conexões de IPs fora do BR.
+
+    Fontes com `geo_restricted=True` são puladas em GitHub Actions runners (US)
+    e devem ser coletadas via worker local em Windows Task Scheduler.
+    Ver `scripts/install_local_monitor_task.ps1`.
+    """
     notas: str | None = Field(default=None, max_length=1000)
     topics: list[Topic] = Field(default_factory=lambda: [Topic.ITCD], max_length=10)
 

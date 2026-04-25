@@ -23,6 +23,8 @@ topics:
 ativo: true
 trusted: true
 fragile: false
+geo_restricted: true
 notas: |
   ALMG legislação mineira sancionada (Leis, Decretos, Resoluções).
   Mais lenta de mudar que proposições — janela de 90 dias é razoável.
+  geo_restricted=true: ver almg.yaml.

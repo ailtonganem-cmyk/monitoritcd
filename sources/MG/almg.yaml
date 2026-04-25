@@ -23,7 +23,12 @@ topics:
 ativo: true
 trusted: true
 fragile: false
+geo_restricted: true
 notas: |
   ALMG — Assembleia Legislativa de Minas Gerais.
   API pública sem autenticação em dadosabertos.almg.gov.br.
   Cobre PLs, PECs, vetos, mensagens em tramitação.
+
+  geo_restricted=true: o servidor rejeita ConnectTimeout em IPs Azure US
+  (GitHub Actions runners). Coletado via worker local Windows
+  (scripts/install_local_monitor_task.ps1).

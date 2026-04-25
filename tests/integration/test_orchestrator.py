@@ -62,8 +62,10 @@ def _write_yaml(path: Path, content: str) -> Path:
 def sources_dir(tmp_path: Path) -> Path:
     fed_dir = tmp_path / "_federal"
     sp_dir = tmp_path / "SP"
+    mg_dir = tmp_path / "MG"
     fed_dir.mkdir()
     sp_dir.mkdir()
+    mg_dir.mkdir()
 
     # Source federal — RSS dummy via httpx-mock pattern via collector real
     _write_yaml(
@@ -92,6 +94,21 @@ def sources_dir(tmp_path: Path) -> Path:
         keywords_required:
           - ITCMD
         ativo: true
+        """,
+    )
+    _write_yaml(
+        mg_dir / "fake-mg-geo.yaml",
+        """\
+        id: fake-mg-geo
+        uf: MG
+        nome: "Fake MG geo-restricted"
+        tipo: assembleia
+        parser: generic_rss
+        url: "https://www.example.gov.br/feed-mg.xml"
+        keywords_required:
+          - ITCMD
+        ativo: true
+        geo_restricted: true
         """,
     )
     return tmp_path
@@ -377,6 +394,69 @@ class TestRunPipeline:
         assert report.sources_consulted == 2
         assert report.sources_failed == 1
         assert "fake-sp" in report.failed_sources
+
+    @pytest.mark.asyncio
+    async def test_skip_geo_restricted(self, sources_dir: Path) -> None:
+        import httpx  # noqa: PLC0415
+        import respx  # noqa: PLC0415
+
+        # active_uf inclui MG e SP; --skip-geo-restricted deve excluir só MG (geo_restricted=true)
+        storage = InMemoryStorage(OWNER)
+        await storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id=OWNER,
+                active_uf=["MG", "SP"],
+                federal_active=True,
+                updated_at=NOW,
+                updated_by="test",
+            ),
+        )
+        async with respx.mock:
+            respx.get("https://www.example.gov.br/feed.xml").mock(
+                return_value=httpx.Response(200, text=_minimal_rss("fed")),
+            )
+            respx.get("https://www.example.gov.br/feed-sp.xml").mock(
+                return_value=httpx.Response(200, text=_minimal_rss("sp")),
+            )
+            report = await run_pipeline(
+                _settings(),
+                storage=storage,
+                llm_provider=FakeLLMProvider(),
+                sources_dir=sources_dir,
+                skip_geo_restricted=True,
+            )
+        # 2 = federal + SP (MG excluida por geo_restricted)
+        assert report.sources_consulted == 2
+
+    @pytest.mark.asyncio
+    async def test_only_geo_restricted(self, sources_dir: Path) -> None:
+        import httpx  # noqa: PLC0415
+        import respx  # noqa: PLC0415
+
+        # only_geo_restricted=True: apenas MG roda; federal e SP são puladas
+        storage = InMemoryStorage(OWNER)
+        await storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id=OWNER,
+                active_uf=["MG", "SP"],
+                federal_active=True,
+                updated_at=NOW,
+                updated_by="test",
+            ),
+        )
+        async with respx.mock:
+            respx.get("https://www.example.gov.br/feed-mg.xml").mock(
+                return_value=httpx.Response(200, text=_minimal_rss("mg")),
+            )
+            report = await run_pipeline(
+                _settings(),
+                storage=storage,
+                llm_provider=FakeLLMProvider(),
+                sources_dir=sources_dir,
+                only_geo_restricted=True,
+            )
+        # Apenas MG (geo_restricted=true)
+        assert report.sources_consulted == 1
 
     @pytest.mark.asyncio
     async def test_filter_by_only_source_id(self, sources_dir: Path) -> None:
