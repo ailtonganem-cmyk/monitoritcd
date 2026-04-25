@@ -91,12 +91,13 @@ class ALMGCollector(BaseCollector):
                 payload = await self.fetch(url)
             except (CollectorError, httpx.HTTPError) as e:
                 # Falha em uma keyword não interrompe as outras — pode ser
-                # rate limit, 500 transitório, ou termo com syntax inválida.
+                # rate limit, 500 transitório, geo-block, ou termo inválido.
                 logger.warning(
                     "almg.fetch_failed",
                     source=self.source.id,
                     palavra=palavra,
-                    error=str(e),
+                    error_type=type(e).__name__,
+                    error=str(e) or "no message",
                 )
                 continue
 
