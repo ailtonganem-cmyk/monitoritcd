@@ -230,9 +230,33 @@ class TestLoadAllSources:
         if not sources_dir.is_dir():
             return
         ufs_brasileiras = {
-            "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-            "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-            "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+            "AC",
+            "AL",
+            "AP",
+            "AM",
+            "BA",
+            "CE",
+            "DF",
+            "ES",
+            "GO",
+            "MA",
+            "MT",
+            "MS",
+            "MG",
+            "PA",
+            "PB",
+            "PR",
+            "PE",
+            "PI",
+            "RJ",
+            "RN",
+            "RS",
+            "RO",
+            "RR",
+            "SC",
+            "SP",
+            "SE",
+            "TO",
         }
         ufs_com_fonte = {
             d.name for d in sources_dir.iterdir() if d.is_dir() and d.name in ufs_brasileiras
