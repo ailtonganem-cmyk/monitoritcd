@@ -17,9 +17,9 @@ import pytest
 import respx
 
 from monitoritcd.core.base_collector import (
+    DEFAULT_ACCEPT,
     BaseCollector,
     CollectorError,
-    DEFAULT_ACCEPT,
     RateLimitedError,
     _domain_of,
     _DomainRateLimiter,
