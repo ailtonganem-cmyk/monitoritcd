@@ -495,7 +495,7 @@ async def handle_relatorio(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
     # Top 5 documentos por relevância
     rated = sorted(
         (d for d in docs if d.llm is not None),
-        key=lambda d: d.llm.relevancia if d.llm else 0,  # type: ignore[union-attr]
+        key=lambda d: d.llm.relevancia if d.llm else 0,
         reverse=True,
     )[:5]
     if rated:
@@ -525,6 +525,19 @@ HANDLERS = {
     "marcar": handle_marcar,
     "relatorio": handle_relatorio,
 }
+
+
+def _register_extra_handlers() -> None:
+    """Registra handlers adicionais (Categoria 6 IDEAS.md).
+
+    Importação tardia para evitar ciclo handlers_extra ↔ handlers.
+    """
+    from monitoritcd.bot.handlers_extra import EXTRA_HANDLERS  # noqa: PLC0415
+
+    HANDLERS.update(EXTRA_HANDLERS)
+
+
+_register_extra_handlers()
 
 
 async def dispatch(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:

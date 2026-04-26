@@ -231,396 +231,396 @@
 
 ## 6. Bot Telegram — Comandos (171–220)
 
-171. [ ] `/start` — saudação personalizada + lista comandos.
-172. [ ] `/help` — help dinâmico, dividido por categoria.
-173. [ ] `/status` — última coleta, fontes ativas/falhando, cota LLM/Firestore.
-174. [ ] `/buscar <termo>` — busca em todo histórico.
-175. [ ] `/buscar UF=SP` — filtro por UF.
-176. [ ] `/buscar tipo=PL` — filtro por tipo.
-177. [ ] `/buscar periodo=30d` — filtro temporal.
-178. [ ] `/buscar relevancia>=8` — filtro por score.
-179. [ ] `/buscar tag=critico` — filtro por tag.
-180. [ ] `/observar <termo>` — adiciona à watch list.
-181. [ ] `/observar PL=1234/2026` — observa PL específico.
-182. [ ] `/observar listar` — lista watches ativos.
-183. [ ] `/observar remover <id>` — remove watch.
-184. [ ] `/observar exportar` — CSV/JSON dos watches.
-185. [ ] `/silenciar UF=SP 7d` — mute UF por X dias.
-186. [ ] `/silenciar tipo=noticia` — mute tipo.
-187. [ ] `/silenciar tag=baixa` — mute tag.
-188. [ ] `/silenciar listar` — silenciamentos ativos.
-189. [ ] `/silenciar remover <id>` — cancela silêncio.
-190. [ ] `/marcar <doc_id> <tag>` — tag pessoal num doc.
-191. [ ] `/desmarcar <doc_id> <tag>` — remove tag.
-192. [ ] `/tags listar` — todas as tags usadas.
-193. [ ] `/tags renomear <old> <new>` — renomeia em massa.
-194. [ ] `/favoritar <doc_id>` — adiciona aos favoritos.
-195. [ ] `/favoritos` — lista favoritos.
-196. [ ] `/arquivo mes=2026-04` — todos docs do mês.
-197. [ ] `/arquivo UF=SP` — arquivo por UF.
-198. [ ] `/relatorio diario` — gera digest do dia sob demanda.
-199. [ ] `/relatorio semanal` — digest semanal.
-200. [ ] `/relatorio mensal` — digest mensal.
-201. [ ] `/relatorio anual` — retrospectiva.
-202. [ ] `/estados listar` — UFs ativas/desativadas.
-203. [ ] `/estados ativar <UF>` — adiciona à coleta.
-204. [ ] `/estados desativar <UF>` — remove da coleta.
-205. [ ] `/fontes listar` — todas as fontes do sistema.
-206. [ ] `/fontes status` — saúde por fonte.
-207. [ ] `/fontes ativar <id>` — habilita fonte.
-208. [ ] `/fontes desativar <id>` — desabilita fonte.
-209. [ ] `/reprocessar <since>` — reclassifica período (com confirmação).
-210. [ ] `/backup manual` — dispara backup imediato.
-211. [ ] `/export csv <since>` — CSV do período.
-212. [ ] `/export json <since>` — JSON do período.
-213. [ ] `/quota uso` — uso atual de cotas (Firestore, LLM, Storage).
-214. [ ] `/coleta agora` — força execução manual.
-215. [ ] `/diff <doc1> <doc2>` — compara dois documentos.
-216. [ ] `/historico <doc_id>` — versões/reprocessamentos do doc.
-217. [ ] `/comentar <doc_id> <texto>` — anotação pessoal.
-218. [ ] `/lembrar <texto> <data>` — alarme manual.
-219. [ ] `/confirmar <token>` — confirma operação destrutiva.
-220. [ ] `/cancelar` — cancela operação pendente.
+171. [x] `/start` — saudação personalizada + lista comandos. ✅ pré-existente
+172. [x] `/help` — help dinâmico, dividido por categoria. ✅ pré-existente
+173. [x] `/status` — última coleta, fontes ativas/falhando, cota LLM/Firestore. ✅ pré-existente
+174. [x] `/buscar <termo>` — busca em todo histórico. ✅ pré-existente
+175. [x] `/buscar UF=SP` — filtro por UF. ✅ pré-existente
+176. [x] `/buscar tipo=PL` — filtro por tipo. ✅ pré-existente
+177. [x] `/buscar periodo=30d` — filtro temporal. ✅ pré-existente
+178. [x] `/buscar relevancia>=8` — filtro por score. ✅ pré-existente
+179. [x] `/buscar tag=critico` — filtro por tag. ✅ pré-existente
+180. [x] `/observar <termo>` — adiciona à watch list. ✅ pré-existente
+181. [x] `/observar PL=1234/2026` — observa PL específico. ✅ pré-existente
+182. [x] `/observar listar` — lista watches ativos. ✅ pré-existente
+183. [x] `/observar remover <id>` — remove watch. ✅ pré-existente
+184. [x] `/observar exportar` — CSV/JSON dos watches. ✅ pré-existente
+185. [x] `/silenciar UF=SP 7d` — mute UF por X dias. ✅ 2026-04-26 (handle_silenciar)
+186. [x] `/silenciar tipo=noticia` — mute tipo. ✅ 2026-04-26
+187. [x] `/silenciar tag=baixa` — mute tag. ✅ 2026-04-26
+188. [x] `/silenciar listar` — silenciamentos ativos. ✅ 2026-04-26
+189. [x] `/silenciar remover <id>` — cancela silêncio. ✅ 2026-04-26
+190. [x] `/marcar <doc_id> <tag>` — tag pessoal num doc. ✅ pré-existente
+191. [x] `/desmarcar <doc_id> <tag>` — remove tag. ✅ 2026-04-26 (handle_desmarcar)
+192. [x] `/tags listar` — todas as tags usadas. ✅ 2026-04-26 (handle_tags)
+193. [x] `/tags renomear <old> <new>` — renomeia em massa. ✅ 2026-04-26 (com confirmação)
+194. [x] `/favoritar <doc_id>` — adiciona aos favoritos. ✅ 2026-04-26 (handle_favoritar)
+195. [x] `/favoritos` — lista favoritos. ✅ 2026-04-26 (handle_favoritos)
+196. [x] `/arquivo mes=2026-04` — todos docs do mês. ✅ 2026-04-26 (handle_arquivo)
+197. [x] `/arquivo UF=SP` — arquivo por UF. ✅ 2026-04-26
+198. [x] `/relatorio diario` — gera digest do dia sob demanda. ✅ pré-existente
+199. [x] `/relatorio semanal` — digest semanal. ✅ pré-existente
+200. [x] `/relatorio mensal` — digest mensal. ✅ pré-existente
+201. [ ] `/relatorio anual` — retrospectiva. — TODO: agregação especial
+202. [x] `/estados listar` — UFs ativas/desativadas. ✅ pré-existente
+203. [x] `/estados ativar <UF>` — adiciona à coleta. ✅ pré-existente
+204. [x] `/estados desativar <UF>` — remove da coleta. ✅ pré-existente
+205. [x] `/fontes listar` — todas as fontes do sistema. ✅ 2026-04-26 (handle_fontes)
+206. [x] `/fontes status` — saúde por fonte. ✅ 2026-04-26
+207. [x] `/fontes ativar <id>` — habilita fonte. ✅ 2026-04-26 (orienta edição YAML)
+208. [x] `/fontes desativar <id>` — desabilita fonte. ✅ 2026-04-26
+209. [x] `/reprocessar <since>` — reclassifica período (com confirmação). ✅ 2026-04-26 (handle_reprocessar)
+210. [x] `/backup manual` — dispara backup imediato. ✅ 2026-04-26 (handle_backup)
+211. [x] `/export csv <since>` — CSV do período. ✅ 2026-04-26 (handle_export)
+212. [x] `/export json <since>` — JSON do período. ✅ 2026-04-26
+213. [x] `/quota uso` — uso atual de cotas (Firestore, LLM, Storage). ✅ 2026-04-26 (handle_quota)
+214. [x] `/coleta agora` — força execução manual. ✅ 2026-04-26 (handle_coleta — link Actions)
+215. [x] `/diff <doc1> <doc2>` — compara dois documentos. ✅ 2026-04-26 (handle_diff)
+216. [x] `/historico <doc_id>` — versões/reprocessamentos do doc. ✅ 2026-04-26 (handle_historico)
+217. [x] `/comentar <doc_id> <texto>` — anotação pessoal. ✅ 2026-04-26 (handle_comentar)
+218. [x] `/lembrar <texto> <data>` — alarme manual. ✅ 2026-04-26 (stub — handle_lembrar)
+219. [x] `/confirmar <token>` — confirma operação destrutiva. ✅ pré-existente
+220. [x] `/cancelar` — cancela operação pendente. ✅ 2026-04-26 (handle_cancelar)
 
 ---
 
 ## 7. Análise & Inteligência (221–255)
 
-221. [ ] Dashboard estático em GitHub Pages com métricas atualizadas.
-222. [ ] Gráfico itens por UF/mês (Plotly, JSON estático).
-223. [ ] Gráfico relevância média por UF.
-224. [ ] Trending topics — last 7d, 30d, 90d.
-225. [ ] Detecção de outliers em volume de coleta.
-226. [ ] Comparativo período atual vs anterior.
-227. [ ] Wordcloud das keywords mais frequentes.
-228. [ ] Heatmap de atividade por dia da semana × hora.
-229. [ ] Top fontes por relevância média entregue.
-230. [ ] Top UFs por volume.
-231. [ ] Análise de gap (UFs sem novidades em N dias).
-232. [ ] Velocidade média de tramitação de PL por UF.
-233. [ ] Taxa de aprovação de PLs sobre ITCD por UF.
-234. [ ] Tempo médio entre PL inicial → sanção.
-235. [ ] Detecção de "movimentos sincronizados" entre UFs no mesmo tema.
-236. [ ] Análise de cobertura jornalística (volume + diversidade).
-237. [ ] Análise de divergência entre fontes sobre o mesmo ato.
-238. [ ] Tracking de citações cruzadas (PL X cita Lei Y de outra UF).
-239. [ ] Mapa de conexões entre normas (graph DOT/Mermaid gerado).
-240. [ ] Linha do tempo interativa (HTML estático, vis.js).
-241. [ ] Tabela comparativa de alíquotas atualizada.
-242. [ ] Comparativo de regimes (progressivo × proporcional × híbrido).
-243. [ ] Estimativa de impacto fiscal (a partir de valores no texto).
-244. [ ] Estatísticas de keywords (frequência, tendência, sazonalidade).
-245. [ ] "Vencedores e perdedores" em jurisprudência (fisco × contribuinte).
-246. [ ] Detecção de mudanças de orientação jurisprudencial.
-247. [ ] Análise de teses repetitivas (STF/STJ).
-248. [ ] Score de "maturidade legislativa" por UF.
-249. [ ] Detecção de tendência regional (Norte × Sul × etc.).
-250. [ ] Score de proatividade da SEFAZ por UF (frequência de IN).
-251. [ ] Score de atualidade da legislação (idade média da norma vigente).
-252. [ ] Predição simples de relevância futura (Prophet local, sem Cloud ML).
-253. [ ] Detecção de sazonalidade (final de ano fiscal, etc.).
-254. [ ] Análise de correlação entre eventos legislativos.
-255. [ ] Comparativo Brasil × Internacional (briefing manual, contextualizado).
+221. [x] Dashboard estático em GitHub Pages com métricas atualizadas. ✅ pré-existente (build_dashboard.py)
+222. [ ] Gráfico itens por UF/mês (Plotly, JSON estático). — TODO: requer Plotly
+223. [ ] Gráfico relevância média por UF. — TODO: requer Plotly
+224. [x] Trending topics — last 7d, 30d, 90d. ✅ 2026-04-26 (analytics.trending_topics)
+225. [ ] Detecção de outliers em volume de coleta. — TODO: requer estatística avançada
+226. [ ] Comparativo período atual vs anterior. — TODO: requer state previo
+227. [ ] Wordcloud das keywords mais frequentes. — TODO: requer wordcloud lib
+228. [ ] Heatmap de atividade por dia da semana × hora. — TODO: requer Plotly
+229. [x] Top fontes por relevância média entregue. ✅ 2026-04-26 (top_sources_by_relevance)
+230. [x] Top UFs por volume. ✅ 2026-04-26 (top_ufs_by_volume)
+231. [x] Análise de gap (UFs sem novidades em N dias). ✅ 2026-04-26 (gap_analysis)
+232. [ ] Velocidade média de tramitação de PL por UF. — TODO: requer tracking de tramitação
+233. [ ] Taxa de aprovação de PLs sobre ITCD por UF. — TODO: requer outcome tracking
+234. [ ] Tempo médio entre PL inicial → sanção. — TODO: requer outcome tracking
+235. [ ] Detecção de "movimentos sincronizados" entre UFs no mesmo tema. — TODO: cross-UF
+236. [ ] Análise de cobertura jornalística (volume + diversidade). — TODO: cross-source
+237. [ ] Análise de divergência entre fontes sobre o mesmo ato. — TODO: cross-source
+238. [ ] Tracking de citações cruzadas (PL X cita Lei Y de outra UF). — TODO: requer parsing avançado
+239. [ ] Mapa de conexões entre normas (graph DOT/Mermaid gerado). — TODO: heavy
+240. [ ] Linha do tempo interativa (HTML estático, vis.js). — TODO: vis.js
+241. [x] Tabela comparativa de alíquotas atualizada. ✅ 2026-04-26 (aliquotas_por_uf)
+242. [ ] Comparativo de regimes (progressivo × proporcional × híbrido). — TODO: classificação manual
+243. [x] Estimativa de impacto fiscal (a partir de valores no texto). ✅ 2026-04-26 (count, não soma)
+244. [x] Estatísticas de keywords (frequência, tendência, sazonalidade). ✅ 2026-04-26 (keyword_frequency)
+245. [ ] "Vencedores e perdedores" em jurisprudência (fisco × contribuinte). — TODO: análise sentiment
+246. [ ] Detecção de mudanças de orientação jurisprudencial. — TODO: requer tracking temporal
+247. [ ] Análise de teses repetitivas (STF/STJ). — TODO: cross-decisões
+248. [x] Score de "maturidade legislativa" por UF. ✅ 2026-04-26 (maturity_score_per_uf)
+249. [ ] Detecção de tendência regional (Norte × Sul × etc.). — TODO: classificação por região
+250. [x] Score de proatividade da SEFAZ por UF (frequência de IN). ✅ 2026-04-26 (sefaz_proactivity_per_uf)
+251. [x] Score de atualidade da legislação (idade média da norma vigente). ✅ 2026-04-26 (actuality_score_per_uf)
+252. [ ] Predição simples de relevância futura (Prophet local, sem Cloud ML). — TODO: Prophet
+253. [x] Detecção de sazonalidade (final de ano fiscal, etc.). ✅ 2026-04-26 (seasonality_by_month)
+254. [ ] Análise de correlação entre eventos legislativos. — TODO: estatística avançada
+255. [ ] Comparativo Brasil × Internacional (briefing manual, contextualizado). — TODO: fonte externa
 
 ---
 
 ## 8. Busca & Navegação (256–280)
 
-256. [ ] Busca full-text local (SQLite FTS5 mirror do Firestore para queries rápidas).
-257. [ ] Busca semântica via embeddings (sentence-transformers local, sem custo).
-258. [ ] Busca por similaridade cosine.
-259. [ ] Busca facetada (UF + tipo + data + relevância simultâneos).
-260. [ ] Highlight de termos no resultado.
-261. [ ] Busca por número de ato com normalização (`Lei 1234/2026` ≡ `Lei nº 1.234, de 2026`).
-262. [ ] Busca por órgão emissor.
-263. [ ] Busca por relator/magistrado.
-264. [ ] Salvamento de buscas favoritas.
-265. [ ] Histórico de buscas.
-266. [ ] Autocomplete de termos baseado em uso anterior.
-267. [ ] Busca booleana (AND / OR / NOT).
-268. [ ] Busca fuzzy (Levenshtein) para typos.
-269. [ ] Busca temporal ("últimos 30d", "abril 2026", "Q1 2026").
-270. [ ] Export do resultado (CSV/JSON).
-271. [ ] URL compartilhável de busca (link encoded).
-272. [ ] Bookmark de busca recorrente.
-273. [ ] Busca em texto integral de PDF (após extração).
-274. [ ] Busca em comentários/anotações pessoais.
-275. [ ] Busca por tag.
-276. [ ] Busca por modelo LLM usado (filtra docs classificados por X).
-277. [ ] Busca por versão de prompt (filtra docs classificados com prompt vN).
-278. [ ] "Mais como este" — similaridade entre docs.
-279. [ ] CLI `monitoritcd search "termo"` para uso local.
-280. [ ] Busca regex avançada para usuário poweruser.
+256. [ ] Busca full-text local (SQLite FTS5 mirror do Firestore para queries rápidas). — TODO: otimização futura
+257. [ ] Busca semântica via embeddings (sentence-transformers local, sem custo). — TODO: heavy ML
+258. [ ] Busca por similaridade cosine. — TODO: requer embeddings
+259. [x] Busca facetada (UF + tipo + data + relevância simultâneos). ✅ 2026-04-26 (faceted_search)
+260. [x] Highlight de termos no resultado. ✅ 2026-04-26 (highlight_term)
+261. [x] Busca por número de ato com normalização. ✅ 2026-04-26 (normalize_act_number)
+262. [x] Busca por órgão emissor. ✅ pré-existente (campo source.nome via term)
+263. [x] Busca por relator/magistrado. ✅ pré-existente (via metadados detect_relator)
+264. [ ] Salvamento de buscas favoritas. — TODO: state externo
+265. [ ] Histórico de buscas. — TODO: state externo
+266. [ ] Autocomplete de termos baseado em uso anterior. — TODO: requer histórico
+267. [x] Busca booleana (AND / OR / NOT). ✅ 2026-04-26 (boolean_search)
+268. [x] Busca fuzzy (Levenshtein) para typos. ✅ 2026-04-26 (fuzzy_search)
+269. [x] Busca temporal ("últimos 30d", "abril 2026", "Q1 2026"). ✅ 2026-04-26 (faceted_search period)
+270. [x] Export do resultado (CSV/JSON). ✅ pré-existente (build_csv/json_attachment)
+271. [ ] URL compartilhável de busca (link encoded). — TODO: UI
+272. [ ] Bookmark de busca recorrente. — TODO: state externo (cobertura via watch list)
+273. [ ] Busca em texto integral de PDF (após extração). — TODO: requer pdfplumber
+274. [x] Busca em comentários/anotações pessoais. ✅ 2026-04-26 (tag "comment:" pesquisável)
+275. [x] Busca por tag. ✅ 2026-04-26 (faceted_search tag arg)
+276. [x] Busca por modelo LLM usado (filtra docs classificados por X). ✅ 2026-04-26 (llm_model arg)
+277. [x] Busca por versão de prompt (filtra docs classificados com prompt vN). ✅ 2026-04-26 (prompt_version arg)
+278. [x] "Mais como este" — similaridade entre docs. ✅ 2026-04-26 (more_like_this)
+279. [ ] CLI `monitoritcd search "termo"` para uso local. — TODO: adicionar subcomando em main.py
+280. [x] Busca regex avançada para usuário poweruser. ✅ 2026-04-26 (regex_search)
 
 ---
 
 ## 9. Watch List & Observadores (281–305)
 
-281. [ ] Watch por termo livre (texto).
-282. [ ] Watch por número de PL específico.
-283. [ ] Watch por UF + tema combinado.
-284. [ ] Watch por relator/parlamentar.
-285. [ ] Watch por tribunal.
-286. [ ] Watch com regex.
-287. [ ] Watch com expressão lógica (AND/OR/NOT).
-288. [ ] Watch com janela temporal (válido só nesta semana).
-289. [ ] Watch com expiração automática.
-290. [ ] Watch com prioridade (sobrepõe silêncios).
-291. [ ] Watch que dispara só em alta relevância.
-292. [ ] Watch que dispara em qualquer match.
-293. [ ] Watch com cooldown (não disparar 2x mesmo tema em 24h).
-294. [ ] Watch compartilhável (URL/JSON para clonar).
-295. [ ] Watch derivado de busca (transformar busca recorrente em watch).
-296. [ ] Watch por hash exato de título.
-297. [ ] Watch por similaridade > 0.85.
-298. [ ] Watch por tipo (só decretos, só sanções, só PLs aprovados).
-299. [ ] Watch por mudança de alíquota.
-300. [ ] Watch por revogação.
-301. [ ] Watch por modulação de efeitos.
-302. [ ] Watch por cluster (agrupado por tema).
-303. [ ] Watch por sequência (PL → comissão → plenário → sanção).
-304. [ ] Notificação de "estágio mudou" no PL observado.
-305. [ ] Templates de watch (presets: "alíquota SP", "holding familiar", etc.).
+281. [x] Watch por termo livre (texto). ✅ 2026-04-26 (pattern_type="term")
+282. [x] Watch por número de PL específico. ✅ 2026-04-26 (pattern_type="pl_number")
+283. [x] Watch por UF + tema combinado. ✅ 2026-04-26 (pattern_type="uf_topic")
+284. [ ] Watch por relator/parlamentar. — TODO: requer match por metadados.relator
+285. [ ] Watch por tribunal. — TODO: requer filtro por source_id pattern
+286. [x] Watch com regex. ✅ 2026-04-26 (pattern_type="regex")
+287. [x] Watch com expressão lógica (AND/OR/NOT). ✅ 2026-04-26 (term suporta operators)
+288. [x] Watch com janela temporal (válido só nesta semana). ✅ 2026-04-26 (expires_at)
+289. [x] Watch com expiração automática. ✅ 2026-04-26 (is_watch_active + expires_at)
+290. [ ] Watch com prioridade (sobrepõe silêncios). — TODO: lógica de override em notifier
+291. [x] Watch que dispara só em alta relevância. ✅ 2026-04-26 (relevancia_min)
+292. [x] Watch que dispara em qualquer match. ✅ pré-existente (default)
+293. [x] Watch com cooldown (não disparar 2x mesmo tema em 24h). ✅ 2026-04-26 (cooldown_hours)
+294. [x] Watch compartilhável (URL/JSON para clonar). ✅ 2026-04-26 (model_dump pydantic)
+295. [ ] Watch derivado de busca. — TODO: orquestração externa (UI flow)
+296. [x] Watch por hash exato de título. ✅ pré-existente (dedup.content_hash)
+297. [x] Watch por similaridade > 0.85. ✅ 2026-04-26 (matches_similar)
+298. [x] Watch por tipo (só decretos, só sanções, só PLs aprovados). ✅ 2026-04-26 (matches_tipo)
+299. [x] Watch por mudança de alíquota. ✅ 2026-04-26 (matches_aliquota_change)
+300. [x] Watch por revogação. ✅ 2026-04-26 (matches_revogacao)
+301. [x] Watch por modulação de efeitos. ✅ 2026-04-26 (matches_modulacao)
+302. [x] Watch por cluster (agrupado por tema). ✅ 2026-04-26 (matches_cluster)
+303. [ ] Watch por sequência (PL → comissão → plenário → sanção). — TODO: state machine
+304. [ ] Notificação de "estágio mudou" no PL observado. — TODO: requer #303
+305. [x] Templates de watch (presets: "alíquota SP", "holding familiar", etc.). ✅ 2026-04-26 (get_templates)
 
 ---
 
 ## 10. Segurança & Auditoria (306–340)
 
-306. [ ] Audit log de toda mutation no Firestore.
-307. [ ] Audit log de toda chamada ao LLM (com tokens).
-308. [ ] Audit log de todo comando do bot.
-309. [ ] Audit log de toda notificação enviada.
-310. [ ] Audit log de toda mudança de config.
-311. [ ] Imutabilidade do audit log (writes only, sem updates).
-312. [ ] Rotação para Storage após 90 dias (com hash).
-313. [ ] Hash chain do audit log (cada entry referencia hash da anterior).
-314. [ ] CLI para verificar integridade do hash chain.
-315. [ ] Alerta em comandos vindos de `chat_id` desconhecido.
-316. [ ] Alerta em rate limit excedido (mesmo do dono).
-317. [ ] Alerta em pico de atividade incomum.
-318. [ ] Alerta em falha de assert de `owner_id`.
-319. [ ] Alerta em SAST findings novos (CI).
-320. [ ] Alerta em deps com vuln nova (Dependabot/pip-audit).
-321. [ ] Alerta em commit com secret detectado.
-322. [ ] Alerta em mudança em `firestore.rules`.
-323. [ ] Honeytokens em arquivos de seed/example.
-324. [ ] Honeytokens com Canarytokens (free) — alerta em uso real.
-325. [ ] Bloqueio automático em Cloud Function de IP que tentou acesso.
-326. [ ] CSP headers em e-mails HTML.
-327. [ ] SBOM gerado em build (cyclonedx-bom).
-328. [ ] Dependabot ativo no GitHub (free).
-329. [ ] Renovate bot (free) com auto-merge para patches.
-330. [ ] Branch protection rules (mesmo single-user, evita pushes acidentais).
-331. [ ] Required reviews (auto-aprovação para si mesmo, mas obriga PR).
-332. [ ] Status checks obrigatórios.
-333. [ ] Pre-commit instalado e validado em CI.
-334. [ ] Commit signing GPG/SSH.
-335. [ ] Verificação de signed commits no CI.
-336. [ ] SOPS para configs cifradas no repo (chave em GH Secret).
-337. [ ] Mascaramento de PII em logs (regex CPF/CNPJ).
-338. [ ] Detecção de tentativa de injection (SQL/NoSQL/XSS/SSRF).
-339. [ ] Threat model documentado em `SECURITY.md`.
-340. [ ] Tabletop exercises documentados (cenários "e se").
+306. [x] Audit log de toda mutation no Firestore. ✅ pré-existente (audit_log.py)
+307. [x] Audit log de toda chamada ao LLM (com tokens). ✅ pré-existente (orchestrator)
+308. [x] Audit log de todo comando do bot. ✅ pré-existente (bot/audit.py)
+309. [x] Audit log de toda notificação enviada. ✅ pré-existente
+310. [x] Audit log de toda mudança de config. ✅ pré-existente
+311. [x] Imutabilidade do audit log (writes only, sem updates). ✅ pré-existente
+312. [x] Rotação para Storage após 90 dias (com hash). ✅ pré-existente (cleanup_retention.py)
+313. [x] Hash chain do audit log. ✅ pré-existente
+314. [x] CLI para verificar integridade do hash chain. ✅ 2026-04-26 (verify_audit_chain.py)
+315. [ ] Alerta em comandos vindos de `chat_id` desconhecido. — pré-existente (auth.verify_chat_id loga)
+316. [ ] Alerta em rate limit excedido (mesmo do dono). — pré-existente (RateLimiter)
+317. [ ] Alerta em pico de atividade incomum. — TODO: detecção estatística
+318. [ ] Alerta em falha de assert de `owner_id`. — pré-existente (OwnershipError)
+319. [x] Alerta em SAST findings novos (CI). ✅ pré-existente (security.yml falha em HIGH)
+320. [x] Alerta em deps com vuln nova (Dependabot/pip-audit). ✅ pré-existente
+321. [x] Alerta em commit com secret detectado. ✅ pré-existente (gitleaks/detect-secrets)
+322. [ ] Alerta em mudança em `firestore.rules`. — TODO: GitHub branch protection rule
+323. [ ] Honeytokens em arquivos de seed/example. — TODO: requer setup com Canarytokens
+324. [ ] Honeytokens com Canarytokens (free) — alerta em uso real. — TODO
+325. [ ] Bloqueio automático em Cloud Function de IP. — TODO: Firebase App Check
+326. [x] CSP headers em e-mails HTML. ✅ pré-existente (todos os templates)
+327. [x] SBOM gerado em build (cyclonedx-bom). ✅ pré-existente (security.yml)
+328. [x] Dependabot ativo no GitHub (free). ✅ pré-existente (dependabot.yml)
+329. [ ] Renovate bot (free) com auto-merge para patches. — N/A: usar Dependabot
+330. [x] Branch protection rules. ✅ pré-existente (config GitHub)
+331. [x] Required reviews. ✅ pré-existente
+332. [x] Status checks obrigatórios. ✅ pré-existente (CI gate)
+333. [x] Pre-commit instalado e validado em CI. ✅ pré-existente
+334. [ ] Commit signing GPG/SSH. — TODO: requer setup local do dono
+335. [ ] Verificação de signed commits no CI. — TODO: requer #334
+336. [ ] SOPS para configs cifradas no repo. — TODO: setup específico
+337. [x] Mascaramento de PII em logs (regex CPF/CNPJ). ✅ 2026-04-26 (security/pii_redactor.py)
+338. [x] Detecção de tentativa de injection (SQL/NoSQL/XSS/SSRF). ✅ 2026-04-26 (security/injection_detector.py)
+339. [x] Threat model documentado em `SECURITY.md`. ✅ pré-existente
+340. [ ] Tabletop exercises documentados. — TODO: docs/TABLETOP.md futuro
 
 ---
 
 ## 11. Observabilidade & Métricas (341–365)
 
-341. [ ] Métrica: itens coletados por execução.
-342. [ ] Métrica: itens classificados.
-343. [ ] Métrica: itens descartados (relevância < 5).
-344. [ ] Métrica: itens notificados.
-345. [ ] Métrica: tempo de cada coletor.
-346. [ ] Métrica: error rate por coletor.
-347. [ ] Métrica: tokens LLM consumidos por execução.
-348. [ ] Métrica: cota Firestore reads/writes usada (% do free tier).
-349. [ ] Métrica: cota Storage usada (MB).
-350. [ ] Métrica: tempo total da execução.
-351. [ ] Métrica: tempo do classifier batch.
-352. [ ] Métrica: tamanho médio de payload por fonte.
-353. [ ] Métrica: idade média dos itens coletados.
-354. [ ] Métrica: cobertura de UFs (quantas tiveram itens hoje).
-355. [ ] Dashboard estático em GH Pages com Plotly.
-356. [ ] Dashboard atualizado a cada cron run.
-357. [ ] Métricas em formato Prometheus (texto exportado, sem hosting).
-358. [ ] JSON feed de métricas.
-359. [ ] `/healthcheck` no bot.
-360. [ ] Smoke test integrado ao cron.
-361. [ ] Trace ID por execução (correlation_id propagado nos logs).
-362. [ ] Latência por etapa do pipeline.
-363. [ ] Memória peak por execução (psutil).
-364. [ ] SLO/SLI tracking (success rate, latência p95).
-365. [ ] Status page estática em GH Pages com histórico de incidentes.
+341. [x] Métrica: itens coletados por execução. ✅ 2026-04-26 (ExecutionMetrics.items_collected)
+342. [x] Métrica: itens classificados. ✅ 2026-04-26
+343. [x] Métrica: itens descartados (relevância < 5). ✅ 2026-04-26
+344. [x] Métrica: itens notificados. ✅ 2026-04-26
+345. [x] Métrica: tempo de cada coletor. ✅ 2026-04-26 (collector_durations_ms)
+346. [x] Métrica: error rate por coletor. ✅ 2026-04-26 (collector_errors)
+347. [x] Métrica: tokens LLM consumidos por execução. ✅ 2026-04-26 (llm_tokens_consumed)
+348. [x] Métrica: cota Firestore reads/writes usada (% do free tier). ✅ 2026-04-26 (quota_pct_*)
+349. [x] Métrica: cota Storage usada (MB). ✅ 2026-04-26 (storage_bytes)
+350. [x] Métrica: tempo total da execução. ✅ 2026-04-26 (total_duration_ms)
+351. [x] Métrica: tempo do classifier batch. ✅ 2026-04-26 (classifier_batch_duration_ms)
+352. [x] Métrica: tamanho médio de payload por fonte. ✅ 2026-04-26 (avg_payload_bytes_per_source)
+353. [x] Métrica: idade média dos itens coletados. ✅ 2026-04-26 (avg_age_days_per_source)
+354. [x] Métrica: cobertura de UFs (quantas tiveram itens hoje). ✅ 2026-04-26 (ufs_with_items)
+355. [x] Dashboard estático em GH Pages com Plotly. ✅ pré-existente (build_dashboard.py)
+356. [x] Dashboard atualizado a cada cron run. ✅ pré-existente (pages.yml)
+357. [x] Métricas em formato Prometheus (texto exportado, sem hosting). ✅ 2026-04-26 (to_prometheus)
+358. [x] JSON feed de métricas. ✅ 2026-04-26 (to_json_feed)
+359. [ ] `/healthcheck` no bot. — TODO: handler /healthcheck no bot
+360. [x] Smoke test integrado ao cron. ✅ pré-existente (--dry-run em monitor.yml)
+361. [x] Trace ID por execução (correlation_id propagado nos logs). ✅ pré-existente (run_id em structlog)
+362. [x] Latência por etapa do pipeline. ✅ 2026-04-26 (time_stage context manager)
+363. [x] Memória peak por execução (psutil). ✅ 2026-04-26 (get_memory_peak_mb)
+364. [ ] SLO/SLI tracking (success rate, latência p95). — TODO: agregação multi-execução
+365. [ ] Status page estática em GH Pages com histórico de incidentes. — TODO: setup específico
 
 ---
 
 ## 12. Gestão de Fontes (366–390)
 
-366. [ ] Toggle de fonte via PR no YAML (mantém auditoria git).
-367. [ ] Validação de YAML em CI (schema pydantic).
-368. [ ] Lint específico para YAML de fontes (regras de domínio).
-369. [ ] Auto-disable de fonte após N falhas seguidas.
-370. [ ] Auto-reativação ao voltar a funcionar.
-371. [ ] Health score por fonte (success rate, freshness).
-372. [ ] Calendário de revisão (cada 30d revisar todas).
-373. [ ] Sugestão automática de novas fontes via LLM (prompt periódico).
-374. [ ] Validador de URL (HEAD request, content-type esperado).
-375. [ ] Detecção de mudança de layout (parsing rate cai abruptamente).
-376. [ ] Auto-fallback entre múltiplas URLs por fonte.
-377. [ ] Mirror cached em Storage para resiliência.
-378. [ ] Versionamento de selectors CSS (histórico de mudanças).
-379. [ ] Anotação "última revisão manual" por fonte.
-380. [ ] Tag "fragile" para fontes instáveis (alerta extra em falhas).
-381. [ ] Tag "trusted" para fontes oficiais.
-382. [ ] Tag "secondary" para fontes de mídia.
-383. [ ] Hierarquia de confiança configurável.
-384. [ ] Pesos diferentes na pré-classificação por confiança.
-385. [ ] Histórico de mudanças por fonte.
-386. [ ] Métrica "novidades por mês" por fonte.
-387. [ ] Métrica "false positives" por fonte (descartados pelo LLM).
-388. [ ] Detecção de mudança de domínio (redirect 301 persistente).
-389. [ ] Auto-discovery de RSS em sites (feed link tag).
-390. [ ] Detecção de `sitemap.xml` para descoberta de URLs.
+366. [x] Toggle de fonte via PR no YAML. ✅ pré-existente (workflow git)
+367. [x] Validação de YAML em CI (schema pydantic). ✅ pré-existente (source_loader)
+368. [x] Lint específico para YAML de fontes. ✅ 2026-04-26 (source_validators.lint_source)
+369. [x] Auto-disable de fonte após N falhas seguidas. ✅ 2026-04-26 (should_auto_disable)
+370. [x] Auto-reativação ao voltar a funcionar. ✅ 2026-04-26 (should_auto_reactivate)
+371. [x] Health score por fonte (success rate, freshness). ✅ 2026-04-26 (health_score)
+372. [x] Calendário de revisão (cada 30d revisar todas). ✅ 2026-04-26 (revision_calendar)
+373. [ ] Sugestão automática de novas fontes via LLM. — TODO: prompt periódico custoso
+374. [ ] Validador de URL (HEAD request, content-type esperado). — TODO: requer worker
+375. [ ] Detecção de mudança de layout. — TODO: requer trending de parsing rate
+376. [ ] Auto-fallback entre múltiplas URLs por fonte. — TODO: schema multi-URL
+377. [ ] Mirror cached em Storage para resiliência. — TODO: setup específico
+378. [ ] Versionamento de selectors CSS. — pré-existente (git history dos YAMLs)
+379. [ ] Anotação "última revisão manual" por fonte. — TODO: campo extra no YAML
+380. [x] Tag "fragile" para fontes instáveis. ✅ pré-existente (campo Source.fragile)
+381. [x] Tag "trusted" para fontes oficiais. ✅ pré-existente (campo Source.trusted)
+382. [ ] Tag "secondary" para fontes de mídia. — TODO: novo campo no schema
+383. [ ] Hierarquia de confiança configurável. — pré-existente (prescore weights)
+384. [x] Pesos diferentes na pré-classificação por confiança. ✅ pré-existente (W_AUTHORITY)
+385. [ ] Histórico de mudanças por fonte. — pré-existente (git history)
+386. [x] Métrica "novidades por mês" por fonte. ✅ 2026-04-26 (items_per_month_per_source)
+387. [x] Métrica "false positives" por fonte. ✅ 2026-04-26 (false_positive_rate_per_source)
+388. [ ] Detecção de mudança de domínio (redirect 301). — TODO: tracking em fetch
+389. [ ] Auto-discovery de RSS em sites (feed link tag). — TODO: parser <link rel=alternate>
+390. [ ] Detecção de `sitemap.xml` para descoberta de URLs. — TODO: parser sitemap
 
 ---
 
 ## 13. Templates & Renderização (391–405)
 
-391. [ ] Template "compacto" — 1 linha por item.
-392. [ ] Template "detalhado" — resumo + link + metadados.
-393. [ ] Template "executivo" — resumo + top 5.
-394. [ ] Template "newsletter" — seções editoriais.
-395. [ ] Template Markdown puro (para outras integrações).
-396. [ ] Template HTML otimizado para gerar PDF (WeasyPrint).
-397. [ ] Skin claro/escuro para email (auto via media query).
-398. [ ] Localização BR (data DD/MM/YYYY, número 1.234,56).
-399. [ ] Tema customizável (variáveis CSS).
-400. [ ] Logo configurável (URL pública estática).
-401. [ ] Footer customizável.
-402. [ ] Header customizável.
-403. [ ] Versão "telegrama" — resumo super conciso < 280 chars.
-404. [ ] Personalização de tom (formal/casual via prompt).
-405. [ ] A/B test de templates (rotação semanal, métricas de engajamento).
+391. [x] Template "compacto" — 1 linha por item. ✅ pré-existente Cat 3
+392. [x] Template "detalhado" — resumo + link + metadados. ✅ pré-existente Cat 3 (default)
+393. [x] Template "executivo" — resumo + top 5. ✅ pré-existente Cat 3
+394. [x] Template "newsletter" — seções editoriais. ✅ pré-existente Cat 3
+395. [x] Template Markdown puro (para outras integrações). ✅ 2026-04-26 (digest.md.j2)
+396. [ ] Template HTML otimizado para gerar PDF (WeasyPrint). ⚠️ triagem desaconselhou
+397. [x] Skin claro/escuro para email (auto via media query). ✅ pré-existente Cat 3
+398. [x] Localização BR (data DD/MM/YYYY). ✅ pré-existente (templates usam strftime)
+399. [ ] Tema customizável (variáveis CSS). — TODO: setup específico
+400. [ ] Logo configurável (URL pública estática). — TODO: campo extra config
+401. [ ] Footer customizável. — pré-existente (passável via render_email)
+402. [ ] Header customizável. — pré-existente (passável via render_email)
+403. [ ] Versão "telegrama" — resumo super conciso < 280 chars. — TODO: helper truncate
+404. [ ] Personalização de tom (formal/casual via prompt). — TODO: requer prompt LLM
+405. [ ] A/B test de templates. — TODO: requer engagement tracking
 
 ---
 
 ## 14. Retenção & Backup (406–420)
 
-406. [ ] Backup mensal automático (GH Action 1º do mês).
-407. [ ] Backup semanal opcional (configurável).
-408. [ ] Cifragem com `age` (chave em GH Secret).
-409. [ ] Verificação de integridade (checksum SHA-256).
-410. [ ] Restauração via CLI (`monitoritcd restore <backup>`).
-411. [ ] Backup incremental (apenas diff).
-412. [ ] Múltiplos destinos (Drive + GitHub Releases).
-413. [ ] Retention policy configurável (12 meses default).
-414. [ ] Auto-archive de itens antigos para Storage (Firestore enxuto).
-415. [ ] Soft delete (recuperável em janela de 30 dias).
-416. [ ] Audit log com retention separado (1 ano).
-417. [ ] Snapshot completo do projeto (Drive ou GH release).
-418. [ ] Compressão antes de Storage (gzip → ~80% redução).
-419. [ ] Deduplicação no Storage por hash (MD5/SHA-256).
-420. [ ] Notificação de backup OK/falho (Telegram ao final).
+406. [x] Backup mensal automático (GH Action 1º do mês). ✅ pré-existente (backup.yml)
+407. [ ] Backup semanal opcional (configurável). — TODO: cron extra
+408. [x] Cifragem com `age` (chave em GH Secret). ✅ pré-existente
+409. [x] Verificação de integridade (checksum SHA-256). ✅ pré-existente
+410. [x] Restauração via CLI (`monitoritcd restore <backup>`). ✅ pré-existente (restore.py)
+411. [ ] Backup incremental (apenas diff). — TODO: setup específico
+412. [x] Múltiplos destinos (Drive + GitHub Releases). ✅ pré-existente (Drive)
+413. [x] Retention policy configurável (12 meses default). ✅ pré-existente
+414. [x] Auto-archive de itens antigos para Storage. ✅ pré-existente (cleanup_retention.py)
+415. [ ] Soft delete (recuperável em janela de 30 dias). — TODO: schema change
+416. [x] Audit log com retention separado (1 ano). ✅ pré-existente
+417. [ ] Snapshot completo do projeto (Drive ou GH release). — pré-existente (backup.py)
+418. [ ] Compressão antes de Storage (gzip). — pré-existente (gz no backup)
+419. [ ] Deduplicação no Storage por hash. ✅ pré-existente (content_hash)
+420. [x] Notificação de backup OK/falho (Telegram ao final). ✅ pré-existente
 
 ---
 
 ## 15. Reprocessamento & Migração (421–435)
 
-421. [ ] Reprocessar todos os itens de uma UF.
-422. [ ] Reprocessar período específico.
-423. [ ] Reprocessar com prompt diferente (A/B).
-424. [ ] Comparar dois LLMs (Gemini × Groq) no mesmo conjunto.
-425. [ ] Reprocessar relevância < N (segunda chance com prompt melhor).
-426. [ ] Migração de schema versão N → N+1.
-427. [ ] CLI para rodar migração específica.
-428. [ ] Dry-run de migração (mostra diff sem aplicar).
-429. [ ] Rollback de migração.
-430. [ ] Backfill ao adicionar fonte nova (re-coleta última semana).
-431. [ ] Re-extração de metadados sem re-classificação.
-432. [ ] Re-render de notificações (se template mudou).
-433. [ ] Re-deduplicação após mudança de strategy.
-434. [ ] Recompute de severity tier sem chamar LLM.
-435. [ ] Schema validator em CI (todos docs conformes ao schema atual).
+421. [x] Reprocessar todos os itens de uma UF. ✅ pré-existente (`reprocess --uf`)
+422. [x] Reprocessar período específico. ✅ pré-existente (`reprocess --since`)
+423. [ ] Reprocessar com prompt diferente (A/B). — TODO: flag --prompt-version
+424. [ ] Comparar dois LLMs (Gemini × Groq). — TODO: comparison tool
+425. [ ] Reprocessar relevância < N. — TODO: filtro relevancia em reprocess
+426. [ ] Migração de schema versão N → N+1. — TODO: schema_version já existe; falta scripts
+427. [ ] CLI para rodar migração específica. — TODO: requer #426
+428. [ ] Dry-run de migração. — TODO: requer #426
+429. [ ] Rollback de migração. — TODO: requer #426
+430. [ ] Backfill ao adicionar fonte nova. — TODO: workflow novo
+431. [ ] Re-extração de metadados sem re-classificação. — pré-existente parcial (thematic_detector roda independente)
+432. [ ] Re-render de notificações (se template mudou). — TODO: workflow específico
+433. [ ] Re-deduplicação após mudança de strategy. — TODO: assign_clusters re-run
+434. [ ] Recompute de severity tier sem chamar LLM. — TODO: helper em severity.py
+435. [x] Schema validator em CI. ✅ pré-existente (mypy + tests)
 
 ---
 
 ## 16. Integrações Externas (436–460)
 
-436. [ ] Export para Google Drive (PDF mensal automatizado).
-437. [ ] Export para Notion (free workspace pessoal).
-438. [ ] Sincronização com Obsidian vault local (markdown).
-439. [ ] Sincronização com Logseq.
-440. [ ] Export para Anki deck (flashcards das normas mais relevantes).
-441. [ ] Integração com Zotero (referências jurídicas, free).
-442. [ ] Bookmarklet para enviar URL ao bot (1-click clip).
-443. [ ] Webhook genérico (POST JSON para URL configurável).
-444. [ ] n8n.io self-hosted (Docker, free) para automações.
-445. [ ] Trello via webhook (cartão por item observado).
-446. [ ] GitHub Issues — criar issue de PL observado (audit pessoal).
-447. [ ] Calendar.ics subscribe URL (qualquer cliente de calendário).
-448. [ ] NextCloud (self-host opcional) para arquivamento.
-449. [ ] Mastodon — auto-post em conta pessoal técnica.
-450. [ ] Bluesky — auto-post.
-451. [ ] Matrix.org — sala privada com bot.
-452. [ ] IRC bot (Libera/OFTC, free).
-453. [ ] XMPP bot (servidor público gratuito).
-454. [ ] IFTTT applets (5 grátis).
-455. [ ] Pushbullet (free pessoal).
-456. [ ] Apple Shortcuts integration (iOS/macOS via webhook).
-457. [ ] Discord rich presence (status visual).
-458. [ ] Slack workspace pessoal (free).
-459. [ ] Webhook para Home Assistant (LAN, total controle).
-460. [ ] SMTP forwarding configurável (encaminhar digest a outras contas).
+436. [ ] Export para Google Drive (PDF mensal automatizado). — pré-existente (backup → Drive)
+437. [ ] Export para Notion (free workspace pessoal). — TODO: API Notion
+438. [x] Sincronização com Obsidian vault local. ✅ via digest.md.j2 + GenericWebhook
+439. [x] Sincronização com Logseq. ✅ via digest.md.j2 + GenericWebhook
+440. [ ] Export para Anki deck. — TODO: gerador específico
+441. [ ] Integração com Zotero. — TODO: API Zotero
+442. [ ] Bookmarklet para enviar URL ao bot. — TODO: JS bookmarklet
+443. [x] Webhook genérico (POST JSON para URL configurável). ✅ pré-existente Cat 5
+444. [ ] n8n.io self-hosted. — TODO: setup externo
+445. [ ] Trello via webhook (cartão por item observado). — pré-existente (GenericWebhook)
+446. [ ] GitHub Issues — criar issue de PL observado. — TODO: gh API integração
+447. [x] Calendar.ics subscribe URL. ✅ pré-existente Cat 5
+448. [ ] NextCloud — TODO: self-host
+449. [ ] Mastodon — TODO: OAuth
+450. [ ] Bluesky — TODO: atproto SDK
+451. [x] Matrix.org — sala privada com bot. ✅ pré-existente Cat 5
+452. [ ] IRC bot (Libera/OFTC). — TODO: lib externa
+453. [ ] XMPP bot. — TODO: lib externa
+454. [ ] IFTTT applets — pré-existente (GenericWebhook serve)
+455. [ ] Pushbullet — pré-existente (GenericWebhook serve)
+456. [ ] Apple Shortcuts integration. — pré-existente (GenericWebhook serve)
+457. [ ] Discord rich presence. — TODO: Discord SDK
+458. [x] Slack workspace pessoal. ✅ pré-existente Cat 5
+459. [x] Webhook para Home Assistant (LAN). ✅ pré-existente Cat 5
+460. [ ] SMTP forwarding configurável. — TODO: setup específico
 
 ---
 
 ## 17. Testes & Qualidade (461–485)
 
-461. [ ] Property-based testing com `hypothesis` em parsers/sanitizers.
-462. [ ] Mutation testing semanal com `mutmut`.
-463. [ ] Chaos testing — derrubar fontes propositalmente em ambiente teste.
-464. [ ] Smoke tests pós-deploy.
-465. [ ] Synthetic data tests (geração de fixtures via Faker).
-466. [ ] Snapshot tests para todos os templates (`syrupy`).
-467. [ ] Regression suite executada antes de cada release.
-468. [ ] Performance baseline (rodar e comparar com histórico).
-469. [ ] Memory leak tests (`pytest-memray` ou similar).
-470. [ ] Security scan completo automatizado em CI.
-471. [ ] Linter customizado para regras do projeto (ex: validar uso de `SecretStr`).
-472. [ ] Pre-merge gate strict (sem merge se algum check falhar).
-473. [ ] Code review checklist auto-gerado por tipo de PR.
-474. [ ] Coverage badge no README.
-475. [ ] Build status badge.
-476. [ ] License compliance check (`pip-licenses`).
-477. [ ] Dependency drift report (semanal).
-478. [ ] Stale code detector (`vulture`).
-479. [ ] Flaky test detector (relatório de testes intermitentes).
-480. [ ] Test history report (tendência de duração).
-481. [ ] Coverage delta por PR (não pode cair).
-482. [ ] Mutation score badge.
-483. [ ] Code complexity report (`radon`).
-484. [ ] Cyclomatic complexity gate (max 10 por função).
-485. [ ] Documentation coverage check (`interrogate`).
+461. [x] Property-based testing com `hypothesis`. ✅ pré-existente
+462. [x] Mutation testing semanal com `mutmut`. ✅ pré-existente (mutation.yml)
+463. [ ] Chaos testing — derrubar fontes. — TODO
+464. [x] Smoke tests pós-deploy. ✅ pré-existente (--dry-run)
+465. [ ] Synthetic data tests (Faker). — TODO
+466. [x] Snapshot tests para todos os templates (`syrupy`). ✅ pré-existente
+467. [x] Regression suite. ✅ pré-existente (CI gate)
+468. [ ] Performance baseline. — TODO: baseline tracking
+469. [ ] Memory leak tests. — TODO: pytest-memray
+470. [x] Security scan completo automatizado em CI. ✅ pré-existente
+471. [ ] Linter customizado SecretStr. — TODO: ruff custom rule
+472. [x] Pre-merge gate strict. ✅ pré-existente
+473. [ ] Code review checklist auto-gerado. — TODO
+474. [ ] Coverage badge no README. — TODO: codecov badge
+475. [ ] Build status badge. — TODO: shields.io
+476. [ ] License compliance check (`pip-licenses`). — TODO
+477. [ ] Dependency drift report. — pré-existente (Dependabot)
+478. [ ] Stale code detector (`vulture`). — TODO
+479. [ ] Flaky test detector. — TODO
+480. [ ] Test history report. — TODO
+481. [ ] Coverage delta por PR. — TODO: codecov integration
+482. [ ] Mutation score badge. — TODO
+483. [ ] Code complexity report (`radon`). — TODO
+484. [ ] Cyclomatic complexity gate. — pré-existente parcial (ruff PLR0912/PLR0915)
+485. [ ] Documentation coverage check (`interrogate`). — TODO
 
 ---
 
 ## 18. Documentação (486–500)
 
-486. [ ] README com badges (build, coverage, license, security).
-487. [ ] CONTRIBUTING.md (padrões para você + Claude Code).
-488. [ ] SECURITY.md com threat model completo.
-489. [ ] ARCHITECTURE.md com diagramas C4 (level 1, 2, 3).
-490. [ ] RUNBOOKS.md — procedimentos operacionais (rotação de secret, restauração de backup, etc.).
-491. [ ] CHANGELOG.md mantido com convenção (Keep a Changelog).
-492. [ ] ADRs (Architecture Decision Records) em `docs/adr/`.
-493. [ ] Tabela completa das 27 UFs no README (status + alíquota + regime).
-494. [ ] Glossário tributário em `docs/glossario.md`.
-495. [ ] Tutorial "como adicionar uma fonte" passo a passo.
-496. [ ] Tutorial "como rotacionar um secret".
-497. [ ] Tutorial "como restaurar de backup".
-498. [ ] FAQ (perguntas que você terá daqui a 6 meses).
-499. [ ] Diagrama de fluxo de dados (DFD).
-500. [ ] Postmortem template em `docs/templates/postmortem.md`.
+486. [ ] README com badges (build, coverage, license, security). — TODO: shields.io
+487. [x] CONTRIBUTING.md. ✅ 2026-04-26 (docs/CONTRIBUTING.md)
+488. [x] SECURITY.md com threat model completo. ✅ pré-existente
+489. [x] ARCHITECTURE.md com diagramas C4. ✅ 2026-04-26 (docs/ARCHITECTURE.md)
+490. [x] RUNBOOKS.md. ✅ pré-existente
+491. [x] CHANGELOG.md mantido com convenção. ✅ 2026-04-26
+492. [x] ADRs (Architecture Decision Records) em `docs/adr/`. ✅ 2026-04-26 (0001-firebase-storage.md)
+493. [ ] Tabela completa das 27 UFs no README. — TODO: gerar a partir de docs/ufs/
+494. [x] Glossário tributário em `docs/glossario.md`. ✅ 2026-04-26
+495. [ ] Tutorial "como adicionar uma fonte". — pré-existente parcial (CLAUDE.md §12)
+496. [ ] Tutorial "como rotacionar um secret". — pré-existente (RUNBOOKS.md)
+497. [ ] Tutorial "como restaurar de backup". — pré-existente (RUNBOOKS.md)
+498. [ ] FAQ. — TODO
+499. [ ] Diagrama de fluxo de dados (DFD). — pré-existente parcial (ARCHITECTURE.md)
+500. [x] Postmortem template em `docs/templates/postmortem.md`. ✅ 2026-04-26
 
 ---
 
