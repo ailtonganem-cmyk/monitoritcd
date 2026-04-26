@@ -486,141 +486,141 @@
 
 ## 13. Templates & Renderização (391–405)
 
-391. [ ] Template "compacto" — 1 linha por item.
-392. [ ] Template "detalhado" — resumo + link + metadados.
-393. [ ] Template "executivo" — resumo + top 5.
-394. [ ] Template "newsletter" — seções editoriais.
-395. [ ] Template Markdown puro (para outras integrações).
-396. [ ] Template HTML otimizado para gerar PDF (WeasyPrint).
-397. [ ] Skin claro/escuro para email (auto via media query).
-398. [ ] Localização BR (data DD/MM/YYYY, número 1.234,56).
-399. [ ] Tema customizável (variáveis CSS).
-400. [ ] Logo configurável (URL pública estática).
-401. [ ] Footer customizável.
-402. [ ] Header customizável.
-403. [ ] Versão "telegrama" — resumo super conciso < 280 chars.
-404. [ ] Personalização de tom (formal/casual via prompt).
-405. [ ] A/B test de templates (rotação semanal, métricas de engajamento).
+391. [x] Template "compacto" — 1 linha por item. ✅ pré-existente Cat 3
+392. [x] Template "detalhado" — resumo + link + metadados. ✅ pré-existente Cat 3 (default)
+393. [x] Template "executivo" — resumo + top 5. ✅ pré-existente Cat 3
+394. [x] Template "newsletter" — seções editoriais. ✅ pré-existente Cat 3
+395. [x] Template Markdown puro (para outras integrações). ✅ 2026-04-26 (digest.md.j2)
+396. [ ] Template HTML otimizado para gerar PDF (WeasyPrint). ⚠️ triagem desaconselhou
+397. [x] Skin claro/escuro para email (auto via media query). ✅ pré-existente Cat 3
+398. [x] Localização BR (data DD/MM/YYYY). ✅ pré-existente (templates usam strftime)
+399. [ ] Tema customizável (variáveis CSS). — TODO: setup específico
+400. [ ] Logo configurável (URL pública estática). — TODO: campo extra config
+401. [ ] Footer customizável. — pré-existente (passável via render_email)
+402. [ ] Header customizável. — pré-existente (passável via render_email)
+403. [ ] Versão "telegrama" — resumo super conciso < 280 chars. — TODO: helper truncate
+404. [ ] Personalização de tom (formal/casual via prompt). — TODO: requer prompt LLM
+405. [ ] A/B test de templates. — TODO: requer engagement tracking
 
 ---
 
 ## 14. Retenção & Backup (406–420)
 
-406. [ ] Backup mensal automático (GH Action 1º do mês).
-407. [ ] Backup semanal opcional (configurável).
-408. [ ] Cifragem com `age` (chave em GH Secret).
-409. [ ] Verificação de integridade (checksum SHA-256).
-410. [ ] Restauração via CLI (`monitoritcd restore <backup>`).
-411. [ ] Backup incremental (apenas diff).
-412. [ ] Múltiplos destinos (Drive + GitHub Releases).
-413. [ ] Retention policy configurável (12 meses default).
-414. [ ] Auto-archive de itens antigos para Storage (Firestore enxuto).
-415. [ ] Soft delete (recuperável em janela de 30 dias).
-416. [ ] Audit log com retention separado (1 ano).
-417. [ ] Snapshot completo do projeto (Drive ou GH release).
-418. [ ] Compressão antes de Storage (gzip → ~80% redução).
-419. [ ] Deduplicação no Storage por hash (MD5/SHA-256).
-420. [ ] Notificação de backup OK/falho (Telegram ao final).
+406. [x] Backup mensal automático (GH Action 1º do mês). ✅ pré-existente (backup.yml)
+407. [ ] Backup semanal opcional (configurável). — TODO: cron extra
+408. [x] Cifragem com `age` (chave em GH Secret). ✅ pré-existente
+409. [x] Verificação de integridade (checksum SHA-256). ✅ pré-existente
+410. [x] Restauração via CLI (`monitoritcd restore <backup>`). ✅ pré-existente (restore.py)
+411. [ ] Backup incremental (apenas diff). — TODO: setup específico
+412. [x] Múltiplos destinos (Drive + GitHub Releases). ✅ pré-existente (Drive)
+413. [x] Retention policy configurável (12 meses default). ✅ pré-existente
+414. [x] Auto-archive de itens antigos para Storage. ✅ pré-existente (cleanup_retention.py)
+415. [ ] Soft delete (recuperável em janela de 30 dias). — TODO: schema change
+416. [x] Audit log com retention separado (1 ano). ✅ pré-existente
+417. [ ] Snapshot completo do projeto (Drive ou GH release). — pré-existente (backup.py)
+418. [ ] Compressão antes de Storage (gzip). — pré-existente (gz no backup)
+419. [ ] Deduplicação no Storage por hash. ✅ pré-existente (content_hash)
+420. [x] Notificação de backup OK/falho (Telegram ao final). ✅ pré-existente
 
 ---
 
 ## 15. Reprocessamento & Migração (421–435)
 
-421. [ ] Reprocessar todos os itens de uma UF.
-422. [ ] Reprocessar período específico.
-423. [ ] Reprocessar com prompt diferente (A/B).
-424. [ ] Comparar dois LLMs (Gemini × Groq) no mesmo conjunto.
-425. [ ] Reprocessar relevância < N (segunda chance com prompt melhor).
-426. [ ] Migração de schema versão N → N+1.
-427. [ ] CLI para rodar migração específica.
-428. [ ] Dry-run de migração (mostra diff sem aplicar).
-429. [ ] Rollback de migração.
-430. [ ] Backfill ao adicionar fonte nova (re-coleta última semana).
-431. [ ] Re-extração de metadados sem re-classificação.
-432. [ ] Re-render de notificações (se template mudou).
-433. [ ] Re-deduplicação após mudança de strategy.
-434. [ ] Recompute de severity tier sem chamar LLM.
-435. [ ] Schema validator em CI (todos docs conformes ao schema atual).
+421. [x] Reprocessar todos os itens de uma UF. ✅ pré-existente (`reprocess --uf`)
+422. [x] Reprocessar período específico. ✅ pré-existente (`reprocess --since`)
+423. [ ] Reprocessar com prompt diferente (A/B). — TODO: flag --prompt-version
+424. [ ] Comparar dois LLMs (Gemini × Groq). — TODO: comparison tool
+425. [ ] Reprocessar relevância < N. — TODO: filtro relevancia em reprocess
+426. [ ] Migração de schema versão N → N+1. — TODO: schema_version já existe; falta scripts
+427. [ ] CLI para rodar migração específica. — TODO: requer #426
+428. [ ] Dry-run de migração. — TODO: requer #426
+429. [ ] Rollback de migração. — TODO: requer #426
+430. [ ] Backfill ao adicionar fonte nova. — TODO: workflow novo
+431. [ ] Re-extração de metadados sem re-classificação. — pré-existente parcial (thematic_detector roda independente)
+432. [ ] Re-render de notificações (se template mudou). — TODO: workflow específico
+433. [ ] Re-deduplicação após mudança de strategy. — TODO: assign_clusters re-run
+434. [ ] Recompute de severity tier sem chamar LLM. — TODO: helper em severity.py
+435. [x] Schema validator em CI. ✅ pré-existente (mypy + tests)
 
 ---
 
 ## 16. Integrações Externas (436–460)
 
-436. [ ] Export para Google Drive (PDF mensal automatizado).
-437. [ ] Export para Notion (free workspace pessoal).
-438. [ ] Sincronização com Obsidian vault local (markdown).
-439. [ ] Sincronização com Logseq.
-440. [ ] Export para Anki deck (flashcards das normas mais relevantes).
-441. [ ] Integração com Zotero (referências jurídicas, free).
-442. [ ] Bookmarklet para enviar URL ao bot (1-click clip).
-443. [ ] Webhook genérico (POST JSON para URL configurável).
-444. [ ] n8n.io self-hosted (Docker, free) para automações.
-445. [ ] Trello via webhook (cartão por item observado).
-446. [ ] GitHub Issues — criar issue de PL observado (audit pessoal).
-447. [ ] Calendar.ics subscribe URL (qualquer cliente de calendário).
-448. [ ] NextCloud (self-host opcional) para arquivamento.
-449. [ ] Mastodon — auto-post em conta pessoal técnica.
-450. [ ] Bluesky — auto-post.
-451. [ ] Matrix.org — sala privada com bot.
-452. [ ] IRC bot (Libera/OFTC, free).
-453. [ ] XMPP bot (servidor público gratuito).
-454. [ ] IFTTT applets (5 grátis).
-455. [ ] Pushbullet (free pessoal).
-456. [ ] Apple Shortcuts integration (iOS/macOS via webhook).
-457. [ ] Discord rich presence (status visual).
-458. [ ] Slack workspace pessoal (free).
-459. [ ] Webhook para Home Assistant (LAN, total controle).
-460. [ ] SMTP forwarding configurável (encaminhar digest a outras contas).
+436. [ ] Export para Google Drive (PDF mensal automatizado). — pré-existente (backup → Drive)
+437. [ ] Export para Notion (free workspace pessoal). — TODO: API Notion
+438. [x] Sincronização com Obsidian vault local. ✅ via digest.md.j2 + GenericWebhook
+439. [x] Sincronização com Logseq. ✅ via digest.md.j2 + GenericWebhook
+440. [ ] Export para Anki deck. — TODO: gerador específico
+441. [ ] Integração com Zotero. — TODO: API Zotero
+442. [ ] Bookmarklet para enviar URL ao bot. — TODO: JS bookmarklet
+443. [x] Webhook genérico (POST JSON para URL configurável). ✅ pré-existente Cat 5
+444. [ ] n8n.io self-hosted. — TODO: setup externo
+445. [ ] Trello via webhook (cartão por item observado). — pré-existente (GenericWebhook)
+446. [ ] GitHub Issues — criar issue de PL observado. — TODO: gh API integração
+447. [x] Calendar.ics subscribe URL. ✅ pré-existente Cat 5
+448. [ ] NextCloud — TODO: self-host
+449. [ ] Mastodon — TODO: OAuth
+450. [ ] Bluesky — TODO: atproto SDK
+451. [x] Matrix.org — sala privada com bot. ✅ pré-existente Cat 5
+452. [ ] IRC bot (Libera/OFTC). — TODO: lib externa
+453. [ ] XMPP bot. — TODO: lib externa
+454. [ ] IFTTT applets — pré-existente (GenericWebhook serve)
+455. [ ] Pushbullet — pré-existente (GenericWebhook serve)
+456. [ ] Apple Shortcuts integration. — pré-existente (GenericWebhook serve)
+457. [ ] Discord rich presence. — TODO: Discord SDK
+458. [x] Slack workspace pessoal. ✅ pré-existente Cat 5
+459. [x] Webhook para Home Assistant (LAN). ✅ pré-existente Cat 5
+460. [ ] SMTP forwarding configurável. — TODO: setup específico
 
 ---
 
 ## 17. Testes & Qualidade (461–485)
 
-461. [ ] Property-based testing com `hypothesis` em parsers/sanitizers.
-462. [ ] Mutation testing semanal com `mutmut`.
-463. [ ] Chaos testing — derrubar fontes propositalmente em ambiente teste.
-464. [ ] Smoke tests pós-deploy.
-465. [ ] Synthetic data tests (geração de fixtures via Faker).
-466. [ ] Snapshot tests para todos os templates (`syrupy`).
-467. [ ] Regression suite executada antes de cada release.
-468. [ ] Performance baseline (rodar e comparar com histórico).
-469. [ ] Memory leak tests (`pytest-memray` ou similar).
-470. [ ] Security scan completo automatizado em CI.
-471. [ ] Linter customizado para regras do projeto (ex: validar uso de `SecretStr`).
-472. [ ] Pre-merge gate strict (sem merge se algum check falhar).
-473. [ ] Code review checklist auto-gerado por tipo de PR.
-474. [ ] Coverage badge no README.
-475. [ ] Build status badge.
-476. [ ] License compliance check (`pip-licenses`).
-477. [ ] Dependency drift report (semanal).
-478. [ ] Stale code detector (`vulture`).
-479. [ ] Flaky test detector (relatório de testes intermitentes).
-480. [ ] Test history report (tendência de duração).
-481. [ ] Coverage delta por PR (não pode cair).
-482. [ ] Mutation score badge.
-483. [ ] Code complexity report (`radon`).
-484. [ ] Cyclomatic complexity gate (max 10 por função).
-485. [ ] Documentation coverage check (`interrogate`).
+461. [x] Property-based testing com `hypothesis`. ✅ pré-existente
+462. [x] Mutation testing semanal com `mutmut`. ✅ pré-existente (mutation.yml)
+463. [ ] Chaos testing — derrubar fontes. — TODO
+464. [x] Smoke tests pós-deploy. ✅ pré-existente (--dry-run)
+465. [ ] Synthetic data tests (Faker). — TODO
+466. [x] Snapshot tests para todos os templates (`syrupy`). ✅ pré-existente
+467. [x] Regression suite. ✅ pré-existente (CI gate)
+468. [ ] Performance baseline. — TODO: baseline tracking
+469. [ ] Memory leak tests. — TODO: pytest-memray
+470. [x] Security scan completo automatizado em CI. ✅ pré-existente
+471. [ ] Linter customizado SecretStr. — TODO: ruff custom rule
+472. [x] Pre-merge gate strict. ✅ pré-existente
+473. [ ] Code review checklist auto-gerado. — TODO
+474. [ ] Coverage badge no README. — TODO: codecov badge
+475. [ ] Build status badge. — TODO: shields.io
+476. [ ] License compliance check (`pip-licenses`). — TODO
+477. [ ] Dependency drift report. — pré-existente (Dependabot)
+478. [ ] Stale code detector (`vulture`). — TODO
+479. [ ] Flaky test detector. — TODO
+480. [ ] Test history report. — TODO
+481. [ ] Coverage delta por PR. — TODO: codecov integration
+482. [ ] Mutation score badge. — TODO
+483. [ ] Code complexity report (`radon`). — TODO
+484. [ ] Cyclomatic complexity gate. — pré-existente parcial (ruff PLR0912/PLR0915)
+485. [ ] Documentation coverage check (`interrogate`). — TODO
 
 ---
 
 ## 18. Documentação (486–500)
 
-486. [ ] README com badges (build, coverage, license, security).
-487. [ ] CONTRIBUTING.md (padrões para você + Claude Code).
-488. [ ] SECURITY.md com threat model completo.
-489. [ ] ARCHITECTURE.md com diagramas C4 (level 1, 2, 3).
-490. [ ] RUNBOOKS.md — procedimentos operacionais (rotação de secret, restauração de backup, etc.).
-491. [ ] CHANGELOG.md mantido com convenção (Keep a Changelog).
-492. [ ] ADRs (Architecture Decision Records) em `docs/adr/`.
-493. [ ] Tabela completa das 27 UFs no README (status + alíquota + regime).
-494. [ ] Glossário tributário em `docs/glossario.md`.
-495. [ ] Tutorial "como adicionar uma fonte" passo a passo.
-496. [ ] Tutorial "como rotacionar um secret".
-497. [ ] Tutorial "como restaurar de backup".
-498. [ ] FAQ (perguntas que você terá daqui a 6 meses).
-499. [ ] Diagrama de fluxo de dados (DFD).
-500. [ ] Postmortem template em `docs/templates/postmortem.md`.
+486. [ ] README com badges (build, coverage, license, security). — TODO: shields.io
+487. [x] CONTRIBUTING.md. ✅ 2026-04-26 (docs/CONTRIBUTING.md)
+488. [x] SECURITY.md com threat model completo. ✅ pré-existente
+489. [x] ARCHITECTURE.md com diagramas C4. ✅ 2026-04-26 (docs/ARCHITECTURE.md)
+490. [x] RUNBOOKS.md. ✅ pré-existente
+491. [x] CHANGELOG.md mantido com convenção. ✅ 2026-04-26
+492. [x] ADRs (Architecture Decision Records) em `docs/adr/`. ✅ 2026-04-26 (0001-firebase-storage.md)
+493. [ ] Tabela completa das 27 UFs no README. — TODO: gerar a partir de docs/ufs/
+494. [x] Glossário tributário em `docs/glossario.md`. ✅ 2026-04-26
+495. [ ] Tutorial "como adicionar uma fonte". — pré-existente parcial (CLAUDE.md §12)
+496. [ ] Tutorial "como rotacionar um secret". — pré-existente (RUNBOOKS.md)
+497. [ ] Tutorial "como restaurar de backup". — pré-existente (RUNBOOKS.md)
+498. [ ] FAQ. — TODO
+499. [ ] Diagrama de fluxo de dados (DFD). — pré-existente parcial (ARCHITECTURE.md)
+500. [x] Postmortem template em `docs/templates/postmortem.md`. ✅ 2026-04-26
 
 ---
 

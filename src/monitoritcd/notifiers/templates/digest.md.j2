@@ -1,0 +1,35 @@
+{# #395 — Template Markdown puro (para integrações externas: Obsidian, Logseq, etc.) #}
+# 📊 MonitorITCD — {{ digest_label }}
+
+_{{ data_geracao }} · {{ items|length }} {% if items|length == 1 %}novidade{% else %}novidades{% endif %}_
+
+{% if items|length == 0 %}
+Sem novidades relevantes neste período.
+{% else %}
+{% if ranking %}
+## 🏆 Top {{ ranking|length }} mais relevantes
+
+{% for h in ranking %}
+1. **[{{ h.titulo }}]({{ h.url }})** — {{ h.uf }} · score {{ h.relevancia }}
+{% endfor %}
+{% endif %}
+
+## Itens
+
+{% for item in items %}
+### {{ item.tier_emoji }} {{ item.titulo }}
+
+- **UF**: {{ item.uf }}
+- **Tipo**: {{ item.tipo_label }}
+{% if item.data_pub %}- **Data**: {{ item.data_pub }}{% endif %}
+- **Fonte**: {{ item.fonte_nome }}
+- **URL**: <{{ item.url }}>
+
+{{ item.resumo }}
+
+---
+{% endfor %}
+{% endif %}
+
+---
+_MonitorITCD · uso pessoal_
