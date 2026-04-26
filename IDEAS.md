@@ -456,31 +456,31 @@
 
 ## 12. Gestão de Fontes (366–390)
 
-366. [ ] Toggle de fonte via PR no YAML (mantém auditoria git).
-367. [ ] Validação de YAML em CI (schema pydantic).
-368. [ ] Lint específico para YAML de fontes (regras de domínio).
-369. [ ] Auto-disable de fonte após N falhas seguidas.
-370. [ ] Auto-reativação ao voltar a funcionar.
-371. [ ] Health score por fonte (success rate, freshness).
-372. [ ] Calendário de revisão (cada 30d revisar todas).
-373. [ ] Sugestão automática de novas fontes via LLM (prompt periódico).
-374. [ ] Validador de URL (HEAD request, content-type esperado).
-375. [ ] Detecção de mudança de layout (parsing rate cai abruptamente).
-376. [ ] Auto-fallback entre múltiplas URLs por fonte.
-377. [ ] Mirror cached em Storage para resiliência.
-378. [ ] Versionamento de selectors CSS (histórico de mudanças).
-379. [ ] Anotação "última revisão manual" por fonte.
-380. [ ] Tag "fragile" para fontes instáveis (alerta extra em falhas).
-381. [ ] Tag "trusted" para fontes oficiais.
-382. [ ] Tag "secondary" para fontes de mídia.
-383. [ ] Hierarquia de confiança configurável.
-384. [ ] Pesos diferentes na pré-classificação por confiança.
-385. [ ] Histórico de mudanças por fonte.
-386. [ ] Métrica "novidades por mês" por fonte.
-387. [ ] Métrica "false positives" por fonte (descartados pelo LLM).
-388. [ ] Detecção de mudança de domínio (redirect 301 persistente).
-389. [ ] Auto-discovery de RSS em sites (feed link tag).
-390. [ ] Detecção de `sitemap.xml` para descoberta de URLs.
+366. [x] Toggle de fonte via PR no YAML. ✅ pré-existente (workflow git)
+367. [x] Validação de YAML em CI (schema pydantic). ✅ pré-existente (source_loader)
+368. [x] Lint específico para YAML de fontes. ✅ 2026-04-26 (source_validators.lint_source)
+369. [x] Auto-disable de fonte após N falhas seguidas. ✅ 2026-04-26 (should_auto_disable)
+370. [x] Auto-reativação ao voltar a funcionar. ✅ 2026-04-26 (should_auto_reactivate)
+371. [x] Health score por fonte (success rate, freshness). ✅ 2026-04-26 (health_score)
+372. [x] Calendário de revisão (cada 30d revisar todas). ✅ 2026-04-26 (revision_calendar)
+373. [ ] Sugestão automática de novas fontes via LLM. — TODO: prompt periódico custoso
+374. [ ] Validador de URL (HEAD request, content-type esperado). — TODO: requer worker
+375. [ ] Detecção de mudança de layout. — TODO: requer trending de parsing rate
+376. [ ] Auto-fallback entre múltiplas URLs por fonte. — TODO: schema multi-URL
+377. [ ] Mirror cached em Storage para resiliência. — TODO: setup específico
+378. [ ] Versionamento de selectors CSS. — pré-existente (git history dos YAMLs)
+379. [ ] Anotação "última revisão manual" por fonte. — TODO: campo extra no YAML
+380. [x] Tag "fragile" para fontes instáveis. ✅ pré-existente (campo Source.fragile)
+381. [x] Tag "trusted" para fontes oficiais. ✅ pré-existente (campo Source.trusted)
+382. [ ] Tag "secondary" para fontes de mídia. — TODO: novo campo no schema
+383. [ ] Hierarquia de confiança configurável. — pré-existente (prescore weights)
+384. [x] Pesos diferentes na pré-classificação por confiança. ✅ pré-existente (W_AUTHORITY)
+385. [ ] Histórico de mudanças por fonte. — pré-existente (git history)
+386. [x] Métrica "novidades por mês" por fonte. ✅ 2026-04-26 (items_per_month_per_source)
+387. [x] Métrica "false positives" por fonte. ✅ 2026-04-26 (false_positive_rate_per_source)
+388. [ ] Detecção de mudança de domínio (redirect 301). — TODO: tracking em fetch
+389. [ ] Auto-discovery de RSS em sites (feed link tag). — TODO: parser <link rel=alternate>
+390. [ ] Detecção de `sitemap.xml` para descoberta de URLs. — TODO: parser sitemap
 
 ---
 
