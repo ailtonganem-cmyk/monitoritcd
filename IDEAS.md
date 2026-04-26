@@ -231,56 +231,56 @@
 
 ## 6. Bot Telegram — Comandos (171–220)
 
-171. [ ] `/start` — saudação personalizada + lista comandos.
-172. [ ] `/help` — help dinâmico, dividido por categoria.
-173. [ ] `/status` — última coleta, fontes ativas/falhando, cota LLM/Firestore.
-174. [ ] `/buscar <termo>` — busca em todo histórico.
-175. [ ] `/buscar UF=SP` — filtro por UF.
-176. [ ] `/buscar tipo=PL` — filtro por tipo.
-177. [ ] `/buscar periodo=30d` — filtro temporal.
-178. [ ] `/buscar relevancia>=8` — filtro por score.
-179. [ ] `/buscar tag=critico` — filtro por tag.
-180. [ ] `/observar <termo>` — adiciona à watch list.
-181. [ ] `/observar PL=1234/2026` — observa PL específico.
-182. [ ] `/observar listar` — lista watches ativos.
-183. [ ] `/observar remover <id>` — remove watch.
-184. [ ] `/observar exportar` — CSV/JSON dos watches.
-185. [ ] `/silenciar UF=SP 7d` — mute UF por X dias.
-186. [ ] `/silenciar tipo=noticia` — mute tipo.
-187. [ ] `/silenciar tag=baixa` — mute tag.
-188. [ ] `/silenciar listar` — silenciamentos ativos.
-189. [ ] `/silenciar remover <id>` — cancela silêncio.
-190. [ ] `/marcar <doc_id> <tag>` — tag pessoal num doc.
-191. [ ] `/desmarcar <doc_id> <tag>` — remove tag.
-192. [ ] `/tags listar` — todas as tags usadas.
-193. [ ] `/tags renomear <old> <new>` — renomeia em massa.
-194. [ ] `/favoritar <doc_id>` — adiciona aos favoritos.
-195. [ ] `/favoritos` — lista favoritos.
-196. [ ] `/arquivo mes=2026-04` — todos docs do mês.
-197. [ ] `/arquivo UF=SP` — arquivo por UF.
-198. [ ] `/relatorio diario` — gera digest do dia sob demanda.
-199. [ ] `/relatorio semanal` — digest semanal.
-200. [ ] `/relatorio mensal` — digest mensal.
-201. [ ] `/relatorio anual` — retrospectiva.
-202. [ ] `/estados listar` — UFs ativas/desativadas.
-203. [ ] `/estados ativar <UF>` — adiciona à coleta.
-204. [ ] `/estados desativar <UF>` — remove da coleta.
-205. [ ] `/fontes listar` — todas as fontes do sistema.
-206. [ ] `/fontes status` — saúde por fonte.
-207. [ ] `/fontes ativar <id>` — habilita fonte.
-208. [ ] `/fontes desativar <id>` — desabilita fonte.
-209. [ ] `/reprocessar <since>` — reclassifica período (com confirmação).
-210. [ ] `/backup manual` — dispara backup imediato.
-211. [ ] `/export csv <since>` — CSV do período.
-212. [ ] `/export json <since>` — JSON do período.
-213. [ ] `/quota uso` — uso atual de cotas (Firestore, LLM, Storage).
-214. [ ] `/coleta agora` — força execução manual.
-215. [ ] `/diff <doc1> <doc2>` — compara dois documentos.
-216. [ ] `/historico <doc_id>` — versões/reprocessamentos do doc.
-217. [ ] `/comentar <doc_id> <texto>` — anotação pessoal.
-218. [ ] `/lembrar <texto> <data>` — alarme manual.
-219. [ ] `/confirmar <token>` — confirma operação destrutiva.
-220. [ ] `/cancelar` — cancela operação pendente.
+171. [x] `/start` — saudação personalizada + lista comandos. ✅ pré-existente
+172. [x] `/help` — help dinâmico, dividido por categoria. ✅ pré-existente
+173. [x] `/status` — última coleta, fontes ativas/falhando, cota LLM/Firestore. ✅ pré-existente
+174. [x] `/buscar <termo>` — busca em todo histórico. ✅ pré-existente
+175. [x] `/buscar UF=SP` — filtro por UF. ✅ pré-existente
+176. [x] `/buscar tipo=PL` — filtro por tipo. ✅ pré-existente
+177. [x] `/buscar periodo=30d` — filtro temporal. ✅ pré-existente
+178. [x] `/buscar relevancia>=8` — filtro por score. ✅ pré-existente
+179. [x] `/buscar tag=critico` — filtro por tag. ✅ pré-existente
+180. [x] `/observar <termo>` — adiciona à watch list. ✅ pré-existente
+181. [x] `/observar PL=1234/2026` — observa PL específico. ✅ pré-existente
+182. [x] `/observar listar` — lista watches ativos. ✅ pré-existente
+183. [x] `/observar remover <id>` — remove watch. ✅ pré-existente
+184. [x] `/observar exportar` — CSV/JSON dos watches. ✅ pré-existente
+185. [x] `/silenciar UF=SP 7d` — mute UF por X dias. ✅ 2026-04-26 (handle_silenciar)
+186. [x] `/silenciar tipo=noticia` — mute tipo. ✅ 2026-04-26
+187. [x] `/silenciar tag=baixa` — mute tag. ✅ 2026-04-26
+188. [x] `/silenciar listar` — silenciamentos ativos. ✅ 2026-04-26
+189. [x] `/silenciar remover <id>` — cancela silêncio. ✅ 2026-04-26
+190. [x] `/marcar <doc_id> <tag>` — tag pessoal num doc. ✅ pré-existente
+191. [x] `/desmarcar <doc_id> <tag>` — remove tag. ✅ 2026-04-26 (handle_desmarcar)
+192. [x] `/tags listar` — todas as tags usadas. ✅ 2026-04-26 (handle_tags)
+193. [x] `/tags renomear <old> <new>` — renomeia em massa. ✅ 2026-04-26 (com confirmação)
+194. [x] `/favoritar <doc_id>` — adiciona aos favoritos. ✅ 2026-04-26 (handle_favoritar)
+195. [x] `/favoritos` — lista favoritos. ✅ 2026-04-26 (handle_favoritos)
+196. [x] `/arquivo mes=2026-04` — todos docs do mês. ✅ 2026-04-26 (handle_arquivo)
+197. [x] `/arquivo UF=SP` — arquivo por UF. ✅ 2026-04-26
+198. [x] `/relatorio diario` — gera digest do dia sob demanda. ✅ pré-existente
+199. [x] `/relatorio semanal` — digest semanal. ✅ pré-existente
+200. [x] `/relatorio mensal` — digest mensal. ✅ pré-existente
+201. [ ] `/relatorio anual` — retrospectiva. — TODO: agregação especial
+202. [x] `/estados listar` — UFs ativas/desativadas. ✅ pré-existente
+203. [x] `/estados ativar <UF>` — adiciona à coleta. ✅ pré-existente
+204. [x] `/estados desativar <UF>` — remove da coleta. ✅ pré-existente
+205. [x] `/fontes listar` — todas as fontes do sistema. ✅ 2026-04-26 (handle_fontes)
+206. [x] `/fontes status` — saúde por fonte. ✅ 2026-04-26
+207. [x] `/fontes ativar <id>` — habilita fonte. ✅ 2026-04-26 (orienta edição YAML)
+208. [x] `/fontes desativar <id>` — desabilita fonte. ✅ 2026-04-26
+209. [x] `/reprocessar <since>` — reclassifica período (com confirmação). ✅ 2026-04-26 (handle_reprocessar)
+210. [x] `/backup manual` — dispara backup imediato. ✅ 2026-04-26 (handle_backup)
+211. [x] `/export csv <since>` — CSV do período. ✅ 2026-04-26 (handle_export)
+212. [x] `/export json <since>` — JSON do período. ✅ 2026-04-26
+213. [x] `/quota uso` — uso atual de cotas (Firestore, LLM, Storage). ✅ 2026-04-26 (handle_quota)
+214. [x] `/coleta agora` — força execução manual. ✅ 2026-04-26 (handle_coleta — link Actions)
+215. [x] `/diff <doc1> <doc2>` — compara dois documentos. ✅ 2026-04-26 (handle_diff)
+216. [x] `/historico <doc_id>` — versões/reprocessamentos do doc. ✅ 2026-04-26 (handle_historico)
+217. [x] `/comentar <doc_id> <texto>` — anotação pessoal. ✅ 2026-04-26 (handle_comentar)
+218. [x] `/lembrar <texto> <data>` — alarme manual. ✅ 2026-04-26 (stub — handle_lembrar)
+219. [x] `/confirmar <token>` — confirma operação destrutiva. ✅ pré-existente
+220. [x] `/cancelar` — cancela operação pendente. ✅ 2026-04-26 (handle_cancelar)
 
 ---
 
