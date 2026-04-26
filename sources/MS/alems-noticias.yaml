@@ -1,0 +1,36 @@
+id: alems-ms-noticias
+uf: MS
+nome: "ALEMS — Notícias da Assembleia Legislativa (RSS)"
+tipo: noticia
+parser: generic_rss
+url: "https://www.al.ms.gov.br/RSS"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - doação
+  - doacao
+  - sucessão
+  - sucessao
+  - inventário
+  - inventario
+  - espólio
+  - espolio
+  - herança
+  - heranca
+  - testamento
+  - "regime de bens"
+  - holding
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: false
+fragile: false
+notas: |
+  ALEMS notícias (validado 2026-04-26): RSS 2.0 oficial, publicação diária
+  durante sessões. Categorias "Direto do Gabinete" e "Agência de Notícias".
+  Substituto parcial à API legislativa (que ALEMS não expõe publicamente).
+  Filtro por keywords reduz volume (feed geral, captura PLs ITCMD/sucessões
+  via menções em comunicados, audiências e pautas de comissões).

@@ -1,12 +1,14 @@
-# Status das fontes (atualizado 2026-04-25 — pós-LexMLPortal)
+# Status das fontes (atualizado 2026-04-26 — pós-Câmara/Senado/ALEMS)
 
 ## ✅ Cobertura atual (validada em produção)
 
-### Federais (5 fontes)
+### Federais (8 fontes)
 | Fonte | Cobertura | Volume típico |
 |---|---|---|
 | **LexML Legislação** | Federal + 27 estaduais + DF | ~56 hits ITCMD, deduped por URN |
 | **LexML Jurisprudência** | STF + STJ + TJs estaduais | ~21 hits ITCMD |
+| **Câmara Deputados** | PLs/PLPs/PECs federais sobre ITCD/sucessões | API v2 JSON, paginação oficial |
+| **Senado Federal** | Matérias do Senado, vetos presidenciais | API `/dadosabertos/processo` |
 | **JOTA principal** | Notícias jurídicas tributárias | ~25 entries diárias |
 | **STF notícias** | Decisões STF | ~10 entries |
 | **STJ notícias** | Decisões STJ | ~100 entries |
@@ -44,8 +46,27 @@ Validados em smoke test 2026-04-25: 104 items reais coletados:
 - ⚠️ **PE** — Alepe usa CMS próprio, URL `/sapl/api/` retorna HTML
 - ⚠️ **SC** — Alesc idem
 
-**Total**: 17 fontes ativas. Cobertura legislativa (LexML) atinge 27 entes + federal.
-Cobertura de proposições em tramitação: 12 UFs (44%).
+#### Via RSS de notícias (substituto parcial — 1 UF)
+- **MS** — `https://www.al.ms.gov.br/RSS` (validado 2026-04-26): RSS 2.0
+  oficial. Não cobre 100% da base bruta de proposições, mas captura
+  movimento legislativo via comunicados, audiências e pautas. Filtro
+  por keywords ITCD/sucessão recupera os hits relevantes.
+
+**Total**: 20 fontes ativas. Cobertura legislativa (LexML) atinge 27 entes + federal.
+Cobertura de proposições em tramitação: 14 UFs com API + 1 UF via RSS = **15 UFs (56%)**.
+
+## 🔄 UFs ainda pendentes de fonte (12 UFs — re-investigação trimestral agendada)
+
+Investigação 2026-04-26 confirmou ausência de API REST/RSS pública
+utilizável em: **SP, RJ, SC, MA, BA, PA, AP, RN, SE, AL Sergipe, RS, DF, TO**.
+
+Razões específicas em [fontes_alternativas_uf.md](fontes_alternativas_uf.md):
+- 4 UFs com sistemas legacy (SP/RJ Lotus Notes, BA vendor externo, MA sem API admitida)
+- 1 UF em transição (AP — eLegis em implementação)
+- 7 UFs com sondagem batch sem retorno (TO, RS, DF, RN, SE, etc.)
+
+**Re-verificação trimestral agendada** — quando rodar, atualizar este
+arquivo + `fontes_alternativas_uf.md` com novos achados.
 
 ## 🎯 Após implementação do LexMLPortalCollector
 
