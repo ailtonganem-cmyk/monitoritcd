@@ -11,6 +11,7 @@ description = "Fixtures de teste do redactor de logs"
 # Caminhos com fakes intencionais (auditados manualmente)
 paths = [
     '''tests/security/test_log_redactor\.py''',
+    '''tests/unit/test_bot_poller\.py''',         # smoke test do pipeline de redacao
     '''scripts/check_secret_literals\.py''',     # patterns de detecção (não secrets)
     '''scripts/legacy_aws_loader\.py''',         # decoy monitorado (ver SECURITY.md T8)
     '''CLAUDE\.md''',                            # docs mencionam prefixos
