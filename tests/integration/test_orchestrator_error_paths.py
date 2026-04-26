@@ -32,6 +32,7 @@ from monitoritcd.core.models import (
     TipoFonte,
 )
 from monitoritcd.llm.fake import FakeLLMProvider
+from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.orchestrator import (
     RunReport,
     classify_and_store,
@@ -116,12 +117,14 @@ def _raw(doc_id: str) -> tuple[Source, RawItem]:
         parser=Parser.GENERIC_HTML,
         url="https://x.gov.br/",
     )
+    # Hash precisa ser único nos primeiros 16 chars (doc_id usa content_hash[:16])
+    last_char = doc_id[-1]
     raw = RawItem(
         source_id="src",
         titulo_raw=f"PL ITCMD {doc_id}",
         url=f"https://x.gov.br/{doc_id}",
         fetched_at=NOW,
-        content_hash=("a" * 63) + doc_id[-1],
+        content_hash=(last_char * 16) + ("0" * 48),
     )
     return src, raw
 
@@ -231,6 +234,68 @@ class TestClassifyAndStoreErrorPaths:
             )
         assert result == []
         assert any("save_documento" in e for e in report.errors)
+
+    @pytest.mark.asyncio
+    async def test_llm_providers_exhausted_defere_como_pending(self) -> None:
+        # Cenário real cron 24957305420: Gemini 429 + Groq 429 simultâneo.
+        # Comportamento esperado: salva itens como PENDING (sem llm) para
+        # próxima execução reclassificar — pipeline NÃO derruba.
+        class _ExhaustedLLM:
+            name = "gemini+groq"
+
+            async def classify_batch(self, _items_text: list[str]) -> list[dict[str, Any]]:
+                msg = "Both LLM providers exhausted: gemini, groq"
+                raise LLMProvidersExhaustedError(msg)
+
+        storage = InMemoryStorage(OWNER)
+        report = RunReport(run_id="t", started_at=NOW)
+        items = [_raw("d1"), _raw("d2")]
+        result = await classify_and_store(
+            items,
+            llm_provider=_ExhaustedLLM(),
+            storage=storage,
+            owner_id=OWNER,
+            report=report,
+        )
+        # Resultado: nenhum doc CLASSIFIED (lista de retorno vazia)
+        assert result == []
+        # Mas itens foram salvos como PENDING para reclassificar depois
+        assert report.items_stored == 2
+        assert any("classify_deferred" in e for e in report.errors)
+        # Verifica persistência: docs existem com llm=None e status PENDING
+        all_docs = await storage.list_documentos(limit=10)
+        assert len(all_docs) == 2
+        assert all(d.llm is None for d in all_docs)
+        assert all(d.status == StatusDocumento.PENDING for d in all_docs)
+
+    @pytest.mark.asyncio
+    async def test_llm_exhausted_save_falha_continua_pipeline(self) -> None:
+        # Cobre branch save_deferred_failed: storage também falha durante defer.
+        # Pipeline continua para próximo batch.
+        class _ExhaustedLLM:
+            name = "gemini+groq"
+
+            async def classify_batch(self, _items_text: list[str]) -> list[dict[str, Any]]:
+                raise LLMProvidersExhaustedError("both exhausted")
+
+        storage = InMemoryStorage(OWNER)
+        report = RunReport(run_id="t", started_at=NOW)
+
+        async def _failing_save(_doc: Documento) -> None:
+            raise RuntimeError("firestore offline during defer")
+
+        with patch.object(storage, "save_documento", side_effect=_failing_save):
+            items = [_raw("d1")]
+            result = await classify_and_store(
+                items,
+                llm_provider=_ExhaustedLLM(),
+                storage=storage,
+                owner_id=OWNER,
+                report=report,
+            )
+        assert result == []
+        # report.errors registra o defer; save_deferred_failed vai pro log
+        assert any("classify_deferred" in e for e in report.errors)
 
 
 @pytest.mark.integration
