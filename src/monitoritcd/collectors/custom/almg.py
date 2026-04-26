@@ -27,12 +27,16 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import httpx
 import structlog
 
+from monitoritcd.collectors.custom._common import (
+    parse_iso_date,
+    parse_keywords_batch_config,
+)
 from monitoritcd.core.base_collector import BaseCollector, CollectorError
 
 if TYPE_CHECKING:
@@ -65,27 +69,19 @@ class ALMGCollector(BaseCollector):
             msg = f"modo ALMG inválido em {self.source.id}: {modo}"
             raise CollectorError(msg)
 
-        # selectors são str-only (Source.selectors: dict[str, str]).
-        # Listas/ints serializadas: "kw1|kw2|kw3" e "60".
-        palavras_raw = sel.get("palavras_chave") or "|".join(DEFAULT_KEYWORDS)
-        palavras = [p.strip() for p in palavras_raw.split("|") if p.strip()]
-        if not palavras:
-            msg = f"palavras_chave vazia em {self.source.id}"
-            raise CollectorError(msg)
-
-        try:
-            dias = int(sel.get("dias", str(DEFAULT_DIAS_RECENTES)))
-        except (TypeError, ValueError) as e:
-            msg = f"dias inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        cutoff = datetime.now(UTC) - timedelta(days=dias)
+        # ALMG não usa page_size — passamos default 0 (ignorado pelo coletor).
+        cfg = parse_keywords_batch_config(
+            self.source,
+            default_keywords=DEFAULT_KEYWORDS,
+            default_dias=DEFAULT_DIAS_RECENTES,
+            default_page_size=0,
+        )
 
         # Dedup global por numeroDoc (mesmo doc pode aparecer em múltiplas keywords)
         seen: set[str] = set()
         items: list[RawItem] = []
 
-        for palavra in palavras:
+        for palavra in cfg.palavras:
             url = self._build_url(palavra)
             try:
                 payload = await self.fetch(url)
@@ -122,7 +118,7 @@ class ALMGCollector(BaseCollector):
                 item = self._parse_item(raw, modo=modo)
                 if item is None:
                     continue
-                if item.data_publicacao and item.data_publicacao < cutoff:
+                if item.data_publicacao and item.data_publicacao < cfg.cutoff:
                     continue
                 items.append(item)
 
@@ -131,7 +127,7 @@ class ALMGCollector(BaseCollector):
             source=self.source.id,
             modo=modo,
             count=len(items),
-            keywords=len(palavras),
+            keywords=len(cfg.palavras),
         )
         return items
 
@@ -173,7 +169,7 @@ class ALMGCollector(BaseCollector):
             f"tipoProjeto={urllib.parse.quote(sigla)}&numProjeto={numero}&ano={ano}"
         )
 
-        data_pub = _parse_iso_date(raw.get("dataPublicacao"))
+        data_pub = parse_iso_date(raw.get("dataPublicacao"))
         numero_doc = raw.get("numeroDoc") or f"{sigla}-{numero}-{ano}"
 
         return self.make_raw_item(
@@ -210,18 +206,6 @@ class ALMGCollector(BaseCollector):
             data_pub=data_pub,
             content_for_hash=num_doc,
         )
-
-
-def _parse_iso_date(s: str | None) -> datetime | None:
-    if not s:
-        return None
-    try:
-        parsed = datetime.fromisoformat(s)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed
 
 
 def _parse_compact_date(s: str | None) -> datetime | None:

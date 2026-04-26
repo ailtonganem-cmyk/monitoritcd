@@ -30,12 +30,13 @@ Princípios canônicos:
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import httpx
 import structlog
 
+from monitoritcd.collectors.custom._common import parse_keywords_batch_config
 from monitoritcd.core.base_collector import BaseCollector, CollectorError
 
 if TYPE_CHECKING:
@@ -54,33 +55,20 @@ class ALEPCollector(BaseCollector):
     """Collector ALEP via API JSON (POST /proposicao/filtrar)."""
 
     async def collect(self) -> list[RawItem]:
-        sel = self.source.selectors or {}
-        palavras_raw = sel.get("palavras_chave") or "|".join(DEFAULT_KEYWORDS)
-        palavras = [p.strip() for p in palavras_raw.split("|") if p.strip()]
-        if not palavras:
-            msg = f"palavras_chave vazia em {self.source.id}"
-            raise CollectorError(msg)
-
-        try:
-            dias = int(sel.get("dias", str(DEFAULT_DIAS_RECENTES)))
-        except (TypeError, ValueError) as e:
-            msg = f"dias inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        try:
-            quantidade = int(sel.get("quantidade", str(DEFAULT_QUANTIDADE)))
-        except (TypeError, ValueError) as e:
-            msg = f"quantidade inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        cutoff = datetime.now(UTC) - timedelta(days=dias)
+        cfg = parse_keywords_batch_config(
+            self.source,
+            default_keywords=DEFAULT_KEYWORDS,
+            default_dias=DEFAULT_DIAS_RECENTES,
+            default_page_size=DEFAULT_QUANTIDADE,
+            page_size_key="quantidade",
+        )
 
         seen: set[int] = set()
         items: list[RawItem] = []
 
-        for palavra in palavras:
+        for palavra in cfg.palavras:
             try:
-                lista = await self._post_filtrar(palavra, quantidade)
+                lista = await self._post_filtrar(palavra, cfg.page_size)
             except (CollectorError, httpx.HTTPError) as e:
                 logger.warning(
                     "alep.fetch_failed",
@@ -100,7 +88,7 @@ class ALEPCollector(BaseCollector):
                 item = self._parse_proposicao(raw)
                 if item is None:  # pragma: no cover - defesa redundante (codigo ja validado acima)
                     continue
-                if item.data_publicacao and item.data_publicacao < cutoff:
+                if item.data_publicacao and item.data_publicacao < cfg.cutoff:
                     continue
                 items.append(item)
 
@@ -108,7 +96,7 @@ class ALEPCollector(BaseCollector):
             "alep.collected",
             source=self.source.id,
             count=len(items),
-            keywords=len(palavras),
+            keywords=len(cfg.palavras),
         )
         return items
 

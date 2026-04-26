@@ -34,11 +34,14 @@ from __future__ import annotations
 
 import json
 import urllib.parse
-from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from monitoritcd.collectors.custom._common import (
+    parse_iso_date,
+    parse_keywords_batch_config,
+)
 from monitoritcd.core.base_collector import BaseCollector, CollectorError
 
 if TYPE_CHECKING:
@@ -62,34 +65,20 @@ class SAPLCollector(BaseCollector):
     """
 
     async def collect(self) -> list[RawItem]:
+        cfg = parse_keywords_batch_config(
+            self.source,
+            default_keywords=DEFAULT_KEYWORDS,
+            default_dias=DEFAULT_DIAS_RECENTES,
+            default_page_size=DEFAULT_PAGE_SIZE,
+        )
         sel = self.source.selectors or {}
-
-        palavras_raw = sel.get("palavras_chave") or "|".join(DEFAULT_KEYWORDS)
-        palavras = [p.strip() for p in palavras_raw.split("|") if p.strip()]
-        if not palavras:
-            msg = f"palavras_chave vazia em {self.source.id}"
-            raise CollectorError(msg)
-
-        try:
-            dias = int(sel.get("dias", str(DEFAULT_DIAS_RECENTES)))
-        except (TypeError, ValueError) as e:
-            msg = f"dias inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        try:
-            page_size = int(sel.get("page_size", str(DEFAULT_PAGE_SIZE)))
-        except (TypeError, ValueError) as e:
-            msg = f"page_size inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        cutoff = datetime.now(UTC) - timedelta(days=dias)
         portal_base = sel.get("portal_base", _derive_portal_base(self.source.url))
 
         seen: set[int] = set()
         items: list[RawItem] = []
 
-        for palavra in palavras:
-            url = self._build_url(palavra, page_size)
+        for palavra in cfg.palavras:
+            url = self._build_url(palavra, cfg.page_size)
             try:
                 payload = await self.fetch(url)
             except CollectorError as e:
@@ -125,7 +114,7 @@ class SAPLCollector(BaseCollector):
                 item = self._parse_materia(raw, portal_base=portal_base)
                 if item is None:
                     continue
-                if item.data_publicacao and item.data_publicacao < cutoff:
+                if item.data_publicacao and item.data_publicacao < cfg.cutoff:
                     continue
                 items.append(item)
 
@@ -133,7 +122,7 @@ class SAPLCollector(BaseCollector):
             "sapl.collected",
             source=self.source.id,
             count=len(items),
-            keywords=len(palavras),
+            keywords=len(cfg.palavras),
         )
         return items
 
@@ -154,7 +143,7 @@ class SAPLCollector(BaseCollector):
         # Título: usa `__str__` quando disponível (já formatado: "PL nº 49 de 2024")
         titulo = raw.get("__str__") or f"Matéria {materia_id}"
         ementa = raw.get("ementa") or ""
-        data_apr = _parse_iso_date(raw.get("data_apresentacao"))
+        data_apr = parse_iso_date(raw.get("data_apresentacao"))
 
         # URL pública: portal SAPL serve em /materia/{id} ou /sapl/materia/{id}
         link_backend = raw.get("link_detail_backend") or f"/materia/{materia_id}"
@@ -189,15 +178,3 @@ def _derive_portal_base(api_url: str) -> str:
     else:
         prefix = ""
     return f"{parsed.scheme}://{parsed.netloc}{prefix}"
-
-
-def _parse_iso_date(s: str | None) -> datetime | None:
-    if not s:
-        return None
-    try:
-        parsed = datetime.fromisoformat(s)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed
