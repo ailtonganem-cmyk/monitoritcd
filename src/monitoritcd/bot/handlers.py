@@ -15,6 +15,7 @@ import re
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from monitoritcd.bot.audit import log_bot_action
 from monitoritcd.bot.auth import (
     InvalidConfirmationTokenError,
     TwoStepConfirmation,
@@ -227,6 +228,7 @@ async def _handle_estados_ativar(ctx: BotContext, cmd: ParsedCommand) -> Handler
     uf = cmd.args[1]
     if not UF_ARG_REGEX.match(uf):
         return HandlerResult(text=f"❌ UF inválida: '{uf}'", is_error=True)
+    await log_bot_action(ctx, action="bot.estados.ativar", payload={"uf": uf})
     return HandlerResult(text=f"✅ UF {uf} marcada para ativação.")
 
 
@@ -237,6 +239,11 @@ async def _handle_estados_desativar(ctx: BotContext, cmd: ParsedCommand) -> Hand
     if not UF_ARG_REGEX.match(uf):
         return HandlerResult(text=f"❌ UF inválida: '{uf}'", is_error=True)
     token = ctx.confirmation.issue(f"estados.desativar:{uf}")
+    await log_bot_action(
+        ctx,
+        action="bot.estados.desativar.token",
+        payload={"uf": uf, "token_prefix": token[:4]},
+    )
     return HandlerResult(
         text=(f"⚠️ Confirmar desativação de {uf}?\nUse `/confirmar {token}` em até 60s."),
     )
@@ -271,6 +278,11 @@ async def handle_confirmar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
         ctx.confirmation.consume(token, action)
     except InvalidConfirmationTokenError:
         return HandlerResult(text="❌ Token inválido ou expirado.", is_error=True)
+    await log_bot_action(
+        ctx,
+        action="bot.confirmar",
+        payload={"confirmed_action": action},
+    )
     return HandlerResult(text=f"✅ Ação '{action}' confirmada.")
 
 
@@ -318,7 +330,19 @@ async def _watch_adicionar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
     try:
         await ctx.storage.save_watch(watch)
     except (ValueError, RuntimeError) as e:
+        await log_bot_action(
+            ctx,
+            action="bot.observar.add",
+            payload={"pattern": pattern},
+            result="failure",
+            error=str(e),
+        )
         return HandlerResult(text=f"❌ Erro: {e}", is_error=True)
+    await log_bot_action(
+        ctx,
+        action="bot.observar.add",
+        payload={"watch_id": watch.watch_id, "pattern": pattern},
+    )
     return HandlerResult(
         text=f"✅ Watch criado: '{pattern}' (id={watch.watch_id[:8]})",
     )
@@ -338,6 +362,11 @@ async def _watch_remover(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
             is_error=True,
         )
     await ctx.storage.delete_watch(matches[0].watch_id)
+    await log_bot_action(
+        ctx,
+        action="bot.observar.remove",
+        payload={"watch_id": matches[0].watch_id, "pattern": matches[0].pattern},
+    )
     return HandlerResult(text=f"✅ Watch removido: '{matches[0].pattern}'")
 
 
@@ -406,8 +435,20 @@ async def handle_marcar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
     try:
         await ctx.storage.add_user_tag(doc.doc_id, tag)
     except (ValueError, RuntimeError) as e:
+        await log_bot_action(
+            ctx,
+            action="bot.marcar",
+            payload={"doc_id": doc.doc_id, "tag": tag},
+            result="failure",
+            error=str(e),
+        )
         return HandlerResult(text=f"❌ Erro ao marcar: {e}", is_error=True)
 
+    await log_bot_action(
+        ctx,
+        action="bot.marcar",
+        payload={"doc_id": doc.doc_id, "tag": tag},
+    )
     titulo = doc.original.titulo_raw[:60]
     return HandlerResult(text=f"✅ Tag '{tag}' adicionada ao doc '{titulo}'.")
 
