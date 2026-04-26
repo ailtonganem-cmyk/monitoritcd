@@ -52,11 +52,13 @@ from monitoritcd.collectors import (
     ALEPCollector,
     ALEPECollector,
     ALMGCollector,
+    CamaraDeputadosCollector,
     GenericHTMLCollector,
     GenericRSSCollector,
     LexMLCollector,
     LexMLPortalCollector,
     SAPLCollector,
+    SenadoCollector,
 )
 from monitoritcd.core.models import (
     Documento,
@@ -92,6 +94,8 @@ _PARSERS_TO_COLLECTORS = {
     Parser.ALEP: ALEPCollector,
     Parser.ALEPE: ALEPECollector,
     Parser.SAPL: SAPLCollector,
+    Parser.CAMARA_DEPUTADOS: CamaraDeputadosCollector,
+    Parser.SENADO: SenadoCollector,
 }
 
 

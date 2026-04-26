@@ -1,0 +1,27 @@
+id: senado-processo
+uf: _federal
+nome: "Senado Federal — Processos legislativos (API /processo)"
+tipo: assembleia
+parser: senado
+url: "https://legis.senado.leg.br/dadosabertos/processo"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|herança|sucessão|inventário|holding familiar|planejamento sucessório"
+  dias: "365"
+  page_size: "50"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: true
+notas: |
+  Senado Federal API /dadosabertos/processo (validado 2026-04-26).
+  Substitui legacy /materia/pesquisa/lista (depreciada em 2026-02-01).
+
+  Cobre matérias originadas no Senado, vetos presidenciais (VET),
+  PECs, PLS, etc. relacionadas a ITCD/sucessões/regime de bens.
+
+  Marcado fragile=true porque suporte a `palavraChave` na nova API
+  ainda não foi 100% validado nos testes — coletor faz filtro local
+  por keyword como fallback caso a API ignore o parâmetro.

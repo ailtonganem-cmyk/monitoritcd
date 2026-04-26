@@ -1,0 +1,24 @@
+id: camara-deputados-proposicoes
+uf: _federal
+nome: "Câmara dos Deputados — Proposições (API v2)"
+tipo: assembleia
+parser: camara_deputados
+url: "https://dadosabertos.camara.leg.br/api/v2/proposicoes"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|herança|sucessão|inventário|holding familiar|planejamento sucessório"
+  dias: "365"
+  page_size: "50"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  Câmara dos Deputados API v2 (validado 2026-04-26). Cobre PLs, PLPs, PECs,
+  MPVs federais sobre ITCD/sucessões/regime de bens. Reforma Tributária
+  (PEC 45/2019), LC 87/96, IBS-ITBI, vetos presidenciais, etc.
+
+  Endpoint oficial sem autenticação, atualização diária, paginação por
+  `pagina`/`itens`. Filter via `keywords=` busca em ementa.
