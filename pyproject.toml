@@ -216,6 +216,7 @@ ignore-init-method = true
 ignore-magic = true
 ignore-private = true
 ignore-nested-functions = true
+generate-badge = false
 verbose = 1
 
 # ---------------------------------------------------------------------------
