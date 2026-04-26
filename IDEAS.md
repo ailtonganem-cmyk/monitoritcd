@@ -91,51 +91,51 @@
 
 ## 2. Processamento & Classificação (51–95)
 
-51. [ ] Pré-score por densidade de keywords no texto.
-52. [ ] Pré-score por autoridade da fonte (oficial > especializado > genérico).
-53. [ ] Pré-score por frescor (quanto mais recente, maior peso).
-54. [ ] Pré-score por presença de número de ato extraível (`Lei nº X/AAAA`).
-55. [ ] Cache de classificações por hash do conteúdo (evita reclassificar).
-56. [ ] Detecção de "atualização" vs "novo ato" pelo número.
-57. [ ] Cluster de itens similares (mesmo tema, fontes diferentes, mesmo dia).
-58. [ ] Topic modeling com BERTopic offline (CPU, sem custo).
-59. [ ] Detecção de mudança de alíquota via regex + tabela.
-60. [ ] Extração estruturada de tabelas em PDF de DOE.
-61. [ ] Detecção de "sanção" vs "veto" no texto da lei.
-62. [ ] Identificação automática do relator de PLs.
-63. [ ] Tracking de tramitação (estágio atual mudou desde última coleta).
-64. [ ] Histórico de versões de Instrução Normativa.
-65. [ ] Diff automático entre versões (palavras adicionadas/removidas).
-66. [ ] Detecção de revogação (`"revoga a Lei X"`).
-67. [ ] Construção de grafo de citações entre normas e decisões.
-68. [ ] Identificação de "leading case" em jurisprudência.
-69. [ ] Sentiment analysis simples (pro-fisco vs pro-contribuinte).
-70. [ ] Extração de jurisprudência citada na fundamentação.
-71. [ ] Identificação de magistrado/desembargador relator.
-72. [ ] Descoberta de palavras-chave dinâmicas (term-frequency em docs aprovados).
-73. [ ] Score de "polêmica" pelo volume de cobertura jornalística.
-74. [ ] Detecção de embargos infringentes / RE / REsp.
-75. [ ] Identificação de matéria submetida a regime de repetitivo.
-76. [ ] Tracking de "Tema" STF/STJ por número.
-77. [ ] Cross-reference com legislação anterior citada.
-78. [ ] Extração de valores monetários no texto (impacto fiscal).
-79. [ ] Detecção de "planejamento sucessório" como tema central.
-80. [ ] Detecção de "holding familiar" como veículo discutido.
-81. [ ] Detecção de "doação com reserva de usufruto".
-82. [ ] Detecção de "testamento" como tema.
-83. [ ] Análise de jurisprudência sobre offshore/exterior.
-84. [ ] Detecção de discussão sobre alíquota progressiva.
-85. [ ] Tracking de PEC sobre ITCD federal (com unificação nacional).
-86. [ ] Análise de pareceres da PGFN sobre o tema.
-87. [ ] Detecção de "modulação de efeitos" em decisões.
-88. [ ] Reclassificação semanal automática com prompt revisado.
-89. [ ] Comparação Gemini vs Groq (medida de consistência da classificação).
-90. [ ] Detecção de inconsistências entre fontes (mesmo ato, dados divergentes).
-91. [ ] Identificação do "fato gerador" no texto.
-92. [ ] Identificação da "base de cálculo".
-93. [ ] Identificação de "isenção" como tema.
-94. [ ] Identificação de "imunidade" tributária como tema.
-95. [ ] Detecção de menções a GIA-ITCMD e outras obrigações acessórias.
+51. [x] Pré-score por densidade de keywords no texto. ✅ pré-existente (filters/prescore.py)
+52. [x] Pré-score por autoridade da fonte (oficial > especializado > genérico). ✅ pré-existente
+53. [x] Pré-score por frescor (quanto mais recente, maior peso). ✅ pré-existente
+54. [x] Pré-score por presença de número de ato extraível (`Lei nº X/AAAA`). ✅ 2026-04-26 (W_ACT_BONUS)
+55. [x] Cache de classificações por hash do conteúdo (evita reclassificar). ✅ pré-existente (dedup.py content_hash)
+56. [ ] Detecção de "atualização" vs "novo ato" pelo número. — TODO: requer estado prev cross-execution
+57. [x] Cluster de itens similares (mesmo tema, fontes diferentes, mesmo dia). ✅ pré-existente (dedup.assign_clusters fuzzy)
+58. [ ] Topic modeling com BERTopic offline (CPU, sem custo). — TODO ⚠️ triagem desaconselhou
+59. [x] Detecção de mudança de alíquota via regex + tabela. ✅ 2026-04-26 (detect_aliquotas)
+60. [ ] Extração estruturada de tabelas em PDF de DOE. — TODO: requer pdfplumber (fora do MVP)
+61. [x] Detecção de "sanção" vs "veto" no texto da lei. ✅ 2026-04-26 (detect_sancao/detect_veto)
+62. [x] Identificação automática do relator de PLs. ✅ 2026-04-26 (detect_relator)
+63. [ ] Tracking de tramitação (estágio atual mudou desde última coleta). — TODO: requer estado prev
+64. [ ] Histórico de versões de Instrução Normativa. — TODO: requer estado prev
+65. [ ] Diff automático entre versões (palavras adicionadas/removidas). — TODO: requer estado prev
+66. [x] Detecção de revogação (`"revoga a Lei X"`). ✅ 2026-04-26 (detect_revogacao) ⭐ Tier 2
+67. [ ] Construção de grafo de citações entre normas e decisões. — TODO ⚠️ triagem desaconselhou
+68. [ ] Identificação de "leading case" em jurisprudência. — TODO: heurística complexa
+69. [ ] Sentiment analysis simples (pro-fisco vs pro-contribuinte). — TODO: requer ML (fora do MVP)
+70. [ ] Extração de jurisprudência citada na fundamentação. — TODO: parser específico de acórdão
+71. [ ] Identificação de magistrado/desembargador relator. ✅ 2026-04-26 (detect_relator cobre)
+72. [ ] Descoberta de palavras-chave dinâmicas (term-frequency em docs aprovados). — TODO: requer DB query
+73. [ ] Score de "polêmica" pelo volume de cobertura jornalística. — TODO: cross-source (requer DB)
+74. [x] Detecção de embargos infringentes / RE / REsp. ✅ 2026-04-26 (detect_recurso_tipo)
+75. [x] Identificação de matéria submetida a regime de repetitivo. ✅ 2026-04-26 (detect_repetitivo)
+76. [x] Tracking de "Tema" STF/STJ por número. ✅ 2026-04-26 (detect_temas_stf_stj)
+77. [x] Cross-reference com legislação anterior citada. ✅ 2026-04-26 (detect_normas_citadas)
+78. [x] Extração de valores monetários no texto (impacto fiscal). ✅ 2026-04-26 (detect_valores_monetarios)
+79. [x] Detecção de "planejamento sucessório" como tema central. ✅ 2026-04-26
+80. [x] Detecção de "holding familiar" como veículo discutido. ✅ 2026-04-26
+81. [x] Detecção de "doação com reserva de usufruto". ✅ 2026-04-26
+82. [x] Detecção de "testamento" como tema. ✅ 2026-04-26
+83. [x] Análise de jurisprudência sobre offshore/exterior. ✅ 2026-04-26
+84. [x] Detecção de discussão sobre alíquota progressiva. ✅ 2026-04-26
+85. [x] Tracking de PEC sobre ITCD federal (com unificação nacional). ✅ 2026-04-26 ⭐ Tier 2
+86. [ ] Análise de pareceres da PGFN sobre o tema. — TODO: cross-fonte (requer agregação)
+87. [x] Detecção de "modulação de efeitos" em decisões. ✅ 2026-04-26
+88. [ ] Reclassificação semanal automática com prompt revisado. — TODO: requer cron job
+89. [ ] Comparação Gemini vs Groq (medida de consistência). — TODO: requer cron job
+90. [ ] Detecção de inconsistências entre fontes (mesmo ato, dados divergentes). — TODO: cross-fonte
+91. [x] Identificação do "fato gerador" no texto. ✅ 2026-04-26
+92. [x] Identificação da "base de cálculo". ✅ 2026-04-26
+93. [x] Identificação de "isenção" como tema. ✅ 2026-04-26
+94. [x] Identificação de "imunidade" tributária como tema. ✅ 2026-04-26
+95. [x] Detecção de menções a GIA-ITCMD e outras obrigações acessórias. ✅ 2026-04-26
 
 ---
 
