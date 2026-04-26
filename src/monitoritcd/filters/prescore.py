@@ -5,11 +5,12 @@ Itens com score ≥ `cutoff` (default 0.3) seguem para classificação LLM.
 Demais são marcados como descartados sem custo.
 
 Componentes (cada ∈ [0, 1]):
-- `density`:    densidade de keywords no texto.
-- `authority`:  confiança da fonte (oficial > especializado > genérico).
-- `freshness`:  proximidade da data de publicação.
+- `density`:    densidade de keywords no texto. (#51 IDEAS.md)
+- `authority`:  confiança da fonte (oficial > especializado > genérico). (#52 IDEAS.md)
+- `freshness`:  proximidade da data de publicação. (#53 IDEAS.md)
+- `act_bonus`:  bônus se o título contém número de ato extraível. (#54 IDEAS.md)
 
-Score final = `0.4 * density + 0.4 * authority + 0.2 * freshness`.
+Score final = `0.35 * density + 0.35 * authority + 0.2 * freshness + 0.1 * act_bonus`.
 """
 
 from __future__ import annotations
@@ -18,14 +19,16 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
 from monitoritcd.core.models import TipoFonte
+from monitoritcd.filters.thematic_detector import detect_numero_ato
 
 if TYPE_CHECKING:
     from monitoritcd.core.models import RawItem, Source
 
 # Pesos da combinação linear
-W_DENSITY: Final[float] = 0.4
-W_AUTHORITY: Final[float] = 0.4
+W_DENSITY: Final[float] = 0.35
+W_AUTHORITY: Final[float] = 0.35
 W_FRESHNESS: Final[float] = 0.2
+W_ACT_BONUS: Final[float] = 0.1
 
 # Mínimos
 MIN_FRESHNESS_SCORE: Final[float] = 0.3
@@ -79,12 +82,21 @@ def _freshness_score(data_pub: datetime | None) -> float:
     return max(MIN_FRESHNESS_SCORE, 1.0 - age_days / MAX_FRESHNESS_AGE_DAYS)
 
 
+def _act_bonus_score(titulo: str) -> float:
+    """#54 — bônus se título contém número de ato (Lei XXX/AAAA).
+
+    Sinal forte: títulos com número de ato extraível são quase sempre
+    legislação real, vs. notícias de opinião sem refêrencia legal.
+    """
+    return 1.0 if detect_numero_ato(titulo) else 0.0
+
+
 def prescore(
     item: RawItem,
     source: Source,
     matched_keywords: list[str],
 ) -> float:
-    """Score 0-1 combinando density, authority e freshness.
+    """Score 0-1 combinando density, authority, freshness e act_bonus.
 
     Args:
         item: RawItem coletado.
@@ -98,7 +110,8 @@ def prescore(
     d = _density_score(text, matched_keywords)
     a = _authority_score(source)
     f = _freshness_score(item.data_publicacao)
-    return W_DENSITY * d + W_AUTHORITY * a + W_FRESHNESS * f
+    b = _act_bonus_score(item.titulo_raw or "")
+    return W_DENSITY * d + W_AUTHORITY * a + W_FRESHNESS * f + W_ACT_BONUS * b
 
 
 def passes_cutoff(score: float, cutoff: float = DEFAULT_CUTOFF) -> bool:
