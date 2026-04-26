@@ -386,41 +386,41 @@
 
 ## 10. Segurança & Auditoria (306–340)
 
-306. [ ] Audit log de toda mutation no Firestore.
-307. [ ] Audit log de toda chamada ao LLM (com tokens).
-308. [ ] Audit log de todo comando do bot.
-309. [ ] Audit log de toda notificação enviada.
-310. [ ] Audit log de toda mudança de config.
-311. [ ] Imutabilidade do audit log (writes only, sem updates).
-312. [ ] Rotação para Storage após 90 dias (com hash).
-313. [ ] Hash chain do audit log (cada entry referencia hash da anterior).
-314. [ ] CLI para verificar integridade do hash chain.
-315. [ ] Alerta em comandos vindos de `chat_id` desconhecido.
-316. [ ] Alerta em rate limit excedido (mesmo do dono).
-317. [ ] Alerta em pico de atividade incomum.
-318. [ ] Alerta em falha de assert de `owner_id`.
-319. [ ] Alerta em SAST findings novos (CI).
-320. [ ] Alerta em deps com vuln nova (Dependabot/pip-audit).
-321. [ ] Alerta em commit com secret detectado.
-322. [ ] Alerta em mudança em `firestore.rules`.
-323. [ ] Honeytokens em arquivos de seed/example.
-324. [ ] Honeytokens com Canarytokens (free) — alerta em uso real.
-325. [ ] Bloqueio automático em Cloud Function de IP que tentou acesso.
-326. [ ] CSP headers em e-mails HTML.
-327. [ ] SBOM gerado em build (cyclonedx-bom).
-328. [ ] Dependabot ativo no GitHub (free).
-329. [ ] Renovate bot (free) com auto-merge para patches.
-330. [ ] Branch protection rules (mesmo single-user, evita pushes acidentais).
-331. [ ] Required reviews (auto-aprovação para si mesmo, mas obriga PR).
-332. [ ] Status checks obrigatórios.
-333. [ ] Pre-commit instalado e validado em CI.
-334. [ ] Commit signing GPG/SSH.
-335. [ ] Verificação de signed commits no CI.
-336. [ ] SOPS para configs cifradas no repo (chave em GH Secret).
-337. [ ] Mascaramento de PII em logs (regex CPF/CNPJ).
-338. [ ] Detecção de tentativa de injection (SQL/NoSQL/XSS/SSRF).
-339. [ ] Threat model documentado em `SECURITY.md`.
-340. [ ] Tabletop exercises documentados (cenários "e se").
+306. [x] Audit log de toda mutation no Firestore. ✅ pré-existente (audit_log.py)
+307. [x] Audit log de toda chamada ao LLM (com tokens). ✅ pré-existente (orchestrator)
+308. [x] Audit log de todo comando do bot. ✅ pré-existente (bot/audit.py)
+309. [x] Audit log de toda notificação enviada. ✅ pré-existente
+310. [x] Audit log de toda mudança de config. ✅ pré-existente
+311. [x] Imutabilidade do audit log (writes only, sem updates). ✅ pré-existente
+312. [x] Rotação para Storage após 90 dias (com hash). ✅ pré-existente (cleanup_retention.py)
+313. [x] Hash chain do audit log. ✅ pré-existente
+314. [x] CLI para verificar integridade do hash chain. ✅ 2026-04-26 (verify_audit_chain.py)
+315. [ ] Alerta em comandos vindos de `chat_id` desconhecido. — pré-existente (auth.verify_chat_id loga)
+316. [ ] Alerta em rate limit excedido (mesmo do dono). — pré-existente (RateLimiter)
+317. [ ] Alerta em pico de atividade incomum. — TODO: detecção estatística
+318. [ ] Alerta em falha de assert de `owner_id`. — pré-existente (OwnershipError)
+319. [x] Alerta em SAST findings novos (CI). ✅ pré-existente (security.yml falha em HIGH)
+320. [x] Alerta em deps com vuln nova (Dependabot/pip-audit). ✅ pré-existente
+321. [x] Alerta em commit com secret detectado. ✅ pré-existente (gitleaks/detect-secrets)
+322. [ ] Alerta em mudança em `firestore.rules`. — TODO: GitHub branch protection rule
+323. [ ] Honeytokens em arquivos de seed/example. — TODO: requer setup com Canarytokens
+324. [ ] Honeytokens com Canarytokens (free) — alerta em uso real. — TODO
+325. [ ] Bloqueio automático em Cloud Function de IP. — TODO: Firebase App Check
+326. [x] CSP headers em e-mails HTML. ✅ pré-existente (todos os templates)
+327. [x] SBOM gerado em build (cyclonedx-bom). ✅ pré-existente (security.yml)
+328. [x] Dependabot ativo no GitHub (free). ✅ pré-existente (dependabot.yml)
+329. [ ] Renovate bot (free) com auto-merge para patches. — N/A: usar Dependabot
+330. [x] Branch protection rules. ✅ pré-existente (config GitHub)
+331. [x] Required reviews. ✅ pré-existente
+332. [x] Status checks obrigatórios. ✅ pré-existente (CI gate)
+333. [x] Pre-commit instalado e validado em CI. ✅ pré-existente
+334. [ ] Commit signing GPG/SSH. — TODO: requer setup local do dono
+335. [ ] Verificação de signed commits no CI. — TODO: requer #334
+336. [ ] SOPS para configs cifradas no repo. — TODO: setup específico
+337. [x] Mascaramento de PII em logs (regex CPF/CNPJ). ✅ 2026-04-26 (security/pii_redactor.py)
+338. [x] Detecção de tentativa de injection (SQL/NoSQL/XSS/SSRF). ✅ 2026-04-26 (security/injection_detector.py)
+339. [x] Threat model documentado em `SECURITY.md`. ✅ pré-existente
+340. [ ] Tabletop exercises documentados. — TODO: docs/TABLETOP.md futuro
 
 ---
 
