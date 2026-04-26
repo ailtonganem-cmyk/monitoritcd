@@ -33,6 +33,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import secrets
 
 import functions_framework
 import httpx
@@ -109,7 +110,8 @@ def bot_webhook(request: Request) -> Response:
     # Auth: X-Telegram-Bot-Api-Secret-Token deve bater com TELEGRAM_WEBHOOK_SECRET
     expected = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
     received = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
-    if not expected or received != expected:
+    # V4 (Pentest): constant-time compare contra timing oracle
+    if not expected or not secrets.compare_digest(received, expected):
         logger.warning("auth failed from %s", request.remote_addr)
         return Response("unauthorized", status=401)
 

@@ -60,9 +60,19 @@ def export_firestore(owner_id: str) -> dict[str, Any]:
 
 
 def encrypt_with_age(input_bytes: bytes, recipient: str) -> bytes:
-    """Cifra `input_bytes` com `age` usando `recipient` (chave pública)."""
+    """Cifra `input_bytes` com `age` usando `recipient` (chave pública).
+
+    V11 (Pentest): resolve binário via `shutil.which` para evitar PATH
+    hijacking se atacante puder escrever em ~/.local/bin/age.
+    """
+    import shutil  # noqa: PLC0415
+
+    age_bin = shutil.which("age")
+    if age_bin is None:
+        msg = "Binário `age` não encontrado em PATH"
+        raise RuntimeError(msg)
     proc = subprocess.run(
-        ["age", "--encrypt", "--recipient", recipient, "--output", "-"],
+        [age_bin, "--encrypt", "--recipient", recipient, "--output", "-"],
         input=input_bytes,
         capture_output=True,
         check=True,

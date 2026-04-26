@@ -106,8 +106,23 @@ def _saudacao_dinamica(now: datetime) -> str:
 
 
 def _format_subject(template: str, *, count: int, date_str: str, label: str) -> str:
-    """#110 — subject com placeholders simples ({count}, {date}, {label})."""
-    return template.format(count=count, date=date_str, label=label)
+    """#110 — subject com placeholders simples ({count}, {date}, {label}).
+
+    V13 (Pentest): troca `str.format` por `string.Template` para evitar
+    format string introspection (ex: `{count.__class__.__mro__}`).
+    `string.Template` aceita apenas `$name` e `${name}`, sem acesso a
+    attrs/items.
+    """
+    import string  # noqa: PLC0415
+
+    # Compatibilidade retroativa: aceita `{count}` (legacy) convertendo
+    # para `$count`. Templates novos devem usar `$name` diretamente.
+    converted = (
+        template.replace("{count}", "$count")
+        .replace("{date}", "$date")
+        .replace("{label}", "$label")
+    )
+    return string.Template(converted).safe_substitute(count=count, date=date_str, label=label)
 
 
 def _render_item_context(doc: Documento) -> dict[str, str]:

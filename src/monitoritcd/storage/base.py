@@ -69,6 +69,14 @@ class StorageProtocol(Protocol):
         """
         ...
 
+    async def remove_user_tag(self, doc_id: str, tag: str) -> None:
+        """V6 (Pentest): remove tag pessoal do dono. Idempotente.
+
+        Operação atômica que preserva `original` write-once. Não levanta
+        erro se a tag não existir (idempotência).
+        """
+        ...
+
     async def exists_by_hash(self, content_hash: str) -> bool:
         """True se há doc com este content_hash do dono."""
         ...

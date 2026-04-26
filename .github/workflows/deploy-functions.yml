@@ -153,6 +153,11 @@ jobs:
             --env-vars-file=/tmp/env.yaml \
             --project=$PROJECT_ID
 
+          # V9 (Pentest): apaga env.yaml com secrets do runner imediatamente
+          # após deploy. Defense-in-depth contra runner comprometido /
+          # leak via cache. `shred -u` sobrescreve antes de unlink.
+          shred -u /tmp/env.yaml 2>/dev/null || rm -f /tmp/env.yaml
+
       - name: Print URLs
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}

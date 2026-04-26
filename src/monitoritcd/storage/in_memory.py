@@ -127,6 +127,17 @@ class InMemoryStorage:
         new_tags = [*doc.user_tags, tag]
         self._documentos[doc_id] = doc.model_copy(update={"user_tags": new_tags})
 
+    async def remove_user_tag(self, doc_id: str, tag: str) -> None:
+        """V6 (Pentest): remoção atômica que preserva `original` write-once."""
+        doc = self._documentos.get(doc_id)
+        if doc is None:
+            msg = f"Documento não encontrado: {doc_id}"
+            raise DocumentNotFoundError(msg)
+        if tag not in doc.user_tags:
+            return  # idempotente
+        new_tags = [t for t in doc.user_tags if t != tag]
+        self._documentos[doc_id] = doc.model_copy(update={"user_tags": new_tags})
+
     async def exists_by_hash(self, content_hash: str) -> bool:
         return any(d.original.content_hash == content_hash for d in self._documentos.values())
 

@@ -74,6 +74,11 @@ class GenericHTMLCollector(BaseCollector):
         # URLs relativas → resolver contra a URL da fonte
         link = urljoin(self.source.url, link_raw)
 
+        # V12 (Pentest): rejeita schemes não-HTTPS após resolução
+        # (urljoin pode preservar javascript:, data:, file: se o input tinha)
+        if not link.lower().startswith(("https://", "http://")):
+            return None
+
         return self.make_raw_item(
             titulo=titulo,
             url=link,

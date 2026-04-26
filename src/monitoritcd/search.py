@@ -49,6 +49,17 @@ MAX_RESULTS: Final[int] = 100
 DEFAULT_FUZZY_THRESHOLD: Final[float] = 0.7
 SIMILAR_THRESHOLD: Final[float] = 0.5
 
+# Mitigação ReDoS (Pentest 2026-04-26 V1 / Alta).
+# Python `re` não tem timeout nativo. Padrões catastróficos como
+# `(a+)+$` causam backtracking exponencial. Limites defensivos:
+# - Pattern não pode ter quantificador aninhado óbvio.
+# - Comprimento total do pattern bound em MAX_QUERY_LENGTH.
+# - Aviso: para defesa estrita, considere lib externa `regex` com timeout.
+RE_NESTED_QUANTIFIER: Final[re.Pattern[str]] = re.compile(
+    r"\([^)]*[+*?]\)[+*?]"  # ex: (a+)+, (.*)*
+)
+MAX_REGEX_BACKREFS: Final[int] = 3
+
 # #261 — Normalização de número de ato
 RE_NUMERO_NORMALIZE: Final[re.Pattern[str]] = re.compile(
     r"(?:lei|decreto|portaria|resolu\w+|instru\w+|in)?\s*"
@@ -357,6 +368,20 @@ def more_like_this(
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+def _validate_regex_safety(pattern: str) -> None:
+    """Pentest V1: rejeita padrões catastróficos antes da compilação.
+
+    Bloqueia quantificadores aninhados (ex: `(a+)+`) e backreferences
+    excessivas que costumam levar a ReDoS exponencial em `re`.
+    """
+    if RE_NESTED_QUANTIFIER.search(pattern):
+        msg = "Regex insegura: quantificador aninhado (ex: '(a+)+'). Reescreva sem aninhamento."
+        raise ValueError(msg)
+    if pattern.count("\\1") + pattern.count("\\2") + pattern.count("\\3") > MAX_REGEX_BACKREFS:
+        msg = f"Regex com mais de {MAX_REGEX_BACKREFS} backreferences (ReDoS risco)."
+        raise ValueError(msg)
+
+
 def regex_search(
     docs: Sequence[Documento],
     pattern: str,
@@ -366,9 +391,13 @@ def regex_search(
     """#280 — Busca regex avançada (poweruser).
 
     Princípio 1: pattern compilado com timeout implícito (Python re não
-    tem timeout nativo, mas limit + max_length defendem ReDoS leve).
+    tem timeout nativo). Defesas contra ReDoS:
+    - `_validate_regex_safety` rejeita quantificadores aninhados óbvios
+    - `_validate_query` força MAX_QUERY_LENGTH
+    - Search limit cap previne degradação prolongada
     """
     pattern = _validate_query(pattern)
+    _validate_regex_safety(pattern)
     try:
         rgx = re.compile(pattern, re.IGNORECASE)
     except re.error as e:

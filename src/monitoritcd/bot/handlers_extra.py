@@ -27,6 +27,7 @@ Princípios canônicos aplicados:
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime, timedelta
 from typing import Final
 
 from monitoritcd.bot.handlers import (
@@ -36,6 +37,15 @@ from monitoritcd.bot.handlers import (
     ParsedCommand,
 )
 from monitoritcd.core import limits as _limits
+
+
+def _parse_duration_to_timedelta(duration: str) -> timedelta:
+    """V5 (Pentest): converte '7d', '2w', '1m', '1y' em timedelta."""
+    n = int(duration[:-1])
+    unit = duration[-1].lower()
+    days = {"d": 1, "w": 7, "m": 30, "y": 365}[unit]
+    return timedelta(days=n * days)
+
 
 # UF estrita: apenas as 27 UFs brasileiras válidas
 UF_STRICT_REGEX: Final[re.Pattern[str]] = re.compile(_limits.UF_REGEX)
@@ -96,12 +106,23 @@ async def handle_silenciar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
     if sub == "remover":
         if len(cmd.args) < MIN_DESMARCAR_ARGS:
             return HandlerResult(text="❌ Use: `/silenciar remover <chave>`", is_error=True)
-        # Remoção real depende de schema; resposta validativa
-        return HandlerResult(
-            text=f"✓ Silenciamento `{cmd.args[1]}` agendado para remoção (próxima execução)."
+        # V5 (Pentest): persistência real
+        chave = cmd.args[1]
+        active = await ctx.storage.get_active_states()
+        if active is None or chave not in active.silenced_until:
+            return HandlerResult(text=f"⚠️ Silenciamento `{chave}` não estava ativo.")
+        new_silenced = {k: v for k, v in active.silenced_until.items() if k != chave}
+        updated = active.model_copy(
+            update={
+                "silenced_until": new_silenced,
+                "updated_at": datetime.now(UTC),
+                "updated_by": "bot:OWNER",
+            }
         )
+        await ctx.storage.save_active_states(updated)
+        return HandlerResult(text=f"✓ Silenciamento `{chave}` removido.")
 
-    # /silenciar UF=SP 7d (validação de formato apenas; persistência delegada)
+    # /silenciar UF=SP 7d — V5 (Pentest): persistência real
     if "=" in sub and len(cmd.args) >= MIN_DESMARCAR_ARGS:
         chave, _, valor = sub.partition("=")
         duracao = cmd.args[1]
@@ -114,7 +135,31 @@ async def handle_silenciar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
             )
         if chave == "UF" and not UF_STRICT_REGEX.match(valor):
             return HandlerResult(text=f"❌ UF inválida: {valor}", is_error=True)
-        return HandlerResult(text=f"🔕 Silenciamento de `{chave}={valor}` por {duracao} agendado.")
+
+        # Persiste em ActiveStatesConfig.silenced_until
+        active = await ctx.storage.get_active_states()
+        if active is None:
+            return HandlerResult(
+                text="❌ Config inicial não criada. Rode `/estados ativar SP` primeiro.",
+                is_error=True,
+            )
+        until = datetime.now(UTC) + _parse_duration_to_timedelta(duracao)
+        # Schema atual usa Dict[UFCode, datetime]. Para tipo/tag, gravamos com prefixo
+        # mas só UF é canonicalmente suportada pelo schema; tipo/tag ficam em chave composta
+        key_to_persist = valor if chave == "UF" else f"{chave}:{valor}"
+        new_silenced = {**active.silenced_until, key_to_persist: until}
+        updated = active.model_copy(
+            update={
+                "silenced_until": new_silenced,
+                "updated_at": datetime.now(UTC),
+                "updated_by": "bot:OWNER",
+            }
+        )
+        await ctx.storage.save_active_states(updated)
+        msg_silenciamento = (
+            f"🔕 Silenciamento de `{chave}={valor}` por {duracao} aplicado (até {until.date()})."
+        )
+        return HandlerResult(text=msg_silenciamento)
 
     return HandlerResult(text="❌ Argumentos inválidos.", is_error=True)
 
@@ -140,14 +185,8 @@ async def handle_desmarcar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
         return HandlerResult(text=f"❌ Documento `{doc_id}` não encontrado.", is_error=True)
 
     if tag in doc.user_tags:
-        # storage.remove_user_tag não existe; lógica inversa: refiltrar
-        new_tags = [t for t in doc.user_tags if t != tag]
-        # Persistência inline via re-save (workaround simples)
-        doc_dict = doc.model_dump()
-        doc_dict["user_tags"] = new_tags
-        from monitoritcd.core.models import Documento  # noqa: PLC0415
-
-        await ctx.storage.save_documento(Documento(**doc_dict))
+        # V6 (Pentest): usa storage.remove_user_tag — atômico, preserva `original`
+        await ctx.storage.remove_user_tag(doc_id, tag)
         return HandlerResult(text=f"✓ Tag `{tag}` removida de `{doc_id}`.")
     return HandlerResult(text=f"⚠️ Tag `{tag}` não estava em `{doc_id}`.")
 

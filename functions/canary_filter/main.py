@@ -32,6 +32,7 @@ import ipaddress
 import logging
 import os
 import re
+import secrets
 from typing import Any
 
 import functions_framework
@@ -151,7 +152,8 @@ def canary_filter(request: Request) -> Response:
     if expected_token:
         # Token via query param OU header (Canarytokens.org limited)
         received = request.args.get("token") or request.headers.get("X-Canary-Filter-Token", "")
-        if received != expected_token:
+        # V4 (Pentest): constant-time compare contra timing oracle
+        if not received or not secrets.compare_digest(received, expected_token):
             logger.warning("auth failed from %s", request.remote_addr)
             return Response("unauthorized", status=401)
 

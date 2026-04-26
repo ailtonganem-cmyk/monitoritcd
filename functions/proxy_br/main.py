@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import logging
 import os
+import secrets
 from urllib.parse import urlparse
 
 import functions_framework
@@ -84,7 +85,8 @@ def proxy_br(request: Request) -> Response:
         return Response("server misconfigured", status=500)
 
     received_token = request.headers.get("X-Proxy-Token", "")
-    if not received_token or received_token != expected_token:
+    # V4 (Pentest): constant-time compare contra timing oracle
+    if not received_token or not secrets.compare_digest(received_token, expected_token):
         logger.warning("auth failed from %s", request.remote_addr)
         return Response("unauthorized", status=401)
 
