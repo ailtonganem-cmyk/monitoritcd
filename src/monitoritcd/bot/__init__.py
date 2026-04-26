@@ -11,7 +11,6 @@ from __future__ import annotations
 
 from monitoritcd.bot.auth import (
     BotAuthError,
-    ConfirmationToken,
     RateLimiter,
     TwoStepConfirmation,
     UnauthorizedChatError,
@@ -26,7 +25,6 @@ from monitoritcd.bot.handlers import (
 __all__ = [
     "BotAuthError",
     "BotContext",
-    "ConfirmationToken",
     "HandlerResult",
     "RateLimiter",
     "TwoStepConfirmation",
