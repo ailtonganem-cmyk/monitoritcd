@@ -627,3 +627,17 @@ class TestALMGCollector:
         assert _parse_compact_date("") is None
         assert _parse_compact_date("notadate") is None
         assert _parse_compact_date("20260230") is None  # 30 fev: dia inválido
+
+    def test_iso_date_helper_paths(self) -> None:
+        from monitoritcd.collectors.custom.almg import _parse_iso_date  # noqa: PLC0415
+
+        assert _parse_iso_date(None) is None
+        assert _parse_iso_date("") is None
+        assert _parse_iso_date("nao-eh-iso") is None  # ValueError
+        # naive -> default UTC
+        d = _parse_iso_date("2026-04-25T10:00:00")
+        assert d is not None and d.tzinfo is not None
+        # com tz preserva
+        d2 = _parse_iso_date("2026-04-25T10:00:00+02:00")
+        assert d2 is not None and d2.utcoffset() is not None
+        assert d2.utcoffset().total_seconds() == 2 * 3600  # type: ignore[union-attr]

@@ -175,6 +175,15 @@ class TestALEPCollector:
                 items = await c.collect()
         assert items == []
 
+    def test_parse_proposicao_codigo_nao_int_retorna_none(self) -> None:
+        # Linha 153 do alep.py: _parse_proposicao retorna None se codigo nao-int.
+        # Cobre o early return defensivo que normalmente nao e' alcancado via
+        # collect() (ja filtra antes), mas existe para chamadas diretas futuras.
+        c = ALEPCollector(_src())
+        assert c._parse_proposicao({"codigo": "string", "ementa": "x"}) is None
+        assert c._parse_proposicao({"codigo": None}) is None
+        assert c._parse_proposicao({}) is None
+
     @pytest.mark.asyncio
     async def test_iso_date_with_offset_parsed(self) -> None:
         from monitoritcd.collectors.custom.alep import _parse_iso_date  # noqa: PLC0415
