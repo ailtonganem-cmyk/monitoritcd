@@ -293,18 +293,30 @@ class BaseCollector(ABC):
         texto: str | None = None,
         data_pub: datetime | None = None,
         content_for_hash: str | None = None,
+        sanitize: bool = True,
     ) -> RawItem:
         """Helper para construir RawItem com hash automático.
+
+        Args:
+            sanitize: V7 (Pentest) — aplica `sanitize_html` em `texto`
+                antes de criar RawItem. Defesa adicional além do
+                Jinja2 autoescape nos templates. Default True.
 
         `content_for_hash` permite estabilidade entre runs: se passado,
         determinístico; senão, usa fallback `source_id|url|titulo`.
         """
+        from monitoritcd.core.sanitize import sanitize_html  # noqa: PLC0415
+
         hash_input = content_for_hash if content_for_hash else f"{self.source.id}|{url}|{titulo}"
+        # V7 (Pentest): sanitiza HTML em texto_raw antes de armazenar.
+        # `<script>`, event handlers, etc. removidos; defesa contra XSS
+        # storage caso template futuro use {{ texto_raw|safe }}.
+        texto_safe = sanitize_html(texto) if (sanitize and texto and "<" in texto) else texto
         return RawItem(
             source_id=self.source.id,
             titulo_raw=titulo,
             url=url,
-            texto_raw=texto,
+            texto_raw=texto_safe,
             data_publicacao=data_pub,
             fetched_at=datetime.now(UTC),
             content_hash=content_hash(hash_input),

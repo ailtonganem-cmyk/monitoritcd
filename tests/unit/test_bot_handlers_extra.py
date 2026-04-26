@@ -118,7 +118,20 @@ class TestSilenciar:
 
     @pytest.mark.asyncio
     async def test_uf_format(self) -> None:
+        # V5 (Pentest): persistência requer ActiveStatesConfig pré-existente
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import ActiveStatesConfig  # noqa: PLC0415
+
         ctx = await _ctx_with_doc()
+        await ctx.storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id="o",
+                active_uf=["SP"],
+                updated_at=datetime.now(UTC),
+                updated_by="test",
+            )
+        )
         r = await handle_silenciar(ctx, _cmd("silenciar", "UF=SP", "7d"))
         assert "Silenciamento" in r.text
 

@@ -138,6 +138,35 @@ class FirestoreStorage:
         self._assert_owner(data.get("owner_id", ""))
         await ref.update({"status": status.value})
 
+    async def add_user_tag(self, doc_id: str, tag: str) -> None:
+        """V6 (Pentest): adiciona tag preservando `original` write-once.
+
+        Usa update atômico em campo `user_tags` (firestore ArrayUnion).
+        """
+        from google.cloud.firestore import ArrayUnion  # noqa: PLC0415
+
+        ref = self._client.collection(COLLECTION_DOCUMENTOS).document(doc_id)
+        snapshot = await ref.get()
+        if not snapshot.exists:
+            msg = f"Documento não encontrado: {doc_id}"
+            raise ValueError(msg)
+        data = snapshot.to_dict() or {}
+        self._assert_owner(data.get("owner_id", ""))
+        await ref.update({"user_tags": ArrayUnion([tag])})
+
+    async def remove_user_tag(self, doc_id: str, tag: str) -> None:
+        """V6 (Pentest): remove tag preservando `original` write-once."""
+        from google.cloud.firestore import ArrayRemove  # noqa: PLC0415
+
+        ref = self._client.collection(COLLECTION_DOCUMENTOS).document(doc_id)
+        snapshot = await ref.get()
+        if not snapshot.exists:
+            msg = f"Documento não encontrado: {doc_id}"
+            raise ValueError(msg)
+        data = snapshot.to_dict() or {}
+        self._assert_owner(data.get("owner_id", ""))
+        await ref.update({"user_tags": ArrayRemove([tag])})
+
     async def exists_by_hash(self, content_hash: str) -> bool:
         query = (
             self._client.collection(COLLECTION_DOCUMENTOS)

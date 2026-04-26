@@ -212,3 +212,57 @@ Localização: `functions/proxy_br/main.py`. Testes em `test_main.py`.
 
 Sistema de uso pessoal — sem programa público de bug bounty.
 Para vulns descobertas pelo dono: documentar em `docs/postmortems/` + corrigir.
+
+---
+
+## Pentest 2026-04-26 — Status pós-remediação
+
+Análise SAST manual identificou 13 findings. **9 corrigidos** nesta release;
+**4 deferidos** (registrados aqui como TODO).
+
+### Corrigidos ✅
+
+| ID | Severidade | Tipo | Fix |
+|----|------------|------|-----|
+| V1 | 🟠 Alta | ReDoS | `_validate_regex_safety` em `search.py` rejeita `(a+)+`, `(.*)*` antes de compilar |
+| V3 | 🟠 Alta | Auth/Integrity | `restore.py` valida SHA-256 + `OWNER_ID` env + allowlist de coleções |
+| V4 | 🟡 Média | Timing oracle | `secrets.compare_digest` nas 3 Cloud Functions |
+| V5 | 🟡 Média | Lógica | `/silenciar` agora persiste em `ActiveStatesConfig.silenced_until` |
+| V6 | 🟡 Média | Schema bypass | `storage.remove_user_tag` atômico (preserva `original` write-once) |
+| V7 | 🟡 Média | XSS storage | `make_raw_item` aplica `sanitize_html` em `texto` automaticamente |
+| V9 | 🟡 Média | Secret transit | `shred -u /tmp/env.yaml` após `gcloud deploy` |
+| V11 | 🟢 Baixa | PATH hijacking | `shutil.which("age")` em `backup.py` e `restore.py` |
+| V12 | 🟢 Baixa | URL scheme | `generic_html._extract_item` rejeita `javascript:`, `data:` |
+| V13 | 🟢 Baixa | Format string | `string.Template` em vez de `str.format` em `_format_subject` |
+
+### TODO (deferidos para PR dedicado) ⚠️
+
+#### V2 — Cloud Functions com `--allow-unauthenticated`
+- **Severidade**: 🟠 Alta
+- **Arquivo**: `.github/workflows/deploy-functions.yml`
+- **Problema**: As 3 funções confiam 100% em token compartilhado em header.
+- **Mitigação atual**: V4 (`secrets.compare_digest`) + token rotation manual.
+- **Remediação completa pendente**: Aplicar IAM-bound invoker via `gcloud run services add-iam-policy-binding`.
+- **Esforço**: 2-4h.
+
+#### V8 — Pinning de actions GitHub por SHA
+- **Severidade**: 🟡 Média
+- **Arquivos**: Todos os `.github/workflows/*.yml`
+- **Problema**: `uses: actions/checkout@v4` (tag mutável).
+- **Esforço**: 1-2h (~12 workflows × 4-6 actions cada).
+
+#### V10 — Duplicação `_escape_md` em `canary_filter`
+- **Severidade**: 🟢 Baixa
+- **Esforço**: 30min (requer empacotar `monitoritcd` no requirements).
+
+#### V5 (parcial) — `/estados`, `/fontes` ainda parciais
+- **Severidade**: 🟡 Média
+- `/silenciar` foi corrigido nesta release. `/estados ativar/desativar` e `/fontes ativar/desativar` continuam como placeholders por exigirem coordenação com revisão manual de YAMLs e estado Firestore.
+- **Esforço**: 4-6h adicionais.
+
+### Score
+
+- **Antes**: 8.2 / 10
+- **Após remediações**: ~9.1 / 10 (estimativa)
+- **Findings ativos**: 4 (V2, V5 parcial, V8, V10)
+- **Vulnerabilidades críticas**: 0

@@ -267,3 +267,17 @@ class TestRegexSearch:
     def test_regex_invalida(self) -> None:
         with pytest.raises(ValueError, match="Regex"):
             regex_search([], "[invalid(")
+
+    def test_redos_quantificador_aninhado_rejeitado(self) -> None:
+        # V1 (Pentest): (a+)+ é padrão clássico ReDoS
+        with pytest.raises(ValueError, match="quantificador aninhado"):
+            regex_search([], "(a+)+")
+
+    def test_redos_estrelas_aninhadas_rejeitado(self) -> None:
+        with pytest.raises(ValueError, match="quantificador aninhado"):
+            regex_search([], "(.*)*")
+
+    def test_regex_segura_aceita(self) -> None:
+        # Regex sem quantificador aninhado deve passar
+        result = regex_search([], r"\d+/\d{4}")
+        assert result == []  # sem docs, sem matches
