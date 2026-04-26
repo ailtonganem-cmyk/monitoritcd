@@ -96,16 +96,24 @@ select = [
     "RUF", # ruff-specific
     "PL",  # pylint
     "TCH", # type-checking imports
+    # ── Sugestão #4: regras adicionais (PERF, LOG, BLE, PTH, ERA) ──
+    "PERF", # perflint — anti-patterns de performance
+    "LOG",  # flake8-logging — uso correto de logging
+    "BLE",  # flake8-blind-except — alinha com CLAUDE.md (proibido except: pass)
+    "PTH",  # flake8-use-pathlib — prefere pathlib sobre os.path
+    "ERA",  # eradicate — detecta código comentado morto
 ]
 ignore = [
     "PLR0913", # too many arguments (sometimes needed)
     "S101",    # assert (allowed in tests via per-file-ignores)
+    # PERF203: try/except em loop é comum em pipeline tolerante a falhas
+    "PERF203",
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = ["S101", "ANN", "PLR2004"]
-"scripts/**/*.py" = ["ANN", "S603", "S607"]
-"functions/**/*.py" = ["ANN", "S101", "S105", "S106", "PLR0911", "PLR2004"]
+"tests/**/*.py" = ["S101", "ANN", "PLR2004", "BLE", "PERF", "PTH", "ERA", "LOG"]
+"scripts/**/*.py" = ["ANN", "S603", "S607", "BLE", "PTH", "ERA", "LOG", "PERF"]
+"functions/**/*.py" = ["ANN", "S101", "S105", "S106", "PLR0911", "PLR2004", "BLE", "PTH", "PERF", "LOG", "ERA"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["monitoritcd"]
@@ -116,6 +124,7 @@ indent-style = "space"
 
 # ---------------------------------------------------------------------------
 # Mypy (strict em módulos críticos)
+# Sugestão #1 + #2: expandir gates além de core/security; +disallow_untyped_decorators
 # ---------------------------------------------------------------------------
 [tool.mypy]
 python_version = "3.11"
@@ -123,16 +132,20 @@ strict = true
 warn_unused_ignores = true
 warn_return_any = true
 disallow_any_unimported = true
+disallow_untyped_decorators = true
 no_implicit_reexport = true
-# Apenas módulos já implementados. Conforme novas fases adicionarem código,
-# expandir esta lista (filters, notifiers, storage, bot, etc.).
+# Gates strict — módulos com cobertura de tipos pronta para enforcement.
 files = [
     "src/monitoritcd/core",
     "src/monitoritcd/security",
+    "src/monitoritcd/notifiers/severity.py",
+    "src/monitoritcd/filters/keywords.py",
+    "src/monitoritcd/filters/prescore.py",
+    "src/monitoritcd/dedup.py",
 ]
 
 [[tool.mypy.overrides]]
-module = ["feedparser", "bleach", "pdfplumber", "pypdf"]
+module = ["feedparser", "bleach", "pdfplumber", "pypdf", "pyahocorasick"]
 ignore_missing_imports = true
 
 # ---------------------------------------------------------------------------
@@ -194,15 +207,29 @@ exclude_dirs = ["tests", "scripts/migrations"]
 skips = ["B101"]  # assert in tests
 
 # ---------------------------------------------------------------------------
-# Interrogate (docstring coverage)
+# Interrogate (docstring coverage) — Sugestão #6: piso elevado para 90
 # ---------------------------------------------------------------------------
 [tool.interrogate]
-fail-under = 80
-exclude = ["tests", "scripts", "docs"]
+fail-under = 90
+exclude = ["tests", "scripts", "docs", "functions"]
 ignore-init-method = true
 ignore-magic = true
 ignore-private = true
+ignore-nested-functions = true
 verbose = 1
+
+# ---------------------------------------------------------------------------
+# Vulture (dead code) — Sugestão #3
+# ---------------------------------------------------------------------------
+[tool.vulture]
+paths = ["src/monitoritcd"]
+min_confidence = 80
+exclude = ["tests/", "scripts/migrations/"]
+ignore_decorators = ["@pytest.fixture", "@app.route", "@retry"]
+
+# ---------------------------------------------------------------------------
+# Mutation testing expandido — Sugestão #8
+# ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 # Mutation testing (mutmut 3.x)
@@ -215,6 +242,12 @@ paths_to_mutate = [
     "src/monitoritcd/dedup.py",
     "src/monitoritcd/security",
     "src/monitoritcd/notifiers/severity.py",
+    # Sugestão #8: expansão para fronteiras de saída
+    "src/monitoritcd/notifiers/email_notifier.py",
+    "src/monitoritcd/notifiers/telegram_notifier.py",
+    "src/monitoritcd/core/sanitize.py",
+    "src/monitoritcd/bot/auth.py",
+    "src/monitoritcd/bot/handlers.py",
 ]
 runner = "python -m pytest -x -q tests/unit tests/security"
 also_copy = ["tests/", "pyproject.toml"]

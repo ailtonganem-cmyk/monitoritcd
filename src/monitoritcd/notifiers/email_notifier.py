@@ -316,26 +316,25 @@ def build_csv_attachment(docs: Sequence[Documento]) -> bytes:
 
 def build_json_attachment(docs: Sequence[Documento]) -> bytes:
     """#107 — Gera JSON estruturado dos itens."""
-    payload = []
-    for d in docs:
-        payload.append(
-            {
-                "doc_id": d.doc_id,
-                "uf": d.source.uf,
-                "fonte": d.source.nome,
-                "url": d.original.url,
-                "titulo": d.original.titulo_raw,
-                "data_publicacao": (
-                    d.original.data_publicacao.isoformat() if d.original.data_publicacao else None
-                ),
-                "tipo": d.llm.tipo.value if d.llm else None,
-                "severity_tier": d.llm.severity_tier.value if d.llm else None,
-                "relevancia": d.llm.relevancia if d.llm else None,
-                "resumo": d.llm.resumo if d.llm else None,
-                "tags": d.llm.tags if d.llm else [],
-                "metadados_extraidos": d.llm.metadados_extraidos if d.llm else {},
-            }
-        )
+    payload = [
+        {
+            "doc_id": d.doc_id,
+            "uf": d.source.uf,
+            "fonte": d.source.nome,
+            "url": d.original.url,
+            "titulo": d.original.titulo_raw,
+            "data_publicacao": (
+                d.original.data_publicacao.isoformat() if d.original.data_publicacao else None
+            ),
+            "tipo": d.llm.tipo.value if d.llm else None,
+            "severity_tier": d.llm.severity_tier.value if d.llm else None,
+            "relevancia": d.llm.relevancia if d.llm else None,
+            "resumo": d.llm.resumo if d.llm else None,
+            "tags": d.llm.tags if d.llm else [],
+            "metadados_extraidos": d.llm.metadados_extraidos if d.llm else {},
+        }
+        for d in docs
+    ]
     return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
 
 

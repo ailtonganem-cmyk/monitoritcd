@@ -58,6 +58,59 @@ jobs:
   test:
     name: Pytest (unit + integration + security)
     runs-on: ubuntu-latest
+    strategy:
+      # Sugestão #34: matrix testing em 3.11/3.12/3.13
+      fail-fast: false
+      matrix:
+        python-version: ['3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # diff-cover precisa do histórico
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      # Sugestão #33: cache pip explícito por hash de pyproject.toml
+      - name: Cache pip wheels
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-${{ runner.os }}-py${{ matrix.python-version }}-${{ hashFiles('pyproject.toml') }}
+          restore-keys: |
+            pip-${{ runner.os }}-py${{ matrix.python-version }}-
+      - name: Install
+        run: |
+          pip install --upgrade pip
+          pip install -e ".[dev]"
+          pip install diff-cover
+      - name: Run tests with coverage
+        run: |
+          pytest \
+            --cov=src/monitoritcd \
+            --cov-branch \
+            --cov-report=xml \
+            --cov-report=term-missing \
+            --cov-fail-under=95
+      # Sugestão #11: diff coverage no PR
+      - name: Diff coverage (PR only)
+        if: github.event_name == 'pull_request'
+        run: |
+          diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --fail-under=95
+      - name: Upload coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-py${{ matrix.python-version }}
+          path: coverage.xml
+          retention-days: 30
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Sugestão #3 + #5: Vulture (dead code) + Radon (complexidade)
+  # ───────────────────────────────────────────────────────────────────────
+  static-analysis:
+    name: Vulture + Radon (dead code & complexity)
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -67,22 +120,30 @@ jobs:
       - name: Install
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
-      - name: Run tests with coverage
+          pip install vulture radon xenon
+      - name: Vulture (dead code, min_confidence=80)
+        run: vulture src/monitoritcd --min-confidence 80 || true
+      - name: Radon (cyclomatic complexity)
         run: |
-          pytest \
-            --cov=src/monitoritcd \
-            --cov-branch \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-fail-under=95
-      - name: Upload coverage
-        if: always()
-        uses: actions/upload-artifact@v4
+          radon cc src/monitoritcd -a -nb || true
+          # xenon falha se houver função com complexidade > B (10)
+          xenon --max-absolute B --max-modules B --max-average A src/monitoritcd || true
+
+  # ───────────────────────────────────────────────────────────────────────
+  # Sugestão #6: Interrogate docstring coverage
+  # ───────────────────────────────────────────────────────────────────────
+  docstring-coverage:
+    name: Interrogate (docstring coverage)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          name: coverage
-          path: coverage.xml
-          retention-days: 30
+          python-version: '3.11'
+      - name: Install
+        run: pip install "interrogate>=1.7.0"
+      - name: Interrogate
+        run: interrogate -c pyproject.toml src/monitoritcd
 
   # Mutation testing roda em workflow proprio (.github/workflows/mutation.yml)
   # com cron semanal — caro demais (~60min) para PRs/push.

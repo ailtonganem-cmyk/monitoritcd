@@ -109,6 +109,25 @@ jobs:
             --ignore-vuln PYSEC-2025-49
 
   # ───────────────────────────────────────────────────────────────────────
+  # Sugestão #38: lint semântico dos YAMLs em sources/
+  # ───────────────────────────────────────────────────────────────────────
+  yaml-semantic-lint:
+    name: YAML semantic lint (sources/)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install
+        run: |
+          pip install --upgrade pip
+          pip install -e .
+      - name: Lint sources/*.yaml
+        run: python scripts/lint_sources_yaml.py
+
+  # ───────────────────────────────────────────────────────────────────────
   # SBOM — Software Bill of Materials
   # ───────────────────────────────────────────────────────────────────────
   sbom:

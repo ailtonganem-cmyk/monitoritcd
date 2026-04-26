@@ -1,0 +1,11 @@
+# serializer version: 1
+# name: test_system_prompt_snapshot
+  dict({
+    'has_pt_br_directive': True,
+    'has_relevancia_scale': True,
+    'has_topics_section': True,
+    'n_inegociaveis': 3,
+    'n_lines': 41,
+    'version': 'v1.0',
+  })
+# ---

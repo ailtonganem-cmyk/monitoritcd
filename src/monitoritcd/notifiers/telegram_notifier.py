@@ -143,13 +143,13 @@ def _render_grouped(
     parts = [header]
     for grupo, gitens in sorted(groups.items()):
         parts.append(f"\n*{escape_markdown_v2(grupo)}* \\({len(gitens)}\\)")
-        for item in gitens:
-            parts.append(
-                f"{item['tier_emoji']} *{item['titulo']}*\n"
-                f"{item['tipo_label']}{' · ' + item['data_pub'] if item.get('data_pub') else ''}\n"
-                f"{item['resumo']}\n"
-                f"[Abrir original]({item['url']})"
-            )
+        parts.extend(
+            f"{item['tier_emoji']} *{item['titulo']}*\n"
+            f"{item['tipo_label']}{' · ' + item['data_pub'] if item.get('data_pub') else ''}\n"
+            f"{item['resumo']}\n"
+            f"[Abrir original]({item['url']})"
+            for item in gitens
+        )
     return "\n".join(parts)
 
 

@@ -253,8 +253,7 @@ async def handle_favoritos(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResul
     if not favs:
         return HandlerResult(text="⭐ Nenhum favorito ainda. Use `/favoritar <doc_id>`.")
     lines = ["⭐ *Favoritos*:"]
-    for d in favs[:20]:
-        lines.append(f"• `{d.doc_id}` — {d.original.titulo_raw[:80]}")
+    lines.extend(f"• `{d.doc_id}` — {d.original.titulo_raw[:80]}" for d in favs[:20])
     if len(favs) > 20:  # noqa: PLR2004
         lines.append(f"\n_...mais {len(favs) - 20}_")
     return HandlerResult(text="\n".join(lines))
@@ -301,8 +300,7 @@ async def handle_arquivo(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult: 
     if not filtered:
         return HandlerResult(text=f"📂 Nenhum documento para {chave}={valor}.")
     lines = [f"📂 *Arquivo {chave}={valor}* ({len(filtered)} docs):"]
-    for d in filtered[:20]:
-        lines.append(f"• {d.original.titulo_raw[:80]}")
+    lines.extend(f"• {d.original.titulo_raw[:80]}" for d in filtered[:20])
     if len(filtered) > 20:  # noqa: PLR2004
         lines.append(f"\n_...mais {len(filtered) - 20}_")
     return HandlerResult(text="\n".join(lines))

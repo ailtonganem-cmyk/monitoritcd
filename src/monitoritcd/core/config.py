@@ -27,9 +27,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ─────────────────────────────────────────────────────────────────────
-    # Owner (single-user)
-    # ─────────────────────────────────────────────────────────────────────
+    # ── Owner (single-user) ────────────────────────────────────────────
     OWNER_ID: Annotated[str, Field(min_length=1, max_length=limits.MAX_OWNER_ID_LENGTH)]
     OWNER_EMAIL: EmailStr
 

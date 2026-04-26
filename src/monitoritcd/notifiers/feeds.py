@@ -125,18 +125,17 @@ def build_json_feed(
     limit: int = DEFAULT_FEED_LIMIT,
 ) -> str:
     """#157 — JSON Feed v1.1 estático."""
-    items = []
-    for d in docs[:limit]:
-        items.append(
-            {
-                "id": d.doc_id,
-                "url": d.original.url,
-                "title": d.original.titulo_raw,
-                "content_text": d.llm.resumo if d.llm else "",
-                "date_published": _isoformat(d.original.data_publicacao or d.original.fetched_at),
-                "tags": [d.source.uf, d.llm.tipo.value] if d.llm else [d.source.uf],
-            }
-        )
+    items = [
+        {
+            "id": d.doc_id,
+            "url": d.original.url,
+            "title": d.original.titulo_raw,
+            "content_text": d.llm.resumo if d.llm else "",
+            "date_published": _isoformat(d.original.data_publicacao or d.original.fetched_at),
+            "tags": [d.source.uf, d.llm.tipo.value] if d.llm else [d.source.uf],
+        }
+        for d in docs[:limit]
+    ]
     payload = {
         "version": "https://jsonfeed.org/version/1.1",
         "title": title,

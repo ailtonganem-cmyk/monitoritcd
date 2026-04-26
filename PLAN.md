@@ -32,6 +32,7 @@
 | 9 | Operations — backup, dashboard, monitoring | 🟩 Concluída |
 | 10 | Pre-deploy validation | 🟩 Concluída |
 | 11 | Backlog IDEAS.md (pós-MVP) | 🟦 Em planejamento |
+| 12 | 50 melhorias hardening (sem custo) | 🟩 Concluída — 2026-04-26 |
 
 ---
 
@@ -349,3 +350,22 @@ não checklist obrigatório. Triagem semestral pelo dono filtra o que segue.
 - **Cobertura de testes** verificada em cada PR; CI bloqueia se cair.
 - **Segurança não é fase** — é transversal. Cada fase adiciona testes de segurança específicos.
 - **Documentação** é deliverable, não opcional.
+
+---
+
+## Fase 12 — 50 melhorias hardening (sem custo) 🟩 CONCLUÍDA — 2026-04-26
+
+Hardening abrangente em 8 categorias, sem despesa financeira.
+
+### Categorias entregues
+
+- **A** Qualidade & Tipagem (1-7): mypy expandido, ruff regras adicionais, vulture, radon, interrogate piso 90.
+- **B** Testes (8-17): mutation testing expandido, hypothesis fuzz, smoke E2E, snapshot Firestore, diff-cover, regression LLM, HTML5 strict.
+- **C** Segurança (18-26): CodeQL, actionlint, dependabot, OSSF Scorecard, rate limit por comando, audit chain runtime, fuzz URLs.
+- **D** Observabilidade (27-32): Prometheus textfile, DLQ, source heartbeat, SLO formal.
+- **E** CI/CD & DevEx (33-38): cache pip, matrix Python, commitlint, doctor.py, lint semântico YAML.
+- **F** Documentação (39-43): ADRs 0002-0005, mermaid pipeline, STRIDE threat model, tabela 27 UFs, runbooks decompostos.
+- **G** Performance & Resiliência (44-47): circuit breaker per-source, Aho-Corasick keyword matcher.
+- **H** Domínio Jurídico (48-50): regex pré-LLM, validador citações CC, cluster temático multi-UF.
+
+Detalhes completos em `CHANGELOG.md` seção `[Unreleased] — 50 melhorias gratuitas`.

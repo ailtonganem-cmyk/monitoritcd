@@ -1,0 +1,26 @@
+name: Actionlint (Sugestão #19)
+
+# Lint dos próprios workflows YAML.
+# Detecta sintaxe inválida, expressões ${{ }} mal-formadas, secrets não-existentes.
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1.7.7

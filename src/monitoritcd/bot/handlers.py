@@ -296,10 +296,10 @@ async def _watch_listar(ctx: BotContext) -> HandlerResult:
     if not watches:
         return HandlerResult(text="📋 Nenhum watch ativo.")
     lines = [f"📋 {len(watches)} watch(es) ativo(s):"]
-    for w in watches[:20]:
-        lines.append(
-            f"• [{w.watch_id[:8]}] '{w.pattern}' ({w.pattern_type}, rel≥{w.relevancia_min})"
-        )
+    lines.extend(
+        f"• [{w.watch_id[:8]}] '{w.pattern}' ({w.pattern_type}, rel≥{w.relevancia_min})"
+        for w in watches[:20]
+    )
     return HandlerResult(text="\n".join(lines))
 
 

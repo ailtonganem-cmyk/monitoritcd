@@ -11,6 +11,34 @@ em busca de mudanças legislativas, normativas e jurisprudenciais sobre 3 temas:
 - **Direito das Sucessões** (CC arts. 1.784+)
 - **Regime de Bens** (CC arts. 1.639-1.688)
 
+## Pipeline (Mermaid — Sugestão #40)
+
+```mermaid
+flowchart LR
+    cron[GitHub Actions cron<br/>10:13 UTC] --> coll[Collectors]
+    coll -->|RawItem| f1[Filtro keywords]
+    f1 -->|matched| f2[Filtro prescore]
+    f2 -->|≥cutoff| dedup[Dedup por hash]
+    dedup -->|novo| llm[LLM Classifier]
+    llm -->|LLMResult| store[(Firestore)]
+    llm -.->|fail quota| fallback[Groq fallback]
+    fallback --> store
+    store --> sev{Severity?}
+    sev -->|CRITICO| tg_push[Telegram push imediato]
+    sev -->|ALTA/NORMAL| digest[Digest Telegram + Email]
+    sev -->|BAIXA| weekly[Email semanal]
+    sev -->|DESCARTADO| void[Não notifica]
+    store --> audit[Audit log hash chain]
+    cron -.->|start/fail| hc[Healthchecks.io]
+
+    classDef external fill:#fff3cd,stroke:#ffc107
+    classDef storage fill:#d1ecf1,stroke:#17a2b8
+    classDef channel fill:#d4edda,stroke:#28a745
+    class coll,llm,fallback external
+    class store,audit storage
+    class tg_push,digest,weekly channel
+```
+
 ## C4 Level 1 — Context
 
 ```

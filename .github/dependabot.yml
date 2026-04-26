@@ -1,0 +1,44 @@
+# Dependabot config (Sugestão #22)
+# Auto-PRs de updates de deps. CI já tem pip-audit para validar mudanças.
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "America/Sao_Paulo"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "deps:python"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    groups:
+      pytest-ecosystem:
+        patterns:
+          - "pytest*"
+          - "hypothesis"
+          - "syrupy"
+          - "respx"
+      lint-tools:
+        patterns:
+          - "ruff"
+          - "mypy"
+          - "bandit*"
+          - "vulture"
+          - "interrogate"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels:
+      - "dependencies"
+      - "deps:actions"
+    commit-message:
+      prefix: "deps(actions)"

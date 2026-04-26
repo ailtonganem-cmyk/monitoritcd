@@ -86,9 +86,7 @@ MAX_METADATA_FIELDS: Final[int] = 30
 MAX_JSON_DEPTH: Final[int] = 5
 MAX_YAML_DEPTH: Final[int] = 6
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Bytes (MAX_BYTES)
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Bytes (MAX_BYTES) ────────────────────────────────────────────────────────
 MAX_HTML_BYTES: Final[int] = 5 * 1024 * 1024  # 5 MB
 MAX_PDF_BYTES: Final[int] = 20 * 1024 * 1024  # 20 MB
 MAX_REQUEST_BODY_BYTES: Final[int] = 1 * 1024 * 1024  # 1 MB

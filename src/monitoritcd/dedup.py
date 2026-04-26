@@ -103,9 +103,10 @@ def assign_clusters(items: Sequence[RawItem]) -> dict[str, str]:
             cluster_id = cluster_by_key[key]
         else:
             # Camada 3: similaridade fuzzy contra clusters existentes
-            cluster_id = _find_fuzzy_cluster(item.titulo_raw, title_index)
-            if cluster_id is None:
-                cluster_id = _hash_id([item.content_hash, key])
+            fuzzy_match = _find_fuzzy_cluster(item.titulo_raw, title_index)
+            cluster_id = (
+                fuzzy_match if fuzzy_match is not None else _hash_id([item.content_hash, key])
+            )
             cluster_by_key[key] = cluster_id
 
         cluster_by_hash[item.content_hash] = cluster_id
