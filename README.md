@@ -115,36 +115,44 @@ Ver [RUNBOOKS.md](RUNBOOKS.md) — passo-a-passo de:
 
 > Fonte da verdade detalhada: [docs/sources_status.md](docs/sources_status.md).
 
-### Federais ativas (5 fontes)
+### Federais ativas (8 fontes)
 
 | Fonte | Tipo | Notas |
 |---|---|---|
 | **LexML Legislação** | API SRU | Cobre federal + 26 estados + DF (legislação sancionada) |
 | **LexML Jurisprudência** | API SRU | STF + STJ + TJs estaduais |
+| **Câmara Deputados** | API REST v2 | PLs/PLPs/PECs federais sobre ITCD/sucessões (Reforma Tributária etc.) |
+| **Senado Federal** | API `/processo` | Matérias do Senado, vetos presidenciais |
 | **JOTA** | RSS | Notícias jurídicas tributárias |
 | **STF notícias** | RSS oficial | Decisões do STF |
 | **STJ notícias** | RSS oficial | Decisões do STJ |
 
-### Proposições estaduais em tramitação (14 UFs ativas)
+### Proposições/notícias estaduais (15 UFs ativas)
 
 | UF | Coletor | Plataforma |
 |---|---|---|
 | **MG** | ALMGCollector (custom) | API JSON `dadosabertos.almg.gov.br` |
 | **PR** | ALEPCollector (custom) | API JSON via POST (`webservices.assembleia.pr.leg.br`) |
 | **PE** | ALEPECollector (custom) | API XML `dadosabertos.alepe.pe.gov.br` |
+| **MS** | GenericRSSCollector | RSS notícias `https://www.al.ms.gov.br/RSS` (substituto parcial) |
 | **AC, AL, AM, CE, ES, GO, MT, PB, PI, RO, RR** | SAPLCollector (genérico) | API REST padronizada Interlegis |
 
-### UFs sem coletor de proposições (13)
+### UFs sem coletor de proposições (12)
 
 Para essas UFs, **leis sancionadas continuam cobertas via LexML**. A lacuna é
 apenas proposições em tramitação que ainda não viraram lei.
 
-Investigação 2026-04-25 (em [docs/sources_status.md](docs/sources_status.md))
+Investigação 2026-04-26 (em [docs/sources_status.md](docs/sources_status.md)
+e [docs/fontes_alternativas_uf.md](docs/fontes_alternativas_uf.md))
 documenta por que cada UF não tem API pública: ALESP/SP requer VIEWSTATE,
 ALERJ/RJ usa Lotus Notes legacy, Alesc/SC pede integração privada, etc.
 
-**Total**: 17 fontes ativas. Cobertura legislativa via LexML atinge **27 entes
-federativos + federal**. Cobertura de proposições em tramitação: 14 UFs (52%).
+**Re-investigação trimestral** automatizada via routine remota (cron
+`0 14 1 1,4,7,10 *`) verifica se alguma das 12 UFs passou a oferecer
+API pública e abre PR com achados.
+
+**Total**: 20 fontes ativas. Cobertura legislativa via LexML atinge **27 entes
+federativos + federal**. Cobertura de proposições/notícias estaduais: **15 UFs (56%)**.
 
 Veja [docs/ufs/](docs/ufs/) para particularidades por UF (alíquotas, lei principal, peculiaridades).
 

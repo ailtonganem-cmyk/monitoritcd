@@ -20,7 +20,9 @@ from monitoritcd.bot.handlers import (
     handle_confirmar,
     handle_estados,
     handle_help,
+    handle_marcar,
     handle_observar,
+    handle_relatorio,
     handle_start,
     handle_status,
     handle_topicos,
@@ -443,3 +445,158 @@ class TestObservar:
         )
         assert result.is_error
         assert "muito curto" in result.text
+
+
+@pytest.mark.integration
+class TestMarcar:
+    """`/marcar <doc_id_prefix> <tag>` adiciona user_tag ao documento."""
+
+    @pytest.mark.asyncio
+    async def test_marcar_sem_args_emite_uso(self) -> None:
+        ctx = await _ctx()
+        result = await handle_marcar(ctx, ParsedCommand(name="marcar", args=[]))
+        assert result.is_error
+        assert "Uso:" in result.text
+
+    @pytest.mark.asyncio
+    async def test_marcar_apenas_doc_id_emite_uso(self) -> None:
+        ctx = await _ctx()
+        result = await handle_marcar(ctx, ParsedCommand(name="marcar", args=["abc"]))
+        assert result.is_error
+
+    @pytest.mark.asyncio
+    async def test_marcar_doc_inexistente(self) -> None:
+        ctx = await _ctx()
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=["ghost", "minhatag"]),
+        )
+        assert result.is_error
+        assert "não encontrado" in result.text
+
+    @pytest.mark.asyncio
+    async def test_marcar_doc_existente_adiciona_tag(self) -> None:
+        ctx = await _ctx()
+        doc = _doc()
+        await ctx.storage.save_documento(doc)
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], "prioridade-alta"]),
+        )
+        assert not result.is_error
+        assert "prioridade-alta" in result.text
+        # Tag persistida
+        loaded = await ctx.storage.get_documento(doc.doc_id)
+        assert loaded is not None
+        assert "prioridade-alta" in loaded.user_tags
+
+    @pytest.mark.asyncio
+    async def test_marcar_idempotente(self) -> None:
+        ctx = await _ctx()
+        doc = _doc()
+        await ctx.storage.save_documento(doc)
+        await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], "tag1"]),
+        )
+        await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], "tag1"]),
+        )
+        loaded = await ctx.storage.get_documento(doc.doc_id)
+        assert loaded is not None
+        assert loaded.user_tags.count("tag1") == 1
+
+    @pytest.mark.asyncio
+    async def test_marcar_prefixo_ambiguo(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(doc_id="abcd111"))
+        await ctx.storage.save_documento(_doc(doc_id="abcd222"))
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=["abcd", "x"]),
+        )
+        assert result.is_error
+        assert "Ambíguo" in result.text
+
+    @pytest.mark.asyncio
+    async def test_marcar_tag_vazia(self) -> None:
+        ctx = await _ctx()
+        doc = _doc()
+        await ctx.storage.save_documento(doc)
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], "   "]),
+        )
+        assert result.is_error
+        assert "vazia" in result.text
+
+
+@pytest.mark.integration
+class TestRelatorio:
+    """`/relatorio [diario|semanal]` resume documentos do período."""
+
+    @pytest.mark.asyncio
+    async def test_periodo_invalido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["mensal"]),
+        )
+        assert result.is_error
+        assert "inválido" in result.text
+
+    @pytest.mark.asyncio
+    async def test_diario_vazio(self) -> None:
+        ctx = await _ctx()
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=[]),
+        )
+        assert "Nenhum documento" in result.text
+
+    @pytest.mark.asyncio
+    async def test_diario_com_docs(self) -> None:
+        # Doc com fetched_at recente para passar no filter `since=now()-1d`
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import RawItem  # noqa: PLC0415
+
+        ctx = await _ctx()
+        recent_raw = RawItem(
+            source_id="s",
+            titulo_raw="PL recente",
+            url="https://x.gov.br/r",
+            fetched_at=datetime.now(UTC),
+            content_hash="b" * 64,
+        )
+        recent_doc = _doc().model_copy(update={"original": recent_raw})
+        await ctx.storage.save_documento(recent_doc)
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["diario"]),
+        )
+        assert "Diário" in result.text or "Relatório" in result.text
+
+    @pytest.mark.asyncio
+    async def test_semanal_com_docs(self) -> None:
+        # Mesma estratégia: fetched_at recente
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import RawItem  # noqa: PLC0415
+
+        ctx = await _ctx()
+        recent_raw = RawItem(
+            source_id="s",
+            titulo_raw="PL recente",
+            url="https://x.gov.br/r",
+            fetched_at=datetime.now(UTC),
+            content_hash="c" * 64,
+        )
+        recent_doc = _doc().model_copy(update={"original": recent_raw})
+        await ctx.storage.save_documento(recent_doc)
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["semanal"]),
+        )
+        assert "Semanal" in result.text

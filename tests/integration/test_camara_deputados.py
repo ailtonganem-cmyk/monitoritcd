@@ -9,6 +9,7 @@ import pytest
 import respx
 
 from monitoritcd.collectors import CamaraDeputadosCollector
+from monitoritcd.collectors.custom._common import parse_iso_date
 from monitoritcd.core.base_collector import _DomainRateLimiter
 from monitoritcd.core.models import Parser, Source, TipoFonte
 
@@ -204,13 +205,12 @@ class TestParseHelpers:
         assert c._parse_proposicao({}) is None
 
     def test_parse_iso_date_helper(self) -> None:
-        from monitoritcd.collectors.custom.camara_deputados import _parse_iso_date  # noqa: PLC0415
-
-        assert _parse_iso_date(None) is None
-        assert _parse_iso_date("") is None
-        assert _parse_iso_date("invalid") is None
-        d = _parse_iso_date("2026-04-01T11:03")
+        # Helper agora vive em _common; testado de forma compartilhada.
+        assert parse_iso_date(None) is None
+        assert parse_iso_date("") is None
+        assert parse_iso_date("invalid") is None
+        d = parse_iso_date("2026-04-01T11:03")
         assert d is not None and d.tzinfo is not None
-        d2 = _parse_iso_date("2026-04-01T11:03+02:00")
+        d2 = parse_iso_date("2026-04-01T11:03+02:00")
         assert d2 is not None
         assert d2.utcoffset().total_seconds() == 2 * 3600  # type: ignore[union-attr]

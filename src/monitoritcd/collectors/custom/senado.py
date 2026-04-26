@@ -1,10 +1,10 @@
 """Coletor do Senado Federal via API de Dados Abertos `/processo`.
 
 A API legacy `/materia/pesquisa/lista` foi depreciada em 2026-02-01 e o
-substituto é `/dadosabertos/processo`. Este coletor usa o endpoint novo
-e tenta filtrar por `palavraChave` (validação adicional necessária — se
-a API ignorar o filtro, o coletor obtém todo o feed e descarta no
-filtro de keywords do pipeline).
+substituto é `/dadosabertos/processo`. **Validação 2026-04-26 confirmou
+que o parâmetro `palavraChave` é IGNORADO server-side** (queries com e
+sem o filtro retornaram conteúdo equivalente). Por isso, o coletor faz
+**1 request único** sem filtro e aplica todas as keywords localmente.
 
 Endpoint: `https://legis.senado.leg.br/dadosabertos/processo`
 
@@ -24,18 +24,21 @@ Resposta JSON (formato observado em 2026-04-26):
 Princípios canônicos:
 - URL externa validada via BaseCollector (anti-SSRF)
 - JSON validado com try/except + fallback silencioso
-- Filtro local por keyword se a API ignorar palavraChave
+- Filtro local por keyword (sempre — API server-side ignora palavraChave)
 """
 
 from __future__ import annotations
 
 import json
 import urllib.parse
-from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from monitoritcd.collectors.custom._common import (
+    parse_iso_date,
+    parse_keywords_batch_config,
+)
 from monitoritcd.core.base_collector import BaseCollector, CollectorError
 
 if TYPE_CHECKING:
@@ -67,90 +70,72 @@ class SenadoCollector(BaseCollector):
     """
 
     async def collect(self) -> list[RawItem]:
-        sel = self.source.selectors or {}
-
-        palavras_raw = sel.get("palavras_chave") or "|".join(DEFAULT_KEYWORDS)
-        palavras = [p.strip() for p in palavras_raw.split("|") if p.strip()]
-        if not palavras:
-            msg = f"palavras_chave vazia em {self.source.id}"
-            raise CollectorError(msg)
-
-        try:
-            dias = int(sel.get("dias", str(DEFAULT_DIAS_RECENTES)))
-        except (TypeError, ValueError) as e:
-            msg = f"dias inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        try:
-            page_size = int(sel.get("page_size", str(DEFAULT_PAGE_SIZE)))
-        except (TypeError, ValueError) as e:
-            msg = f"page_size inválido em {self.source.id}: {e}"
-            raise CollectorError(msg) from e
-
-        cutoff = datetime.now(UTC) - timedelta(days=dias)
+        cfg = parse_keywords_batch_config(
+            self.source,
+            default_keywords=DEFAULT_KEYWORDS,
+            default_dias=DEFAULT_DIAS_RECENTES,
+            default_page_size=DEFAULT_PAGE_SIZE,
+        )
+        palavras_lower = [p.lower() for p in cfg.palavras]
 
         seen: set[str] = set()
         items: list[RawItem] = []
 
-        for palavra in palavras:
-            url = self._build_url(palavra, page_size)
-            try:
-                payload = await self.fetch(url)
-            except CollectorError as e:
-                logger.warning(
-                    "senado.fetch_failed",
-                    source=self.source.id,
-                    palavra=palavra,
-                    error_type=type(e).__name__,
-                    error=str(e) or "no message",
-                )
+        # 1 request único — API ignora palavraChave, então filtramos todas
+        # as keywords localmente sobre o mesmo payload (reduz N→1 fetches).
+        url = self._build_url(cfg.page_size)
+        try:
+            payload = await self.fetch(url)
+        except CollectorError as e:
+            logger.warning(
+                "senado.fetch_failed",
+                source=self.source.id,
+                error_type=type(e).__name__,
+                error=str(e) or "no message",
+            )
+            return items
+
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "senado.invalid_json",
+                source=self.source.id,
+                error=str(e),
+            )
+            return items
+
+        registros = _extract_records(data)
+
+        for raw in registros:
+            ident = raw.get("identificacao")
+            if not isinstance(ident, str) or not ident or ident in seen:
                 continue
 
-            try:
-                data = json.loads(payload)
-            except json.JSONDecodeError as e:
-                logger.warning(
-                    "senado.invalid_json",
-                    source=self.source.id,
-                    palavra=palavra,
-                    error=str(e),
-                )
+            # Filtro local: passa se QUALQUER keyword aparece em ementa ou identificacao
+            ementa_lower = (raw.get("ementa") or "").lower()
+            ident_lower = ident.lower()
+            if not any(p in ementa_lower or p in ident_lower for p in palavras_lower):
                 continue
 
-            registros = _extract_records(data)
-            palavra_lower = palavra.lower()
-
-            for raw in registros:
-                ident = raw.get("identificacao")
-                if not isinstance(ident, str) or not ident or ident in seen:
-                    continue
-
-                # Filtro local: se API não respeitou palavraChave, descarta aqui.
-                ementa = (raw.get("ementa") or "").lower()
-                if palavra_lower not in ementa and palavra_lower not in ident.lower():
-                    continue
-
-                seen.add(ident)
-                item = self._parse_processo(raw)
-                if item is None:  # pragma: no cover - defesa redundante
-                    continue
-                if item.data_publicacao and item.data_publicacao < cutoff:
-                    continue
-                items.append(item)
+            seen.add(ident)
+            item = self._parse_processo(raw)
+            if item is None:  # pragma: no cover - defesa redundante
+                continue
+            if item.data_publicacao and item.data_publicacao < cfg.cutoff:
+                continue
+            items.append(item)
 
         logger.info(
             "senado.collected",
             source=self.source.id,
             count=len(items),
-            keywords=len(palavras),
+            keywords=len(cfg.palavras),
         )
         return items
 
-    def _build_url(self, palavra: str, page_size: int) -> str:
-        params = {
-            "palavraChave": palavra,
-            "limit": str(page_size),
-        }
+    def _build_url(self, page_size: int) -> str:
+        params = {"limit": str(page_size)}
         return f"{self.source.url}?{urllib.parse.urlencode(params)}"
 
     def _parse_processo(self, raw: dict[str, Any]) -> RawItem | None:
@@ -177,7 +162,7 @@ class SenadoCollector(BaseCollector):
             else f"https://www25.senado.leg.br/web/atividade/materias?p_p_state=normal&busca={urllib.parse.quote(ident)}"
         )
 
-        data_pub = _parse_iso_date(raw.get("dataApresentacao"))
+        data_pub = parse_iso_date(raw.get("dataApresentacao"))
 
         return self.make_raw_item(
             titulo=titulo,
@@ -198,15 +183,3 @@ def _extract_records(data: Any) -> list[dict[str, Any]]:  # noqa: ANN401
             if isinstance(value, list):
                 return [r for r in value if isinstance(r, dict)]
     return []
-
-
-def _parse_iso_date(s: str | None) -> datetime | None:
-    if not s:
-        return None
-    try:
-        parsed = datetime.fromisoformat(s)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=UTC)
-    return parsed

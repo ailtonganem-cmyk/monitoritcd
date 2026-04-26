@@ -60,6 +60,15 @@ class StorageProtocol(Protocol):
 
     async def update_status(self, doc_id: str, status: StatusDocumento) -> None: ...
 
+    async def add_user_tag(self, doc_id: str, tag: str) -> None:
+        """Adiciona tag pessoal do dono ao documento (idempotente).
+
+        Diferente de `llm.tags` (write-once via update_llm), `user_tags`
+        cresce ao longo do tempo conforme o dono marca documentos via
+        `/marcar` no bot. Idempotente: re-adicionar mesma tag não duplica.
+        """
+        ...
+
     async def exists_by_hash(self, content_hash: str) -> bool:
         """True se há doc com este content_hash do dono."""
         ...

@@ -9,6 +9,7 @@ import pytest
 import respx
 
 from monitoritcd.collectors import SenadoCollector
+from monitoritcd.collectors.custom._common import parse_iso_date
 from monitoritcd.core.base_collector import _DomainRateLimiter
 from monitoritcd.core.models import Parser, Source, TipoFonte
 
@@ -215,6 +216,7 @@ class TestSenadoCollector:
 
     @pytest.mark.asyncio
     async def test_dedupe_across_keywords(self) -> None:
+        # 1 request único cobrindo N keywords; cada item passa se QUALQUER keyword bate.
         src = _src().model_copy(
             update={
                 "selectors": {
@@ -225,15 +227,15 @@ class TestSenadoCollector:
             },
         )
         async with respx.mock:
-            respx.get(url__startswith="https://legis.senado.leg.br/").mock(
+            route = respx.get(url__startswith="https://legis.senado.leg.br/").mock(
                 return_value=httpx.Response(200, text=SENADO_RESPONSE),
             )
             async with SenadoCollector(src) as c:
                 items = await c.collect()
-        # 2 keywords retornam mesma fixture; dedup por identificacao
-        # ITCMD: pega VET 8/2026 (ementa tem ITCMD)
-        # sucessão: pega PLS 100/2024 (ementa "Sucessão hereditária")
+        # ITCMD: VET 8/2026 (ementa); sucessão: PLS 100/2024 (ementa)
         assert len(items) == 2
+        # Otimização: 1 request único independente de N keywords
+        assert route.call_count == 1
 
 
 class TestExtractRecords:
@@ -278,13 +280,11 @@ class TestParseHelpers:
         assert c._parse_processo({"identificacao": 123}) is None  # type: ignore[arg-type]
 
     def test_parse_iso_date_helper(self) -> None:
-        from monitoritcd.collectors.custom.senado import _parse_iso_date  # noqa: PLC0415
-
-        assert _parse_iso_date(None) is None
-        assert _parse_iso_date("") is None
-        assert _parse_iso_date("invalid") is None
-        d = _parse_iso_date("2026-04-25")
+        assert parse_iso_date(None) is None
+        assert parse_iso_date("") is None
+        assert parse_iso_date("invalid") is None
+        d = parse_iso_date("2026-04-25")
         assert d is not None and d.tzinfo is not None
-        d2 = _parse_iso_date("2026-04-25T10:00:00+02:00")
+        d2 = parse_iso_date("2026-04-25T10:00:00+02:00")
         assert d2 is not None
         assert d2.utcoffset().total_seconds() == 2 * 3600  # type: ignore[union-attr]

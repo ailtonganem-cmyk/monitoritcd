@@ -112,6 +112,9 @@ async def handle_start(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
             "• /status — saúde do sistema\n"
             "• /buscar <termo> [topico=...] — busca no histórico\n"
             "• /topicos — lista divisões temáticas\n"
+            "• /observar <termo> | listar | remover <id>\n"
+            "• /marcar <doc_id_prefix> <tag> — tag pessoal num doc\n"
+            "• /relatorio [diario|semanal] — digest sob demanda\n"
             "• /estados listar — UFs ativas\n"
             "• /estados ativar <UF>\n"
             "• /estados desativar <UF> (requer confirmação)\n"
@@ -361,6 +364,110 @@ async def handle_observar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# /marcar
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+async def handle_marcar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  # noqa: PLR0911
+    """`/marcar <doc_id_prefix> <tag>` — adiciona tag pessoal ao documento.
+
+    `doc_id_prefix` é o prefixo do doc_id (mostrado em buscas/digests);
+    se ambíguo, retorna erro. Tag idempotente (re-marcar não duplica).
+    """
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(
+            text="❌ Uso: /marcar <doc_id_prefix> <tag>",
+            is_error=True,
+        )
+    doc_prefix = cmd.args[0]
+    tag = " ".join(cmd.args[1:]).strip()
+    if not tag:
+        return HandlerResult(text="❌ Tag vazia.", is_error=True)
+    if len(tag) > limits.MAX_TAG_LENGTH:
+        return HandlerResult(
+            text=f"❌ Tag muito longa (máximo {limits.MAX_TAG_LENGTH} caracteres).",
+            is_error=True,
+        )
+
+    docs = await ctx.storage.list_documentos(limit=1000)
+    matches = [d for d in docs if d.doc_id.startswith(doc_prefix)]
+    if not matches:
+        return HandlerResult(
+            text=f"❌ Documento não encontrado com prefixo '{doc_prefix}'.",
+            is_error=True,
+        )
+    if len(matches) > 1:
+        return HandlerResult(
+            text=f"❌ Ambíguo: {len(matches)} documentos batem. Use prefixo maior.",
+            is_error=True,
+        )
+
+    doc = matches[0]
+    try:
+        await ctx.storage.add_user_tag(doc.doc_id, tag)
+    except (ValueError, RuntimeError) as e:
+        return HandlerResult(text=f"❌ Erro ao marcar: {e}", is_error=True)
+
+    titulo = doc.original.titulo_raw[:60]
+    return HandlerResult(text=f"✅ Tag '{tag}' adicionada ao doc '{titulo}'.")
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# /relatorio
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+async def handle_relatorio(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """`/relatorio [diario|semanal]` — digest sob demanda do período.
+
+    Lista documentos NOTIFIED ou CLASSIFIED no período (default: 1 dia).
+    Não envia digest pelo Telegram — apenas resume na resposta inline.
+    """
+    from datetime import UTC, datetime, timedelta  # noqa: PLC0415
+
+    periodo = (cmd.args[0].lower() if cmd.args else "diario").strip()
+    if periodo not in {"diario", "semanal"}:
+        return HandlerResult(
+            text="❌ Período inválido. Use: /relatorio [diario|semanal]",
+            is_error=True,
+        )
+
+    dias = 1 if periodo == "diario" else 7
+    since = datetime.now(UTC) - timedelta(days=dias)
+    docs = await ctx.storage.list_documentos(since=since, limit=1000)
+
+    if not docs:
+        return HandlerResult(text=f"📊 Nenhum documento nos últimos {dias} dia(s).")
+
+    # Resumo por severity tier
+    tier_counts: dict[str, int] = {}
+    for d in docs:
+        if d.llm:
+            tier = d.llm.severity_tier.value
+            tier_counts[tier] = tier_counts.get(tier, 0) + 1
+
+    label = "Diário" if periodo == "diario" else "Semanal"
+    lines = [f"📊 Relatório {label} ({len(docs)} documentos)"]
+    for tier, count in sorted(tier_counts.items()):
+        lines.append(f"• {tier}: {count}")
+
+    # Top 5 documentos por relevância
+    rated = sorted(
+        (d for d in docs if d.llm is not None),
+        key=lambda d: d.llm.relevancia if d.llm else 0,  # type: ignore[union-attr]
+        reverse=True,
+    )[:5]
+    if rated:
+        lines.append("\nTop 5 por relevância:")
+        for d in rated:
+            rel = d.llm.relevancia if d.llm else 0
+            titulo = d.original.titulo_raw[:50]
+            lines.append(f"• [{d.doc_id[:8]}] rel={rel} — {titulo}")
+
+    return HandlerResult(text="\n".join(lines))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatch
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -374,6 +481,8 @@ HANDLERS = {
     "estados": handle_estados,
     "confirmar": handle_confirmar,
     "observar": handle_observar,
+    "marcar": handle_marcar,
+    "relatorio": handle_relatorio,
 }
 
 

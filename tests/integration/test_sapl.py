@@ -229,36 +229,36 @@ class TestDerivePortalBase:
 
 
 class TestParseIsoDate:
-    """`_parse_iso_date` aceita ISO, retorna None em invalido, defaulta UTC."""
+    """Helper compartilhado em `_common.parse_iso_date`."""
 
     def test_none_retorna_none(self) -> None:
-        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+        from monitoritcd.collectors.custom._common import parse_iso_date  # noqa: PLC0415
 
-        assert _parse_iso_date(None) is None
+        assert parse_iso_date(None) is None
 
     def test_string_vazia_retorna_none(self) -> None:
-        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+        from monitoritcd.collectors.custom._common import parse_iso_date  # noqa: PLC0415
 
-        assert _parse_iso_date("") is None
+        assert parse_iso_date("") is None
 
     def test_iso_invalido_retorna_none(self) -> None:
-        # Linhas 199-200: ValueError de fromisoformat
-        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+        # ValueError de fromisoformat
+        from monitoritcd.collectors.custom._common import parse_iso_date  # noqa: PLC0415
 
-        assert _parse_iso_date("not-a-date") is None
+        assert parse_iso_date("not-a-date") is None
 
     def test_iso_naive_recebe_utc(self) -> None:
-        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+        from monitoritcd.collectors.custom._common import parse_iso_date  # noqa: PLC0415
 
-        result = _parse_iso_date("2026-04-25T10:00:00")
+        result = parse_iso_date("2026-04-25T10:00:00")
         assert result is not None
         assert result.tzinfo is not None  # default UTC
 
     def test_iso_com_timezone_preserva(self) -> None:
-        # Linha 201->203: tzinfo ja presente, nao sobrescreve
-        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+        # tzinfo ja presente, nao sobrescreve
+        from monitoritcd.collectors.custom._common import parse_iso_date  # noqa: PLC0415
 
-        result = _parse_iso_date("2026-04-25T10:00:00+03:00")
+        result = parse_iso_date("2026-04-25T10:00:00+03:00")
         assert result is not None
         assert result.utcoffset() is not None
         assert result.utcoffset().total_seconds() == 3 * 3600  # type: ignore[union-attr]

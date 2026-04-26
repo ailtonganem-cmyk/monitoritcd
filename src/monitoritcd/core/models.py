@@ -272,6 +272,15 @@ class Documento(OwnerScoped):
     notificacao: NotificacaoStatus = Field(default_factory=NotificacaoStatus)
     status: StatusDocumento = StatusDocumento.PENDING
     cluster_id: str | None = Field(default=None, max_length=128)
+    user_tags: Annotated[
+        list[Tag],
+        Field(default_factory=list, max_length=limits.MAX_TAGS_PER_DOC),
+    ]
+    """Tags atribuidas pelo dono via `/marcar` (separado de `llm.tags`).
+
+    Diferente de `llm.tags` (frozen, write-once via update_llm), este campo
+    pode crescer ao longo do tempo conforme o dono marca documentos.
+    """
 
 
 # ─────────────────────────────────────────────────────────────────────────────
