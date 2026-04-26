@@ -355,3 +355,59 @@ class TestAuditLog:
         )
         with pytest.raises(AuditChainError):
             await log.verify_chain(s._audit)
+
+
+@pytest.mark.unit
+class TestUserTags:
+    @pytest.mark.asyncio
+    async def test_add_tag_em_doc_inexistente_raises(self) -> None:
+        # Bot /marcar pode tentar tag em prefixo ambíguo ou doc removido —
+        # storage rejeita ao invés de criar doc fantasma.
+        s = InMemoryStorage(OWNER)
+        with pytest.raises(DocumentNotFoundError):
+            await s.add_user_tag("missing", "minha-tag")
+
+    @pytest.mark.asyncio
+    async def test_add_tag_e_persistido(self) -> None:
+        s = InMemoryStorage(OWNER)
+        await s.save_documento(_doc())
+        await s.add_user_tag("doc1", "minha-tag")
+        doc = await s.get_documento("doc1")
+        assert doc is not None
+        assert "minha-tag" in doc.user_tags
+
+    @pytest.mark.asyncio
+    async def test_add_tag_idempotente(self) -> None:
+        # Tag duplicada não vira entry duplicada — protege contra clicks
+        # repetidos no bot ou retries.
+        s = InMemoryStorage(OWNER)
+        await s.save_documento(_doc())
+        await s.add_user_tag("doc1", "x")
+        await s.add_user_tag("doc1", "x")
+        doc = await s.get_documento("doc1")
+        assert doc is not None
+        assert doc.user_tags.count("x") == 1
+
+
+@pytest.mark.unit
+class TestAppendAudit:
+    @pytest.mark.asyncio
+    async def test_append_com_prev_hash_invalido_raises(self) -> None:
+        # Chain invariant: prev_hash da nova entry DEVE bater com hash da última.
+        # Bypass do AuditLog.append (que calcula automaticamente) para simular
+        # caller mal-intencionado ou bug que monta entry à mão.
+        from monitoritcd.core.models import AuditLogEntry  # noqa: PLC0415
+
+        s = InMemoryStorage(OWNER)
+        bad = AuditLogEntry(
+            owner_id=OWNER,
+            entry_id="manual",
+            timestamp=NOW,
+            actor="x",
+            action="x",
+            payload_hash="a" * 64,
+            prev_hash="b" * 64,  # não bate com GENESIS_HASH
+            result="success",
+        )
+        with pytest.raises(ValueError, match="hash chain quebrada"):
+            await s.append_audit(bad)

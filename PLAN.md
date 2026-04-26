@@ -31,6 +31,7 @@
 | 8 | Cobertura MVP — 5 UFs + federais | 🟩 Concluída |
 | 9 | Operations — backup, dashboard, monitoring | 🟩 Concluída |
 | 10 | Pre-deploy validation | 🟩 Concluída |
+| 11 | Backlog IDEAS.md (pós-MVP) | 🟦 Em planejamento |
 
 ---
 
@@ -314,14 +315,31 @@
 4. Itens marcados em IDEAS.md mas que ainda não cabem em fase atual ficam na fila;
    serão abordados quando a fase correspondente for ativada.
 
-## Pós-MVP
+## Fase 11 — Backlog IDEAS.md (pós-MVP) 🟦
 
-Depois do gate da Fase 10, abre-se o backlog de:
-- 22 UFs restantes (Fase 11)
-- WhatsApp via Meta Cloud API (fase 12)
-- Funcionalidades avançadas marcadas em `IDEAS.md`
-- Reprocessamento histórico
-- Tudo o mais que estiver marcado e não tiver entrado no MVP
+**Goal**: depois do gate da Fase 10, abrir programa estruturado de absorção
+do backlog em `IDEAS.md` priorizado por valor × esforço.
+
+**Pré-requisitos** (gate da Fase 10):
+- [x] MVP no ar com cron 3 dias verde
+- [x] Sistema operacional (audit log, Cloud Functions, dashboard)
+- [x] Fase A-C de validação pós-MVP concluída (cobertura 100% críticos, smoke real)
+
+**Como funciona**:
+1. Dono marca itens em `IDEAS.md` com `[x]` priorizando.
+2. Cada item vira issue (ou bundle de issues) com label `idea-absorbed`.
+3. PRs referenciam `Closes IDEAS.md #N` e seguem CLAUDE.md.
+4. Gate de cada PR: testes, cobertura ≥ 95%, sem regressão de segurança.
+
+**Subfases candidatas** (a priorizar conforme dono escolhe):
+- 11.1 — 12 UFs restantes sem cobertura legislativa (BA, MA, AP, PA, RN, SE, SC, TO, RR, AC já em re-verificação trimestral).
+- 11.2 — WhatsApp via Meta Cloud API (alternativa ao Telegram).
+- 11.3 — Reprocessamento histórico (comando `--reprocess` está pronto; falta UI/bot).
+- 11.4 — Melhorias do `--dry-run` (separar leitura Firestore × escrita InMemory).
+- 11.5 — Funcionalidades avançadas marcadas em `IDEAS.md` (ML scoring, summarization customizada, alertas por tópico jurídico, etc.).
+
+**Não-goal**: implementar tudo do IDEAS.md. Backlog é fonte de candidatos,
+não checklist obrigatório. Triagem semestral pelo dono filtra o que segue.
 
 ---
 
