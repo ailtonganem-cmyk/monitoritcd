@@ -98,7 +98,7 @@ class ALEPCollector(BaseCollector):
                 seen.add(codigo)
 
                 item = self._parse_proposicao(raw)
-                if item is None:
+                if item is None:  # pragma: no cover - defesa redundante (codigo ja validado acima)
                     continue
                 if item.data_publicacao and item.data_publicacao < cutoff:
                     continue

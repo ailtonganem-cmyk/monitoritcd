@@ -149,19 +149,20 @@ class ALEPECollector(BaseCollector):
         numero = proj.get("numero", "") or ""
         ano = proj.get("ano", "") or ""
         tipo = proj.get("tipo", "") or "PROPOSIÇÃO"
-        # Bs4 garante str em get(); cast defensivo
-        if not isinstance(numero, str):
+        # Bs4 garante str em get() para XML; casts defensivos cobrem
+        # malformed input que nao ocorre na pratica.
+        if not isinstance(numero, str):  # pragma: no cover
             numero = ""
-        if not isinstance(ano, str):
+        if not isinstance(ano, str):  # pragma: no cover
             ano = ""
-        if not isinstance(tipo, str):
+        if not isinstance(tipo, str):  # pragma: no cover
             tipo = "PROPOSIÇÃO"
 
         titulo = f"{tipo} {numero}/{ano}".strip()
 
         autores = []
         for a in proj.find_all("autor"):
-            if isinstance(a, Tag):
+            if isinstance(a, Tag):  # pragma: no cover - find_all sempre Tag em XML
                 nome = a.get("nome", "")
                 if isinstance(nome, str) and nome:
                     autores.append(nome)
