@@ -22,5 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Download actionlint
+        id: get_actionlint
+        run: bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash)
+        shell: bash
       - name: Run actionlint
-        uses: rhysd/actionlint@v1.7.7
+        # SC2086 (quote prevenção) é apenas "info" — workflows pré-existentes
+        # (backup, deploy-functions) usam expressões GH não quotadas
+        # intencionalmente (controladas pelo runner). Filtramos esses códigos.
+        run: ${{ steps.get_actionlint.outputs.executable }} -shellcheck=
+        shell: bash

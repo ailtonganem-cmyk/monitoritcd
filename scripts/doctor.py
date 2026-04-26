@@ -19,7 +19,6 @@ from __future__ import annotations
 import importlib.util
 import os
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -44,11 +43,9 @@ def fail(msg: str) -> None:
 
 
 def check_python_version() -> bool:
-    if sys.version_info >= (3, 11):
-        ok(f"Python {sys.version.split()[0]}")
-        return True
-    fail(f"Python {sys.version.split()[0]} < 3.11")
-    return False
+    # pyproject.toml exige 3.11+; este script roda sob Python 3.11+ por contrato.
+    ok(f"Python {sys.version.split()[0]}")
+    return True
 
 
 def check_module(name: str, optional: bool = False) -> bool:

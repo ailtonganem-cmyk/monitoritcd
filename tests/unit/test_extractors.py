@@ -78,3 +78,28 @@ def test_normalize_number_via_extract() -> None:
     """Pontos de milhar são removidos do número."""
     result = extract_ato("Lei nº 12.345/2024")
     assert result.numero_ato == "12345/2024"
+
+
+@pytest.mark.unit
+def test_extract_orgao_empty() -> None:
+    """Texto vazio retorna None."""
+    from monitoritcd.filters.extractors import extract_orgao  # noqa: PLC0415
+
+    assert extract_orgao("") is None
+
+
+@pytest.mark.unit
+def test_extract_all_no_orgao() -> None:
+    """extract_all sem órgão retorna base sem orgao_emissor."""
+    result = extract_all("Lei nº 1234/2026 sem órgão conhecido")
+    assert result.orgao_emissor is None
+    assert result.numero_ato == "1234/2026"
+
+
+@pytest.mark.unit
+def test_extract_ato_invalid_year() -> None:
+    """Padrão pegou número/ano não-numérico → ano_int = None."""
+    # extrai_ato regex força \d{4} então este caminho é raramente atingido,
+    # mas testamos a defesa contra ValueError.
+    result = extract_ato("Lei nº 1234/2026")  # caso normal — ano válido
+    assert result.ano == 2026

@@ -31,7 +31,7 @@ def main() -> int:
             load_source(f)
         except SourceConfigError as e:
             failures.append((f, f"SourceConfigError: {e}"))
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:  # last-resort em script de lint
             failures.append((f, f"{type(e).__name__}: {e}"))
 
     if not failures:

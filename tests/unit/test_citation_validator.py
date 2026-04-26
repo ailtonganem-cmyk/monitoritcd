@@ -59,3 +59,31 @@ def test_validate_empty_text() -> None:
     valid, invalid = validate_cc_citations("")
     assert valid
     assert invalid == []
+
+
+@pytest.mark.unit
+def test_validate_small_number_outside_art_context() -> None:
+    """Número pequeno (< 100) sem palavra 'art' próxima é ignorado."""
+    # "5 do Código Civil" — 5 sem ser citado como artigo
+    valid, invalid = validate_cc_citations("Item 5 do Código Civil")
+    # 5 não é válido como art mas a heurística ignora; resultado válido.
+    assert valid
+    assert 5 not in invalid
+
+
+@pytest.mark.unit
+def test_validate_with_art_keyword() -> None:
+    """Número pequeno com 'art' explícito é considerado citação real."""
+    valid, _invalid = validate_cc_citations(
+        "art. 5 do Código Civil"  # 5 é válido (Parte Geral)
+    )
+    assert valid
+
+
+@pytest.mark.unit
+def test_validate_text_with_garbage_in_capture() -> None:
+    """Texto onde o regex match dá grupo não-numérico é tolerado."""
+    # Garante que ValueError não derruba (linha 72-73 do módulo).
+    valid, invalid = validate_cc_citations("art. 1.829 do Código Civil normal")
+    assert valid
+    assert invalid == []

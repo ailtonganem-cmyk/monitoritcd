@@ -118,3 +118,38 @@ def test_no_topics_no_cluster() -> None:
     docs = [_make_doc(doc_id="x", uf="SP", topics=[])]
     clusters = assign_thematic_clusters(docs)
     assert clusters == []
+
+
+@pytest.mark.unit
+def test_doc_without_llm_returns_none_numero() -> None:
+    """Doc sem LLMResult não tem numero_ato extraído (linha 46 do módulo)."""
+    from monitoritcd.filters.thematic_cluster import _doc_numero_ato  # noqa: PLC0415
+
+    src = Source(
+        id="src",
+        nome="t",
+        uf="SP",
+        tipo=TipoFonte.NOTICIA,
+        url="https://example.com/feed",
+        parser=Parser.GENERIC_RSS,
+        ativo=True,
+        topics=[Topic.ITCD],
+    )
+    raw = RawItem(
+        source_id="src",
+        url="https://example.com/x",
+        titulo_raw="T",
+        texto_raw="B",
+        data_publicacao=datetime.now(UTC),
+        fetched_at=datetime.now(UTC),
+        content_hash="a" * 64,
+    )
+    doc = Documento(
+        owner_id="o",
+        doc_id="x",
+        source=src,
+        original=raw,
+        llm=None,
+        status=StatusDocumento.PENDING,
+    )
+    assert _doc_numero_ato(doc) is None

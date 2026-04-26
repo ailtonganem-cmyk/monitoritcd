@@ -177,3 +177,42 @@ def test_keyword_matcher_fallback_path() -> None:
     assert set(found) == {"itcd", "alíquota"}
     # AHO_CORASICK_AVAILABLE é constante de módulo
     assert isinstance(kw_module.AHO_CORASICK_AVAILABLE, bool)
+
+
+@pytest.mark.unit
+def test_keyword_matcher_fallback_constructor(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Constrói matcher com Aho-Corasick desabilitado (cobre _build_automaton fallback)."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    # Força _AHC_AVAILABLE = False antes de construir
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", False)
+    m = kw_module.KeywordMatcher(["ITCD", "ITCMD"])
+    assert not m.using_aho_corasick
+    matched, found = m.find_in("Lei sobre ITCD aprovada")
+    assert matched
+    assert "itcd" in found
+
+
+@pytest.mark.unit
+def test_keyword_matcher_case_sensitive_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Case sensitive + fallback path (cobre branch sem _lower_keywords)."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", False)
+    m = kw_module.KeywordMatcher(["ITCD"], case_sensitive=True)
+    matched, _ = m.find_in("ITCD em maiúsculas")
+    assert matched
+    matched_lower, _ = m.find_in("itcd em minúsculas")
+    assert not matched_lower
+
+
+@pytest.mark.unit
+def test_keyword_matcher_empty_keyword_in_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """String vazia na lista é ignorada no fallback path."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", False)
+    m = kw_module.KeywordMatcher(["", "ITCD", ""])
+    matched, found = m.find_in("ITCD novo")
+    assert matched
+    assert "" not in found

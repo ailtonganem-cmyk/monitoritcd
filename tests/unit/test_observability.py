@@ -142,8 +142,10 @@ def test_dlq_remove() -> None:
             error_message="",
         )
     )
-    assert dlq.remove("x1") is True
-    assert dlq.remove("nonexistent") is False
+    removed_x1 = dlq.remove("x1")
+    removed_missing = dlq.remove("nonexistent")
+    assert removed_x1 is True
+    assert removed_missing is False
     assert len(dlq) == 0
 
 
