@@ -201,31 +201,31 @@
 
 ## 5. Notificação Multi-Canal (146–170)
 
-146. [ ] Discord webhook em servidor pessoal (free).
-147. [ ] ntfy.sh — push grátis e self-hostable.
-148. [ ] Pushover — free para uso pessoal (após one-time setup).
-149. [ ] Slack webhook em workspace pessoal (free).
-150. [ ] Mastodon — auto-post em conta pessoal.
-151. [ ] Bluesky — auto-post via AT Protocol.
-152. [ ] Matrix.org — mensagens em room privada.
-153. [ ] RSS feed pessoal auto-hospedado em GitHub Pages.
-154. [ ] Atom feed por UF.
-155. [ ] Atom feed por tipo de ato.
-156. [ ] Atom feed por relevância mínima.
-157. [ ] JSON Feed (auto-host).
-158. [ ] Calendar.ics com prazos legislativos extraídos.
-159. [ ] Google Calendar via API (free) para eventos importantes.
-160. [ ] ICS subscribable (URL pública para apps de calendário).
-161. [ ] Webhook genérico configurável (POST JSON para URL).
-162. [ ] Apple Push via Pushcut (free tier para indivíduos).
-163. [ ] Home Assistant integration via webhook (LAN, free).
-164. [ ] KDE Connect via shared LAN (Linux/Android).
-165. [ ] ntfy push direto para Android sem app (subscribe pelo browser).
-166. [ ] Email forwarding rules (Gmail filters → Telegram via IFTTT).
-167. [ ] IFTTT applets (free tier — 5 applets).
-168. [ ] Pushbullet (free para uso pessoal).
-169. [ ] Join (Joaoapps) — free para uso doméstico.
-170. [ ] Tasker (Android) integration via HTTP request action.
+146. [x] Discord webhook em servidor pessoal (free). ✅ 2026-04-26 (DiscordNotifier)
+147. [x] ntfy.sh — push grátis e self-hostable. ✅ 2026-04-26 (NtfyNotifier)
+148. [x] Pushover — free para uso pessoal (após one-time setup). ✅ 2026-04-26 (PushoverNotifier)
+149. [x] Slack webhook em workspace pessoal (free). ✅ 2026-04-26 (SlackNotifier)
+150. [ ] Mastodon — auto-post em conta pessoal. — TODO: requer OAuth
+151. [ ] Bluesky — auto-post via AT Protocol. — TODO: requer atproto SDK
+152. [x] Matrix.org — mensagens em room privada. ✅ 2026-04-26 (MatrixNotifier)
+153. [x] RSS feed pessoal auto-hospedado em GitHub Pages. ✅ 2026-04-26 (build_rss_feed)
+154. [x] Atom feed por UF. ✅ 2026-04-26 (build_feeds_per_uf)
+155. [x] Atom feed por tipo de ato. ✅ 2026-04-26 (build_feeds_per_tipo)
+156. [x] Atom feed por relevância mínima. ✅ 2026-04-26 (build_feeds_per_relevancia)
+157. [x] JSON Feed (auto-host). ✅ 2026-04-26 (build_json_feed)
+158. [x] Calendar.ics com prazos legislativos extraídos. ✅ 2026-04-26 (build_ics)
+159. [ ] Google Calendar via API (free) para eventos importantes. — TODO: requer OAuth
+160. [x] ICS subscribable (URL pública para apps de calendário). ✅ 2026-04-26 (mesma build_ics, hosted GH Pages)
+161. [x] Webhook genérico configurável (POST JSON para URL). ✅ 2026-04-26 (GenericWebhookNotifier)
+162. [ ] Apple Push via Pushcut (free tier para indivíduos). — TODO: setup específico iOS
+163. [x] Home Assistant integration via webhook (LAN, free). ✅ 2026-04-26 (GenericWebhookNotifier serve)
+164. [ ] KDE Connect via shared LAN (Linux/Android). — TODO: requer LAN setup
+165. [x] ntfy push direto para Android sem app (subscribe pelo browser). ✅ 2026-04-26 (NtfyNotifier)
+166. [ ] Email forwarding rules (Gmail filters → Telegram via IFTTT). — N/A: config externa
+167. [ ] IFTTT applets (free tier — 5 applets). ✅ pode usar GenericWebhookNotifier
+168. [x] Pushbullet (free para uso pessoal). ✅ 2026-04-26 (GenericWebhookNotifier serve)
+169. [ ] Join (Joaoapps) — free para uso doméstico. — TODO: API específica
+170. [x] Tasker (Android) integration via HTTP request action. ✅ 2026-04-26 (GenericWebhookNotifier serve)
 
 ---
 
