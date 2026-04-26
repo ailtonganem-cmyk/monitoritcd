@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
+  <title>{{ subject }}</title>
+  <style>
+    @media (prefers-color-scheme: dark) {
+      .bg-page { background:#1a1a1a !important; }
+      .bg-card { background:#2a2a2a !important; }
+      .text-primary { color:#f0f0f0 !important; }
+      .text-secondary { color:#bbb !important; }
+      .text-muted { color:#888 !important; }
+      .link { color:#6db4ff !important; }
+      .destaque-bg { background:#3a2f00 !important; }
+      .destaque-text { color:#ffd966 !important; }
+    }
+  </style>
+</head>
+{# #112 — Template "executivo": resumo agregado + top 5. #}
+<body class="bg-page" style="margin:0; padding:0; background:#f5f5f7; font-family:Georgia,'Times New Roman',serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-page" style="background:#f5f5f7;">
+    <tr>
+      <td align="center" style="padding:24px 12px;">
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" class="bg-card" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+          <tr>
+            <td style="padding:28px 28px 12px 28px; border-bottom:2px solid #1a1a1a;">
+              {% if saudacao %}
+              <p class="text-secondary" style="margin:0 0 6px 0; font-size:13px; color:#666; font-style:italic;">{{ saudacao }}</p>
+              {% endif %}
+              <h1 class="text-primary" style="margin:0; font-size:22px; color:#111; font-weight:bold;">Briefing Executivo — MonitorITCD</h1>
+              <p class="text-secondary" style="margin:8px 0 0 0; font-size:13px; color:#666;">{{ data_geracao }} · {{ digest_label }} · {{ items|length }} {% if items|length == 1 %}item monitorado{% else %}itens monitorados{% endif %}</p>
+            </td>
+          </tr>
+
+          {# Resumo agregado #}
+          {% if items|length > 0 %}
+          <tr>
+            <td style="padding:20px 28px;">
+              <p class="text-primary" style="margin:0; font-size:14px; line-height:1.7; color:#222;">
+                <strong>Sumário do período</strong>: {{ items|length }} {% if items|length == 1 %}item monitorado{% else %}itens monitorados{% endif %}
+                {% if criticos > 0 %} · <span style="color:#d32f2f; font-weight:600;">{{ criticos }} crítico{% if criticos > 1 %}s{% endif %}</span>{% endif %}
+                {% if altos > 0 %} · <span style="color:#f57c00; font-weight:600;">{{ altos }} alta relevância</span>{% endif %}
+                {% if ufs %} · UFs: {{ ufs }}{% endif %}.
+              </p>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# Top 5 detalhado #}
+          {% if ranking %}
+          <tr>
+            <td style="padding:8px 28px 24px 28px;">
+              <h2 class="text-primary" style="margin:0 0 12px 0; font-size:16px; color:#111;">⭐ Os {{ ranking|length }} mais relevantes</h2>
+              {% for h in ranking %}
+              <div style="margin-bottom:18px; padding-left:12px; border-left:3px solid {{ h.tier_color }};">
+                <p class="text-muted" style="margin:0; font-size:11px; color:#999;">{{ h.tier_emoji }} {{ h.tier_label }} · {{ h.uf }} · {{ h.tipo_label }}{% if h.data_pub %} · {{ h.data_pub }}{% endif %}</p>
+                <h3 class="text-primary" style="margin:4px 0 6px 0; font-size:15px; color:#111;">
+                  <a href="{{ h.url }}" class="link" style="color:#0066cc; text-decoration:none;">{{ h.titulo }}</a>
+                </h3>
+                <p class="text-secondary" style="margin:0; font-size:13px; line-height:1.6; color:#444;">{{ h.resumo }}</p>
+              </div>
+              {% endfor %}
+            </td>
+          </tr>
+          {% endif %}
+
+          <tr>
+            <td class="text-muted" style="padding:18px 28px; text-align:center; font-size:11px; color:#999; border-top:1px solid #ececec;">
+              {% if bot_url %}
+              <p style="margin:0 0 6px 0;"><a href="{{ bot_url }}" class="link" style="color:#0066cc; text-decoration:none;">💬 Ver lista completa no bot</a></p>
+              {% endif %}
+              MonitorITCD · {{ data_geracao }}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

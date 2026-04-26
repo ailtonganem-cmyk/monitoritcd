@@ -71,12 +71,21 @@ def _doc(
 @pytest.mark.templates
 class TestEmailRender:
     def test_subject_includes_count(self) -> None:
+        # #118: pluralização correta — "1 novidade" (singular)
         subject, _ = render_email(
             [_doc()],
             digest_label="Diário",
             data_geracao=FIXED_NOW,
         )
-        assert "1 novidades" in subject
+        assert "1 novidade" in subject
+
+    def test_subject_pluralizado_para_n_maior_que_1(self) -> None:
+        subject, _ = render_email(
+            [_doc(titulo=f"PL {i}/2026") for i in range(5)],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "5 novidades" in subject
 
     def test_empty_state_renders(self) -> None:
         subject, body = render_email(
@@ -131,13 +140,15 @@ class TestEmailRender:
         assert 'http-equiv="Content-Security-Policy"' in body
 
     def test_highlights_section_for_critico_alta(self) -> None:
+        # Template novo (#103) usa "Top X mais relevantes" como ranking,
+        # substituindo o antigo título "Destaques".
         docs = [
             _doc(titulo="Crítico", tier=SeverityTier.CRITICO),
             _doc(titulo="Alta", tier=SeverityTier.ALTA),
             _doc(titulo="Normal", tier=SeverityTier.NORMAL),
         ]
         _, body = render_email(docs, digest_label="Diário", data_geracao=FIXED_NOW)
-        assert "Destaques" in body or "destaques" in body
+        assert "mais relevantes" in body or "Top" in body
 
     def test_snapshot_simple_digest(self, snapshot: object) -> None:
         # Snapshot test — qualquer mudança visual no template detectada.
