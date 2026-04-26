@@ -326,31 +326,31 @@
 
 ## 8. Busca & Navegação (256–280)
 
-256. [ ] Busca full-text local (SQLite FTS5 mirror do Firestore para queries rápidas).
-257. [ ] Busca semântica via embeddings (sentence-transformers local, sem custo).
-258. [ ] Busca por similaridade cosine.
-259. [ ] Busca facetada (UF + tipo + data + relevância simultâneos).
-260. [ ] Highlight de termos no resultado.
-261. [ ] Busca por número de ato com normalização (`Lei 1234/2026` ≡ `Lei nº 1.234, de 2026`).
-262. [ ] Busca por órgão emissor.
-263. [ ] Busca por relator/magistrado.
-264. [ ] Salvamento de buscas favoritas.
-265. [ ] Histórico de buscas.
-266. [ ] Autocomplete de termos baseado em uso anterior.
-267. [ ] Busca booleana (AND / OR / NOT).
-268. [ ] Busca fuzzy (Levenshtein) para typos.
-269. [ ] Busca temporal ("últimos 30d", "abril 2026", "Q1 2026").
-270. [ ] Export do resultado (CSV/JSON).
-271. [ ] URL compartilhável de busca (link encoded).
-272. [ ] Bookmark de busca recorrente.
-273. [ ] Busca em texto integral de PDF (após extração).
-274. [ ] Busca em comentários/anotações pessoais.
-275. [ ] Busca por tag.
-276. [ ] Busca por modelo LLM usado (filtra docs classificados por X).
-277. [ ] Busca por versão de prompt (filtra docs classificados com prompt vN).
-278. [ ] "Mais como este" — similaridade entre docs.
-279. [ ] CLI `monitoritcd search "termo"` para uso local.
-280. [ ] Busca regex avançada para usuário poweruser.
+256. [ ] Busca full-text local (SQLite FTS5 mirror do Firestore para queries rápidas). — TODO: otimização futura
+257. [ ] Busca semântica via embeddings (sentence-transformers local, sem custo). — TODO: heavy ML
+258. [ ] Busca por similaridade cosine. — TODO: requer embeddings
+259. [x] Busca facetada (UF + tipo + data + relevância simultâneos). ✅ 2026-04-26 (faceted_search)
+260. [x] Highlight de termos no resultado. ✅ 2026-04-26 (highlight_term)
+261. [x] Busca por número de ato com normalização. ✅ 2026-04-26 (normalize_act_number)
+262. [x] Busca por órgão emissor. ✅ pré-existente (campo source.nome via term)
+263. [x] Busca por relator/magistrado. ✅ pré-existente (via metadados detect_relator)
+264. [ ] Salvamento de buscas favoritas. — TODO: state externo
+265. [ ] Histórico de buscas. — TODO: state externo
+266. [ ] Autocomplete de termos baseado em uso anterior. — TODO: requer histórico
+267. [x] Busca booleana (AND / OR / NOT). ✅ 2026-04-26 (boolean_search)
+268. [x] Busca fuzzy (Levenshtein) para typos. ✅ 2026-04-26 (fuzzy_search)
+269. [x] Busca temporal ("últimos 30d", "abril 2026", "Q1 2026"). ✅ 2026-04-26 (faceted_search period)
+270. [x] Export do resultado (CSV/JSON). ✅ pré-existente (build_csv/json_attachment)
+271. [ ] URL compartilhável de busca (link encoded). — TODO: UI
+272. [ ] Bookmark de busca recorrente. — TODO: state externo (cobertura via watch list)
+273. [ ] Busca em texto integral de PDF (após extração). — TODO: requer pdfplumber
+274. [x] Busca em comentários/anotações pessoais. ✅ 2026-04-26 (tag "comment:" pesquisável)
+275. [x] Busca por tag. ✅ 2026-04-26 (faceted_search tag arg)
+276. [x] Busca por modelo LLM usado (filtra docs classificados por X). ✅ 2026-04-26 (llm_model arg)
+277. [x] Busca por versão de prompt (filtra docs classificados com prompt vN). ✅ 2026-04-26 (prompt_version arg)
+278. [x] "Mais como este" — similaridade entre docs. ✅ 2026-04-26 (more_like_this)
+279. [ ] CLI `monitoritcd search "termo"` para uso local. — TODO: adicionar subcomando em main.py
+280. [x] Busca regex avançada para usuário poweruser. ✅ 2026-04-26 (regex_search)
 
 ---
 
