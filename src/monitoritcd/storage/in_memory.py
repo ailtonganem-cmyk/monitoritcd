@@ -117,6 +117,16 @@ class InMemoryStorage:
             raise DocumentNotFoundError(msg)
         self._documentos[doc_id] = doc.model_copy(update={"status": status})
 
+    async def add_user_tag(self, doc_id: str, tag: str) -> None:
+        doc = self._documentos.get(doc_id)
+        if doc is None:
+            msg = f"Documento não encontrado: {doc_id}"
+            raise DocumentNotFoundError(msg)
+        if tag in doc.user_tags:
+            return  # idempotente
+        new_tags = [*doc.user_tags, tag]
+        self._documentos[doc_id] = doc.model_copy(update={"user_tags": new_tags})
+
     async def exists_by_hash(self, content_hash: str) -> bool:
         return any(d.original.content_hash == content_hash for d in self._documentos.values())
 
