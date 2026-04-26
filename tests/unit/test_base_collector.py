@@ -19,6 +19,8 @@ import respx
 from monitoritcd.core.base_collector import (
     BaseCollector,
     CollectorError,
+    DEFAULT_ACCEPT,
+    RateLimitedError,
     _domain_of,
     _DomainRateLimiter,
     content_hash,
@@ -240,6 +242,124 @@ class TestProxyFallback:
             async with collector as c:
                 with pytest.raises(CollectorError, match="proxy fetch falhou"):
                     await c.fetch()
+
+    @pytest.mark.asyncio
+    async def test_proxy_used_on_403_geo_block(self) -> None:
+        """HTTP 403 + geo_restricted + proxy → fallback (geo-block fix)."""
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                return_value=httpx.Response(403, text="forbidden"),
+            )
+            respx.get(url__startswith="https://proxy.example.com/").mock(
+                return_value=httpx.Response(200, text="<via-proxy/>"),
+            )
+            collector = _StubCollector(
+                self._geo_src(),
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                text = await c.fetch()
+                assert text == "<via-proxy/>"
+
+    @pytest.mark.asyncio
+    async def test_proxy_used_on_451_unavailable_for_legal(self) -> None:
+        """HTTP 451 (UnavailableForLegalReasons) também é geo-block típico."""
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                return_value=httpx.Response(451, text="legal block"),
+            )
+            respx.get(url__startswith="https://proxy.example.com/").mock(
+                return_value=httpx.Response(200, text="ok"),
+            )
+            collector = _StubCollector(
+                self._geo_src(),
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                text = await c.fetch()
+                assert text == "ok"
+
+    @pytest.mark.asyncio
+    async def test_403_propaga_quando_nao_geo_restricted(self) -> None:
+        """403 sem geo_restricted: HTTPStatusError propaga (sem proxy)."""
+        non_geo = self._geo_src().model_copy(update={"geo_restricted": False})
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                return_value=httpx.Response(403, text="forbidden"),
+            )
+            collector = _StubCollector(
+                non_geo,
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                with pytest.raises(httpx.HTTPStatusError):
+                    await c.fetch()
+
+
+@pytest.mark.unit
+class TestRateLimitedHandling:
+    """429/503 NÃO devem retentar — backoff de 30s não resolve rate limit."""
+
+    @pytest.mark.asyncio
+    async def test_429_levanta_rate_limited_error_sem_retry(self) -> None:
+        async with respx.mock:
+            route = respx.get("https://www.lexml.gov.br/").mock(
+                return_value=httpx.Response(429, text="too many requests"),
+            )
+            async with _StubCollector(_src()) as c:
+                with pytest.raises(RateLimitedError, match="429"):
+                    await c.fetch()
+                # Sem retry: apenas 1 chamada (vs 3 do retry padrão)
+                assert route.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_503_levanta_rate_limited_error_sem_retry(self) -> None:
+        async with respx.mock:
+            route = respx.get("https://www.lexml.gov.br/").mock(
+                return_value=httpx.Response(503, text="overloaded"),
+            )
+            async with _StubCollector(_src()) as c:
+                with pytest.raises(RateLimitedError, match="503"):
+                    await c.fetch()
+                assert route.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_500_continua_com_retry(self) -> None:
+        # 500 ainda tenta retry (transient interno do servidor) — só 429/503
+        # são considerados rate limit / overload sem retry.
+        async with respx.mock:
+            route = respx.get("https://www.lexml.gov.br/").mock(
+                return_value=httpx.Response(500, text="internal error"),
+            )
+            async with _StubCollector(_src()) as c:
+                with pytest.raises(httpx.HTTPStatusError):
+                    await c.fetch()
+                # 3 tentativas (RETRY_MAX_ATTEMPTS), sem ser RateLimitedError
+                assert route.call_count >= 2  # pelo menos retry uma vez
+
+
+@pytest.mark.unit
+class TestAcceptHeader:
+    """Default Accept favorece JSON — fix para sapl-es retornar HTML por default."""
+
+    @pytest.mark.asyncio
+    async def test_accept_header_default_inclui_json_primeiro(self) -> None:
+        # Verifica que client default tem Accept: application/json...
+        async with _StubCollector(_src()) as c:
+            assert c._client is not None
+            accept = c._client.headers.get("Accept", "")
+            assert "application/json" in accept
+            # JSON deve vir antes de HTML (preferência)
+            assert accept.index("application/json") < accept.index("text/html")
+
+    def test_default_accept_constant_form(self) -> None:
+        # Sanity: constante exportada e contém os tipos esperados.
+        assert "application/json" in DEFAULT_ACCEPT
+        assert "application/xml" in DEFAULT_ACCEPT
+        assert "text/html" in DEFAULT_ACCEPT
 
 
 @pytest.mark.unit
