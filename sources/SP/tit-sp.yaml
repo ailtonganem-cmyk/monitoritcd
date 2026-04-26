@@ -1,0 +1,26 @@
+id: tit-sp-decisoes
+uf: SP
+nome: "TIT-SP — Tribunal de Impostos e Taxas (stub)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://www.fazenda.sp.gov.br/tit/"
+keywords_required:
+  - ITCMD
+  - ITD
+  - "causa mortis"
+  - "doação"
+selectors:
+  item: "div.decisao"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #39 do IDEAS.md — TIT-SP (Tribunal de Impostos e Taxas de São Paulo).
+  Stub: o TIT é o órgão administrativo de julgamento de tributos estaduais SP.
+  Cobre disputas pré-judiciais de ITCMD. Volume baixo, sinal específico.
+
+  TITs estaduais existem em SP, RJ, MG, RS — outros estados podem ser stubs futuros.

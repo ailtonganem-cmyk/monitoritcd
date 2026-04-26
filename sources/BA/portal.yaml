@@ -1,0 +1,34 @@
+id: alba-portal
+uf: BA
+nome: "ALBA — Assembleia Legislativa da Bahia (portal — stub)"
+tipo: assembleia
+parser: generic_html
+url: "https://www.al.ba.leg.br/proposicoes"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "div.proposicao"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #5 do IDEAS.md — ALBA (Bahia).
+  Stub: ALBA não usa SAPL. Selectors precisam ser confirmados manualmente
+  (provável drift). Considerar custom collector se layout for ASP.NET com VIEWSTATE.
+  Antes de ativar:
+    1. Inspecionar https://www.al.ba.leg.br/proposicoes no browser
+    2. Confirmar/ajustar selectors CSS
+    3. Cassette VCR em tests/integration/test_sources_BA.py

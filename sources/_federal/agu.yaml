@@ -1,0 +1,26 @@
+id: agu-pareceres
+uf: _federal
+nome: "AGU — Pareceres (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://www.gov.br/agu/pt-br/composicao/cgu/cgu/pareceres"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - parecer
+selectors:
+  item: "div.tileItem"
+  titulo: "h2.tileHeadline a"
+  link: "h2.tileHeadline a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #50 do IDEAS.md (parcial) — AGU (Advocacia-Geral da União).
+  Stub: pareceres vinculantes e referenciais.

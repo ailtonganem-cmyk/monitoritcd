@@ -1,0 +1,29 @@
+id: aleto-portal
+uf: TO
+nome: "ALETO — Assembleia Legislativa do Tocantins (portal — stub)"
+tipo: assembleia
+parser: generic_html
+url: "https://www.al.to.leg.br/proposicoesEmTramitacao"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "tr.proposicao"
+  titulo: "td.titulo a"
+  link: "td.titulo a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #27 do IDEAS.md — ALETO (Tocantins).
+  Stub generic_html. ALETO usa portal próprio (não SAPL). Validar selectors.

@@ -1,0 +1,27 @@
+id: ibet-publicacoes
+uf: _federal
+nome: "IBET — Instituto Brasileiro de Estudos Tributários (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://www.ibet.com.br/publicacoes/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento tributário"
+selectors:
+  item: "article.publicacao"
+  titulo: "h2.titulo a"
+  link: "h2.titulo a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: false
+fragile: true
+notas: |
+  Item #45 do IDEAS.md — IBET.
+  Stub: portal institucional. Validar URL e selectors antes de ativar.
+  Volume baixo (publicações eventuais), mas alto sinal doutrinário.

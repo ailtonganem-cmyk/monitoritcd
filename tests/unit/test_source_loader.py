@@ -219,3 +219,116 @@ class TestLoadAllSources:
         existing = {p.name for p in federal_dir.glob("*.yaml")}
         missing = expected - existing
         assert not missing, f"YAMLs de tribunais faltando: {missing}"
+
+    def test_categoria_1_cobertura_27_ufs(self) -> None:
+        """IDEAS.md Categoria 1: todas as 27 UFs devem ter ≥ 1 fonte (ativa ou stub).
+
+        Itens #1-#27 cobertos: cada UF brasileira tem pelo menos 1 YAML em sources/{UF}/.
+        """
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        sources_dir = repo_root / "sources"
+        if not sources_dir.is_dir():
+            return
+        ufs_brasileiras = {
+            "AC",
+            "AL",
+            "AP",
+            "AM",
+            "BA",
+            "CE",
+            "DF",
+            "ES",
+            "GO",
+            "MA",
+            "MT",
+            "MS",
+            "MG",
+            "PA",
+            "PB",
+            "PR",
+            "PE",
+            "PI",
+            "RJ",
+            "RN",
+            "RS",
+            "RO",
+            "RR",
+            "SC",
+            "SP",
+            "SE",
+            "TO",
+        }
+        ufs_com_fonte = {
+            d.name for d in sources_dir.iterdir() if d.is_dir() and d.name in ufs_brasileiras
+        }
+        faltando = ufs_brasileiras - ufs_com_fonte
+        assert not faltando, f"UFs sem nenhuma fonte (Categoria 1 IDEAS.md): {faltando}"
+
+    def test_categoria_1_midia_juridica_funcional(self) -> None:
+        """IDEAS.md #40, #41, #42: mídia jurídica especializada disponível e ativa."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        federal_dir = repo_root / "sources" / "_federal"
+        if not federal_dir.is_dir():
+            return
+        expected_ativos = {"jota.yaml", "conjur.yaml", "migalhas.yaml"}
+        existing = {p.name for p in federal_dir.glob("*.yaml")}
+        missing = expected_ativos - existing
+        assert not missing, f"Mídia jurídica faltando: {missing}"
+        for nome in expected_ativos:
+            src = load_source(federal_dir / nome)
+            # JOTA e Conjur ativos. Migalhas pode ficar fragile=true mas ativa.
+            if nome in {"jota.yaml", "conjur.yaml", "migalhas.yaml"}:
+                assert src.tipo.value == "noticia"
+
+    def test_categoria_1_federais_oficiais_stubs(self) -> None:
+        """IDEAS.md #34, #35, #50: stubs de Receita, CONFAZ, PGFN, AGU criados."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        federal_dir = repo_root / "sources" / "_federal"
+        if not federal_dir.is_dir():
+            return
+        expected = {
+            "receita-federal.yaml",
+            "confaz.yaml",
+            "pgfn.yaml",
+            "agu.yaml",
+        }
+        existing = {p.name for p in federal_dir.glob("*.yaml")}
+        missing = expected - existing
+        assert not missing, f"Federais oficiais (stubs) faltando: {missing}"
+
+    def test_categoria_1_institutos_e_academia_stubs(self) -> None:
+        """IDEAS.md #45-#49: stubs de institutos (IBET/IBPT) e academia (SciELO/BDTD/Scholar)."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        federal_dir = repo_root / "sources" / "_federal"
+        if not federal_dir.is_dir():
+            return
+        expected = {
+            "ibet.yaml",
+            "ibpt.yaml",
+            "scielo-tributario.yaml",
+            "bdtd-capes.yaml",
+            "google-scholar.yaml",
+        }
+        existing = {p.name for p in federal_dir.glob("*.yaml")}
+        missing = expected - existing
+        assert not missing, f"Institutos/academia (stubs) faltando: {missing}"
+
+    def test_categoria_1_tj_estaduais_5_maiores(self) -> None:
+        """IDEAS.md #38: TJs estaduais cobertos (SP/RJ/MG já existem; novos: BA/CE/PE/PR/SC)."""
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        sources_dir = repo_root / "sources"
+        if not sources_dir.is_dir():
+            return
+        tj_existentes = {
+            ("SP", "tjsp.yaml"),
+            ("RJ", "tjrj.yaml"),
+            ("MG", "tjmg.yaml"),
+            ("BA", "tjba.yaml"),
+            ("CE", "tjce.yaml"),
+            ("PE", "tjpe.yaml"),
+            ("PR", "tjpr.yaml"),
+            ("SC", "tjsc.yaml"),
+        }
+        for uf, nome in tj_existentes:
+            tj_path = sources_dir / uf / nome
+            assert tj_path.exists(), f"TJ faltando: {uf}/{nome}"

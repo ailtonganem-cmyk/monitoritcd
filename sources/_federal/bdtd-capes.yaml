@@ -1,0 +1,28 @@
+id: bdtd-capes
+uf: _federal
+nome: "BDTD CAPES — Teses e dissertações (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://bdtd.ibict.br/vufind/Search/Results?lookfor=ITCMD&type=AllFields"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento sucessório"
+  - "holding familiar"
+selectors:
+  item: "div.result"
+  titulo: "a.title"
+  link: "a.title@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #48 do IDEAS.md — BDTD CAPES.
+  Stub: Biblioteca Digital de Teses e Dissertações. Volume baixíssimo,
+  sinal alto. Validar antes de ativar.

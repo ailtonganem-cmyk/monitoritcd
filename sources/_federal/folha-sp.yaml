@@ -1,0 +1,24 @@
+id: folha-sp-feed
+uf: _federal
+nome: "Folha de S.Paulo — Feed mercado (stub paywall)"
+tipo: noticia
+parser: generic_rss
+url: "https://feeds.folha.uol.com.br/mercado/rss091.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento sucessório"
+  - "holding familiar"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: false
+fragile: false
+notas: |
+  Item #44 do IDEAS.md (parcial) — Folha de S.Paulo.
+  Stub: feed público de Mercado. Conteúdo completo atrás de paywall;
+  RSS traz título + lead. Útil como early signal.

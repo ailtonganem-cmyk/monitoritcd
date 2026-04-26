@@ -1,0 +1,29 @@
+id: tjpe-jurisprudencia
+uf: PE
+nome: "TJ-PE — Jurisprudência (stub)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://www.tjpe.jus.br/web/jurisprudencia"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "div.resultado"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #38 do IDEAS.md (parcial) — TJ-PE.
+  Stub. Validar URL e selectors antes de ativar.

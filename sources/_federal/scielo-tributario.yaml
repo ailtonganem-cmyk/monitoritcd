@@ -1,0 +1,28 @@
+id: scielo-tributario
+uf: _federal
+nome: "SciELO — Artigos sobre tributação sucessória (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://search.scielo.org/?q=ITCMD+OR+ITCD+OR+sucess%C3%A3o&lang=pt"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "regime de bens"
+selectors:
+  item: "div.item"
+  titulo: "div.line strong a"
+  link: "div.line strong a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #47 do IDEAS.md — SciELO.
+  Stub: SciELO Search. Volume baixo (artigos acadêmicos eventuais),
+  alto sinal doutrinário. Validar selectors antes de ativar.

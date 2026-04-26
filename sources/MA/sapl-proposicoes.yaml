@@ -1,0 +1,29 @@
+id: sapl-ma
+uf: MA
+nome: "ALEMA — Proposições em tramitação (SAPL — candidato)"
+tipo: assembleia
+parser: sapl
+url: "https://sapl.al.ma.leg.br/api/materia/materialegislativa/"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
+  dias: "365"
+  page_size: "50"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #10 do IDEAS.md — ALEMA (Maranhão).
+  Stub SAPL não validado. Validação manual antes de ativar (ver AP/sapl-proposicoes.yaml).
