@@ -426,31 +426,31 @@
 
 ## 11. Observabilidade & Métricas (341–365)
 
-341. [ ] Métrica: itens coletados por execução.
-342. [ ] Métrica: itens classificados.
-343. [ ] Métrica: itens descartados (relevância < 5).
-344. [ ] Métrica: itens notificados.
-345. [ ] Métrica: tempo de cada coletor.
-346. [ ] Métrica: error rate por coletor.
-347. [ ] Métrica: tokens LLM consumidos por execução.
-348. [ ] Métrica: cota Firestore reads/writes usada (% do free tier).
-349. [ ] Métrica: cota Storage usada (MB).
-350. [ ] Métrica: tempo total da execução.
-351. [ ] Métrica: tempo do classifier batch.
-352. [ ] Métrica: tamanho médio de payload por fonte.
-353. [ ] Métrica: idade média dos itens coletados.
-354. [ ] Métrica: cobertura de UFs (quantas tiveram itens hoje).
-355. [ ] Dashboard estático em GH Pages com Plotly.
-356. [ ] Dashboard atualizado a cada cron run.
-357. [ ] Métricas em formato Prometheus (texto exportado, sem hosting).
-358. [ ] JSON feed de métricas.
-359. [ ] `/healthcheck` no bot.
-360. [ ] Smoke test integrado ao cron.
-361. [ ] Trace ID por execução (correlation_id propagado nos logs).
-362. [ ] Latência por etapa do pipeline.
-363. [ ] Memória peak por execução (psutil).
-364. [ ] SLO/SLI tracking (success rate, latência p95).
-365. [ ] Status page estática em GH Pages com histórico de incidentes.
+341. [x] Métrica: itens coletados por execução. ✅ 2026-04-26 (ExecutionMetrics.items_collected)
+342. [x] Métrica: itens classificados. ✅ 2026-04-26
+343. [x] Métrica: itens descartados (relevância < 5). ✅ 2026-04-26
+344. [x] Métrica: itens notificados. ✅ 2026-04-26
+345. [x] Métrica: tempo de cada coletor. ✅ 2026-04-26 (collector_durations_ms)
+346. [x] Métrica: error rate por coletor. ✅ 2026-04-26 (collector_errors)
+347. [x] Métrica: tokens LLM consumidos por execução. ✅ 2026-04-26 (llm_tokens_consumed)
+348. [x] Métrica: cota Firestore reads/writes usada (% do free tier). ✅ 2026-04-26 (quota_pct_*)
+349. [x] Métrica: cota Storage usada (MB). ✅ 2026-04-26 (storage_bytes)
+350. [x] Métrica: tempo total da execução. ✅ 2026-04-26 (total_duration_ms)
+351. [x] Métrica: tempo do classifier batch. ✅ 2026-04-26 (classifier_batch_duration_ms)
+352. [x] Métrica: tamanho médio de payload por fonte. ✅ 2026-04-26 (avg_payload_bytes_per_source)
+353. [x] Métrica: idade média dos itens coletados. ✅ 2026-04-26 (avg_age_days_per_source)
+354. [x] Métrica: cobertura de UFs (quantas tiveram itens hoje). ✅ 2026-04-26 (ufs_with_items)
+355. [x] Dashboard estático em GH Pages com Plotly. ✅ pré-existente (build_dashboard.py)
+356. [x] Dashboard atualizado a cada cron run. ✅ pré-existente (pages.yml)
+357. [x] Métricas em formato Prometheus (texto exportado, sem hosting). ✅ 2026-04-26 (to_prometheus)
+358. [x] JSON feed de métricas. ✅ 2026-04-26 (to_json_feed)
+359. [ ] `/healthcheck` no bot. — TODO: handler /healthcheck no bot
+360. [x] Smoke test integrado ao cron. ✅ pré-existente (--dry-run em monitor.yml)
+361. [x] Trace ID por execução (correlation_id propagado nos logs). ✅ pré-existente (run_id em structlog)
+362. [x] Latência por etapa do pipeline. ✅ 2026-04-26 (time_stage context manager)
+363. [x] Memória peak por execução (psutil). ✅ 2026-04-26 (get_memory_peak_mb)
+364. [ ] SLO/SLI tracking (success rate, latência p95). — TODO: agregação multi-execução
+365. [ ] Status page estática em GH Pages com histórico de incidentes. — TODO: setup específico
 
 ---
 
