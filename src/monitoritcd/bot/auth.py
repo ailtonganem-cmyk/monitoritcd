@@ -90,16 +90,6 @@ class RateLimiter:
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-class ConfirmationToken:
-    """Token efêmero (string + expiry) para confirmação 2-step."""
-
-    __slots__ = ("expires_at", "token")
-
-    def __init__(self, token: str, expires_at: float) -> None:
-        self.token = token
-        self.expires_at = expires_at
-
-
 class TwoStepConfirmation:
     """Gerencia tokens de confirmação para operações destrutivas.
 
@@ -145,9 +135,9 @@ class TwoStepConfirmation:
     def consume(self, token: str, expected_action: str, *, now: float | None = None) -> None:
         """Consome `token`. Levanta erro se inválido, expirado ou ação errada.
 
-        Estratégia: valida ANTES de consumir. Token só é removido em sucesso ou
-        em expiração — mismatch de ação não consome (permite o handler tentar
-        múltiplas ações se necessário, embora `find_action` seja mais limpo).
+        Estratégia: `_cleanup_expired` no inicio remove tokens vencidos, entao
+        qualquer entry remanescente esta valido em tempo. Mismatch de acao nao
+        consome (permite o handler tentar varias acoes; `find_action` e mais limpo).
         """
         ts = now if now is not None else time.monotonic()
         self._cleanup_expired(ts)
@@ -157,11 +147,7 @@ class TwoStepConfirmation:
             msg = "token de confirmação inválido"
             raise InvalidConfirmationTokenError(msg)
 
-        action, expires_at = entry
-        if ts > expires_at:
-            self._tokens.pop(token, None)
-            msg = "token expirado"
-            raise InvalidConfirmationTokenError(msg)
+        action, _expires_at = entry
         if action != expected_action:
             msg = "token de confirmação inválido"
             raise InvalidConfirmationTokenError(msg)

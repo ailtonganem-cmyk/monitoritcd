@@ -196,3 +196,83 @@ class TestSAPLCollector:
             async with SAPLCollector(_src()) as c:
                 items = await c.collect()
         assert items == []
+
+
+class TestDerivePortalBase:
+    """`_derive_portal_base` extrai portal a partir de URL de API."""
+
+    def test_derive_com_sapl_subpath(self) -> None:
+        from monitoritcd.collectors.custom.sapl import _derive_portal_base  # noqa: PLC0415
+
+        assert (
+            _derive_portal_base(
+                "https://www.al.ce.leg.br/sapl/api/materia/x/",
+            )
+            == "https://www.al.ce.leg.br/sapl"
+        )
+
+    def test_derive_com_api_no_topo(self) -> None:
+        from monitoritcd.collectors.custom.sapl import _derive_portal_base  # noqa: PLC0415
+
+        assert (
+            _derive_portal_base(
+                "https://sapl.al.ac.leg.br/api/materia/x/",
+            )
+            == "https://sapl.al.ac.leg.br"
+        )
+
+    def test_derive_sem_api_no_path(self) -> None:
+        # Linha 190: nem /sapl/api/ nem /api/ -> prefix vazio
+        from monitoritcd.collectors.custom.sapl import _derive_portal_base  # noqa: PLC0415
+
+        assert _derive_portal_base("https://example.com/") == "https://example.com"
+
+
+class TestParseIsoDate:
+    """`_parse_iso_date` aceita ISO, retorna None em invalido, defaulta UTC."""
+
+    def test_none_retorna_none(self) -> None:
+        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+
+        assert _parse_iso_date(None) is None
+
+    def test_string_vazia_retorna_none(self) -> None:
+        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+
+        assert _parse_iso_date("") is None
+
+    def test_iso_invalido_retorna_none(self) -> None:
+        # Linhas 199-200: ValueError de fromisoformat
+        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+
+        assert _parse_iso_date("not-a-date") is None
+
+    def test_iso_naive_recebe_utc(self) -> None:
+        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+
+        result = _parse_iso_date("2026-04-25T10:00:00")
+        assert result is not None
+        assert result.tzinfo is not None  # default UTC
+
+    def test_iso_com_timezone_preserva(self) -> None:
+        # Linha 201->203: tzinfo ja presente, nao sobrescreve
+        from monitoritcd.collectors.custom.sapl import _parse_iso_date  # noqa: PLC0415
+
+        result = _parse_iso_date("2026-04-25T10:00:00+03:00")
+        assert result is not None
+        assert result.utcoffset() is not None
+        assert result.utcoffset().total_seconds() == 3 * 3600  # type: ignore[union-attr]
+
+
+class TestParseMateriaInvalido:
+    """`_parse_materia` rejeita materia_id nao-int (linha 152)."""
+
+    def test_materia_sem_id_retorna_none(self) -> None:
+        from monitoritcd.collectors.custom.sapl import SAPLCollector  # noqa: PLC0415
+
+        c = SAPLCollector(_src())
+        result = c._parse_materia(
+            {"ementa": "x", "id": "string-em-vez-de-int"},
+            portal_base="https://x.gov.br/sapl",
+        )
+        assert result is None

@@ -113,35 +113,38 @@ Ver [RUNBOOKS.md](RUNBOOKS.md) — passo-a-passo de:
 
 ## Cobertura de fontes
 
-### Federais (10 fontes)
+> Fonte da verdade detalhada: [docs/sources_status.md](docs/sources_status.md).
 
-| Fonte | Tópicos | Status | Notas |
-|---|---|---|---|
-| LexML | itcd, sucessoes | 🟢 ativo | API SRU oficial |
-| STF | itcd, sucessoes, regime_bens | 🟢 ativo | RSS oficial |
-| STJ | itcd, sucessoes, regime_bens | 🟢 ativo | RSS oficial |
-| TRF1 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| TRF2 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| TRF3 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| TRF4 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| TRF5 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| TRF6 | itcd, sucessoes | 🟡 fragile | Verificar URL |
-| CNJ | itcd, sucessoes | 🟡 fragile | Provimentos |
-| IBDFAM | sucessoes, regime_bens, itcd | 🟡 fragile | Doutrina |
+### Federais ativas (5 fontes)
 
-### UFs com YAMLs prontos
+| Fonte | Tipo | Notas |
+|---|---|---|
+| **LexML Legislação** | API SRU | Cobre federal + 26 estados + DF (legislação sancionada) |
+| **LexML Jurisprudência** | API SRU | STF + STJ + TJs estaduais |
+| **JOTA** | RSS | Notícias jurídicas tributárias |
+| **STF notícias** | RSS oficial | Decisões do STF |
+| **STJ notícias** | RSS oficial | Decisões do STJ |
 
-| UF | Alíquota | Assembleia | SEFAZ | DOE | TJ |
-|---|---|---|---|---|---|
-| **SP** | 4% fixa | 🟡 | 🟡 | 🟡 | 🟡 |
-| **RJ** | 4-8% (ITD) | 🟡 | 🟡 | 🟡 | 🟡 |
-| **MG** | 5% fixa | 🟡 | 🟡 | 🟡 | 🟡 |
-| **RS** | 3-7% | 🟡 | 🟡 | 🟡 | — |
-| **DF** | 4-6% | 🟡 | 🟡 | 🟡 | — |
+### Proposições estaduais em tramitação (14 UFs ativas)
 
-🟢 ativo · 🟡 YAML pronto, `fragile: true` (verificar antes de ativar) · — não criado
+| UF | Coletor | Plataforma |
+|---|---|---|
+| **MG** | ALMGCollector (custom) | API JSON `dadosabertos.almg.gov.br` |
+| **PR** | ALEPCollector (custom) | API JSON via POST (`webservices.assembleia.pr.leg.br`) |
+| **PE** | ALEPECollector (custom) | API XML `dadosabertos.alepe.pe.gov.br` |
+| **AC, AL, AM, CE, ES, GO, MT, PB, PI, RO, RR** | SAPLCollector (genérico) | API REST padronizada Interlegis |
 
-Demais 22 UFs: serão adicionadas em fases pós-MVP via mesma estrutura YAML.
+### UFs sem coletor de proposições (13)
+
+Para essas UFs, **leis sancionadas continuam cobertas via LexML**. A lacuna é
+apenas proposições em tramitação que ainda não viraram lei.
+
+Investigação 2026-04-25 (em [docs/sources_status.md](docs/sources_status.md))
+documenta por que cada UF não tem API pública: ALESP/SP requer VIEWSTATE,
+ALERJ/RJ usa Lotus Notes legacy, Alesc/SC pede integração privada, etc.
+
+**Total**: 17 fontes ativas. Cobertura legislativa via LexML atinge **27 entes
+federativos + federal**. Cobertura de proposições em tramitação: 14 UFs (52%).
 
 Veja [docs/ufs/](docs/ufs/) para particularidades por UF (alíquotas, lei principal, peculiaridades).
 

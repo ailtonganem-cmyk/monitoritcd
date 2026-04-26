@@ -94,6 +94,24 @@ class TestTwoStepConfirmation:
         with pytest.raises(InvalidConfirmationTokenError):
             manager.consume(token, "delete:foo", now=120.0)
 
+    def test_find_action_returns_none_for_unknown_token(self) -> None:
+        # Sem cleanup interno; token desconhecido -> None
+        manager = TwoStepConfirmation()
+        assert manager.find_action("ghost-token") is None
+
+    def test_find_action_returns_none_for_expired(self) -> None:
+        # find_action nao roda cleanup; token expirado fica no dict mas e' rejeitado
+        manager = TwoStepConfirmation(ttl_seconds=60)
+        token = manager.issue("delete:foo", now=0.0)
+        assert manager.find_action(token, now=120.0) is None
+        # Token ainda no dict (find_action e' read-only)
+        assert token in manager._tokens
+
+    def test_find_action_returns_action_when_valid(self) -> None:
+        manager = TwoStepConfirmation(ttl_seconds=60)
+        token = manager.issue("delete:foo", now=0.0)
+        assert manager.find_action(token, now=10.0) == "delete:foo"
+
     def test_consume_wrong_action_rejected(self) -> None:
         manager = TwoStepConfirmation()
         token = manager.issue("action:A", now=0.0)

@@ -19,6 +19,8 @@ from monitoritcd.bot.handlers import (
     handle_buscar,
     handle_confirmar,
     handle_estados,
+    handle_help,
+    handle_observar,
     handle_start,
     handle_status,
     handle_topicos,
@@ -324,3 +326,120 @@ class TestDispatch:
         ctx = await _ctx()
         result = await dispatch(ctx, ParsedCommand(name="naoexiste", args=[]))
         assert result.is_error
+
+
+@pytest.mark.integration
+class TestHelp:
+    """`/help` reaproveita `handle_start` (linha 124 do handlers.py)."""
+
+    @pytest.mark.asyncio
+    async def test_help_returns_start_text(self) -> None:
+        ctx = await _ctx()
+        result_help = await handle_help(ctx, ParsedCommand(name="help", args=[]))
+        result_start = await handle_start(ctx, ParsedCommand(name="start", args=[]))
+        assert result_help.text == result_start.text
+
+
+@pytest.mark.integration
+class TestObservar:
+    """Edge cases dos sub-handlers de /observar."""
+
+    @pytest.mark.asyncio
+    async def test_observar_sem_args_emite_uso(self) -> None:
+        ctx = await _ctx()
+        result = await handle_observar(ctx, ParsedCommand(name="observar", args=[]))
+        assert result.is_error
+
+    @pytest.mark.asyncio
+    async def test_observar_remover_sem_id_emite_uso(self) -> None:
+        ctx = await _ctx()
+        result = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["remover"]),
+        )
+        assert result.is_error
+        assert "Uso:" in result.text
+
+    @pytest.mark.asyncio
+    async def test_observar_listar_vazio(self) -> None:
+        ctx = await _ctx()
+        result = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["listar"]),
+        )
+        assert "Nenhum watch ativo" in result.text
+
+    @pytest.mark.asyncio
+    async def test_observar_adicionar_e_remover(self) -> None:
+        ctx = await _ctx()
+        # Cria
+        added = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["x", "holding", "familiar"]),
+        )
+        assert "Watch criado" in added.text
+        # Lista mostra
+        listed = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["listar"]),
+        )
+        assert "holding familiar" in listed.text
+        # Remove pelo prefixo do id
+        watches = await ctx.storage.list_watches()
+        prefix = watches[0].watch_id[:6]
+        removed = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["remover", prefix]),
+        )
+        assert "Watch removido" in removed.text
+
+    @pytest.mark.asyncio
+    async def test_observar_remover_id_inexistente(self) -> None:
+        ctx = await _ctx()
+        result = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["remover", "ghost123"]),
+        )
+        assert result.is_error
+        assert "não encontrado" in result.text
+
+    @pytest.mark.asyncio
+    async def test_observar_remover_prefixo_ambiguo(self) -> None:
+        # Cria 2 watches; usa prefixo curto que casa em ambos -> erro de ambiguidade
+        ctx = await _ctx()
+        from uuid import uuid4  # noqa: PLC0415
+
+        from monitoritcd.core.models import Watch  # noqa: PLC0415
+
+        # Forca dois watch_ids com mesmo prefixo "abcd"
+        for pattern in ("primeiro", "segundo"):
+            await ctx.storage.save_watch(
+                Watch(
+                    owner_id=OWNER,
+                    watch_id="abcd" + uuid4().hex[:12],
+                    pattern=pattern,
+                    pattern_type="term",
+                    relevancia_min=5,
+                    cooldown_hours=24,
+                    created_at=NOW,
+                ),
+            )
+
+        result = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["remover", "abcd"]),
+        )
+        assert result.is_error
+        assert "Ambíguo" in result.text
+
+    @pytest.mark.asyncio
+    async def test_observar_termo_curto_rejeitado(self) -> None:
+        # handle_observar prepende "adicionar" -> _watch_adicionar recebe
+        # args=["adicionar", "ab"] e faz join(args[1:]) = "ab" (2 chars < 3)
+        ctx = await _ctx()
+        result = await handle_observar(
+            ctx,
+            ParsedCommand(name="observar", args=["ab"]),
+        )
+        assert result.is_error
+        assert "muito curto" in result.text

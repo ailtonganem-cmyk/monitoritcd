@@ -160,6 +160,18 @@ class TestEdgeCases:
         assert validate_url("https://portal.fazenda.sp.gov.br/")
         assert validate_url("https://www.al.sp.gov.br/")
 
+    def test_public_ip_literal_allowed(self) -> None:
+        # IP publico (nao privado/loopback/link-local/etc) e aceito.
+        # Cobre o `return url` final apos passar pela checagem ipaddress.
+        assert validate_url("https://8.8.8.8/path") == "https://8.8.8.8/path"
+        assert validate_url("https://1.1.1.1/") == "https://1.1.1.1/"
+
+    def test_malformed_url_blocked(self) -> None:
+        # urlparse pode levantar ValueError em URLs com IPv6 + port malformado.
+        # Cobre o except ValueError no validate_url.
+        with pytest.raises(UnsafeURLError):
+            validate_url("https://[::1")  # IPv6 sem fechar -> ValueError ou sem host
+
 
 @pytest.mark.security
 class TestIsSafeURL:

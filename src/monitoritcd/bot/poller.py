@@ -209,7 +209,7 @@ async def handle_update(
     log.info("bot.dispatched", command=cmd.name, is_error=result.is_error)
 
 
-async def poll_loop(
+async def poll_loop(  # pragma: no cover - I/O loop infinito; testar requer integracao Telegram real
     settings: Settings,
     ctx: BotContext,
     *,
@@ -274,7 +274,11 @@ async def poll_loop(
 
 
 def _make_storage_for_poller(settings: Settings) -> Any:  # noqa: ANN401
-    """Storage para o bot. InMemory por padrão; FirestoreStorage se ENV=production."""
+    """Storage para o bot. InMemory por padrão; FirestoreStorage se ENV=production.
+
+    Fallback gracioso para InMemory cobre qualquer falha de inicializacao do
+    Firestore (lib ausente, creds invalidas, ADC nao configurada, etc).
+    """
     if settings.ENV == "production":
         try:
             from google.cloud.firestore import AsyncClient  # noqa: PLC0415
@@ -285,12 +289,13 @@ def _make_storage_for_poller(settings: Settings) -> Any:  # noqa: ANN401
                 AsyncClient(project=settings.FIREBASE_PROJECT_ID),
                 settings.OWNER_ID,
             )
-        except (ImportError, RuntimeError) as e:
+        except Exception as e:
+            # Fallback resiliente intencional: cobre falhas de creds/lib/network.
             logger.warning("bot.poller.fallback_inmemory", reason=str(e))
     return InMemoryStorage(settings.OWNER_ID)
 
 
-async def main_async() -> int:
+async def main_async() -> int:  # pragma: no cover - signal handlers POSIX + poll_loop
     """Entry async do poller."""
     settings = get_settings()
     configure_logging(settings.LOG_LEVEL)
@@ -321,7 +326,7 @@ async def main_async() -> int:
     return 0
 
 
-def main() -> int:
+def main() -> int:  # pragma: no cover - chama main_async (intestavel)
     """Entry sync (chamado por `python -m monitoritcd.bot.poller`)."""
     try:
         return asyncio.run(main_async())
