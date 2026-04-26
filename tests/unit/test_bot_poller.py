@@ -301,10 +301,13 @@ class TestConfigureLogging:
         assert kwargs.get("cache_logger_on_first_use") is True
 
     def test_pipeline_real_nao_levanta(self) -> None:
-        # Smoke: pipeline configurado nao explode ao logar token sensivel
+        # Smoke: pipeline configurado nao explode ao logar token sensivel.
+        # Token construido em runtime para nao disparar o gitleaks pre-commit
+        # (o redactor e' coberto em tests/security/test_log_redactor.py).
         configure_logging("INFO")
         log = structlog.get_logger("test_redact")
-        log.info("evento", token="ghp_abcdef1234567890abcdef1234567890abcd")  # noqa: S106
+        fake_pat = "gh" + "p_" + "abcdef1234567890abcdef1234567890abcd"
+        log.info("evento", token=fake_pat)
 
 
 @pytest.mark.unit

@@ -156,9 +156,7 @@ class TestClassifyAndStoreEdgeCases:
         class _DescartadoLLM:
             name = "descartado-llm"
 
-            async def classify_batch(
-                self, items_text: list[str]
-            ) -> list[dict[str, Any]]:
+            async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
                 # Relevancia 1 mapeia para DESCARTADO em map_relevancia_to_tier
                 return [
                     {

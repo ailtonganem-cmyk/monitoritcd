@@ -204,16 +204,22 @@ class TestDerivePortalBase:
     def test_derive_com_sapl_subpath(self) -> None:
         from monitoritcd.collectors.custom.sapl import _derive_portal_base  # noqa: PLC0415
 
-        assert _derive_portal_base(
-            "https://www.al.ce.leg.br/sapl/api/materia/x/",
-        ) == "https://www.al.ce.leg.br/sapl"
+        assert (
+            _derive_portal_base(
+                "https://www.al.ce.leg.br/sapl/api/materia/x/",
+            )
+            == "https://www.al.ce.leg.br/sapl"
+        )
 
     def test_derive_com_api_no_topo(self) -> None:
         from monitoritcd.collectors.custom.sapl import _derive_portal_base  # noqa: PLC0415
 
-        assert _derive_portal_base(
-            "https://sapl.al.ac.leg.br/api/materia/x/",
-        ) == "https://sapl.al.ac.leg.br"
+        assert (
+            _derive_portal_base(
+                "https://sapl.al.ac.leg.br/api/materia/x/",
+            )
+            == "https://sapl.al.ac.leg.br"
+        )
 
     def test_derive_sem_api_no_path(self) -> None:
         # Linha 190: nem /sapl/api/ nem /api/ -> prefix vazio
