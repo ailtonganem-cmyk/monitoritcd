@@ -157,8 +157,7 @@ async def handle_silenciar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
         )
         await ctx.storage.save_active_states(updated)
         msg_silenciamento = (
-            f"🔕 Silenciamento de `{chave}={valor}` por {duracao} "
-            f"aplicado (até {until.date()})."
+            f"🔕 Silenciamento de `{chave}={valor}` por {duracao} aplicado (até {until.date()})."
         )
         return HandlerResult(text=msg_silenciamento)
 
