@@ -1,0 +1,81 @@
+# serializer version: 1
+# name: test_active_states_schema_snapshot
+  dict({
+    'active_uf': 'list',
+    'federal_active': 'bool',
+    'owner_id': 'str',
+    'schema_version': 'int',
+    'silenced_until': dict({
+    }),
+    'updated_at': 'str',
+    'updated_by': 'str',
+  })
+# ---
+# name: test_documento_schema_snapshot
+  dict({
+    'cluster_id': 'NoneType',
+    'doc_id': 'str',
+    'llm': dict({
+      'classified_at': 'str',
+      'llm_model': 'str',
+      'llm_prompt_version': 'str',
+      'metadados_extraidos': dict({
+      }),
+      'relevancia': 'int',
+      'resumo': 'str',
+      'severity_tier': 'str',
+      'tags': 'list',
+      'tipo': 'str',
+      'topics': 'list',
+    }),
+    'notificacao': dict({
+      'canais': 'list',
+      'enviada': 'bool',
+      'enviada_em': 'NoneType',
+    }),
+    'original': dict({
+      'content_hash': 'str',
+      'data_publicacao': 'str',
+      'fetched_at': 'str',
+      'raw_storage_path': 'NoneType',
+      'source_id': 'str',
+      'texto_raw': 'str',
+      'titulo_raw': 'str',
+      'url': 'str',
+    }),
+    'owner_id': 'str',
+    'schema_version': 'int',
+    'source': dict({
+      'ativo': 'bool',
+      'fragile': 'bool',
+      'geo_restricted': 'bool',
+      'id': 'str',
+      'keywords_required': 'list',
+      'nome': 'str',
+      'notas': 'NoneType',
+      'parser': 'str',
+      'selectors': 'NoneType',
+      'tipo': 'str',
+      'topics': 'list',
+      'trusted': 'bool',
+      'uf': 'str',
+      'url': 'str',
+    }),
+    'status': 'str',
+    'user_tags': 'list',
+  })
+# ---
+# name: test_watch_schema_snapshot
+  dict({
+    'cooldown_hours': 'int',
+    'created_at': 'str',
+    'expires_at': 'NoneType',
+    'last_triggered': 'NoneType',
+    'owner_id': 'str',
+    'pattern': 'str',
+    'pattern_type': 'str',
+    'relevancia_min': 'int',
+    'uf': 'NoneType',
+    'watch_id': 'str',
+  })
+# ---

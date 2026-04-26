@@ -185,3 +185,7 @@ class InMemoryStorage:
         as_dict = last.model_dump(mode="json")
         canonical = json.dumps(as_dict, sort_keys=True, default=str)
         return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    async def list_audit_recent(self, limit: int = 20) -> list[AuditLogEntry]:
+        """Retorna últimas entries em ordem cronológica (Sugestão #25)."""
+        return [deepcopy(e) for e in self._audit[-limit:]]

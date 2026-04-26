@@ -305,9 +305,7 @@ def evaluate_watches(
             continue
         if is_in_cooldown(watch, now=now):
             continue
-        for doc in docs:
-            if matches_doc(watch, doc):
-                matches.append((watch, doc))
+        matches.extend((watch, doc) for doc in docs if matches_doc(watch, doc))
     return matches
 
 

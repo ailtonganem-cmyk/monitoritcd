@@ -75,7 +75,7 @@ from monitoritcd.filters.prescore import passes_cutoff, prescore
 from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
-from monitoritcd.storage.audit_log import AuditLog
+from monitoritcd.storage.audit_log import AuditChainError, AuditLog
 
 if TYPE_CHECKING:
     from monitoritcd.core.base_collector import BaseCollector
@@ -499,8 +499,7 @@ async def _collect_all(
                 message=str(result),
             )
             continue
-        for item in result:
-            raw_items.append((source, item))
+        raw_items.extend((source, item) for item in result)
     report.items_collected = len(raw_items)
     return raw_items
 
@@ -523,6 +522,21 @@ async def run_pipeline(
     audit = AuditLog(storage)
     bound = logger.bind(run_id=run_id)
     bound.info("run.start")
+
+    # Sugestão #25: validação leve da chain de audit em runtime.
+    # Apenas checa as últimas N entries (custo O(N), N=20). Detecção de
+    # tampering recente sem inviabilizar performance.
+    try:
+        recent_audit = await storage.list_audit_recent(limit=20)
+        if recent_audit:
+            await audit.verify_chain(recent_audit)
+    except AttributeError:
+        # Storage backend sem list_audit_recent — pula silenciosamente.
+        bound.debug("run.audit_chain_check_unavailable")
+    except (AuditChainError, ValueError) as e:
+        # Chain corrompida — alerta crítico, mas não derruba pipeline.
+        bound.error("run.audit_chain_corruption", error=str(e))
+        report.errors.append(f"audit_chain_corruption: {e}")
 
     # 1. Selecionar fontes ativas
     sources_to_run = await _select_sources(

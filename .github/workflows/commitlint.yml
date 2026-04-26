@@ -1,0 +1,25 @@
+name: Commitlint (Sugestão #35)
+
+# Lint de mensagens de commit (Conventional Commits).
+# Padrão informal já existe no histórico; gate explícito ajuda changelog auto.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  commitlint:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: webiny/action-conventional-commits@v1.3.0
+        with:
+          allowed-commit-types: "feat,fix,docs,style,refactor,perf,test,build,ci,chore,revert,sec,deps,deps-dev"

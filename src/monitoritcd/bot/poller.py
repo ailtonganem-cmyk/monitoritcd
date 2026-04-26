@@ -289,8 +289,7 @@ def _make_storage_for_poller(settings: Settings) -> Any:  # noqa: ANN401
                 AsyncClient(project=settings.FIREBASE_PROJECT_ID),
                 settings.OWNER_ID,
             )
-        except Exception as e:
-            # Fallback resiliente intencional: cobre falhas de creds/lib/network.
+        except Exception as e:  # noqa: BLE001 — fallback resiliente: creds/lib/network
             logger.warning("bot.poller.fallback_inmemory", reason=str(e))
     return InMemoryStorage(settings.OWNER_ID)
 

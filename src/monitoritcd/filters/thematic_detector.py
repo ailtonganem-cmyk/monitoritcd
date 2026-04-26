@@ -295,8 +295,7 @@ def detect_revogacao(text: str | None) -> list[str]:
         # Janela de 200 chars após o gatilho
         end = min(trigger.end() + 200, len(text))
         trecho = text[trigger.end() : end]
-        for m in RE_NORMA_CITADA.finditer(trecho):
-            normas.append(m.group(1))
+        normas.extend(m.group(1) for m in RE_NORMA_CITADA.finditer(trecho))
     # Dedup mantendo ordem
     seen: list[str] = []
     for n in normas:

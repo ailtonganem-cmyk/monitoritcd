@@ -73,6 +73,5 @@ async def log_bot_action(
             error=error,
         )
         await ctx.storage.append_audit(entry)
-    except Exception as e:
-        # Audit failure NUNCA derruba o handler. Apenas log.
+    except Exception as e:  # noqa: BLE001 — audit é last-resort: nunca derruba handler
         logger.warning("bot.audit.failed", action=action, error=str(e))
