@@ -146,6 +146,33 @@ class TestParseLLMResponse:
         result = parse_llm_response(resp, llm_model="x")
         assert len(result.tags) <= 20  # MAX_TAGS_PER_DOC
 
+    def test_topic_invalido_e_ignorado(self) -> None:
+        # LLM pode retornar valor de topic fora do enum (alucinação ou versão
+        # de prompt antiga). Defesa: ignorar topics inválidos individualmente
+        # em vez de falhar a resposta inteira.
+        resp = {
+            "tipo": "outro",
+            "relevancia": 5,
+            "resumo": "x",
+            "topics": ["itcd", "valor_invalido", "sucessoes"],
+        }
+        result = parse_llm_response(resp, llm_model="x")
+        assert {t.value for t in result.topics} == {"itcd", "sucessoes"}
+
+    def test_todos_topics_invalidos_caem_para_itcd(self) -> None:
+        # Se LLM retorna apenas valores inválidos, fallback para ITCD garante
+        # que o documento ainda é classificável (ITCD é o tópico canônico).
+        from monitoritcd.core.models import Topic  # noqa: PLC0415
+
+        resp = {
+            "tipo": "outro",
+            "relevancia": 5,
+            "resumo": "x",
+            "topics": ["xxx", "yyy"],
+        }
+        result = parse_llm_response(resp, llm_model="x")
+        assert result.topics == [Topic.ITCD]
+
 
 @pytest.mark.unit
 class TestClassifyWithProvider:

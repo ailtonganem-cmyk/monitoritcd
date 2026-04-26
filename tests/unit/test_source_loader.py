@@ -102,6 +102,26 @@ class TestLoadSource:
         with pytest.raises(SourceConfigError, match="MAX_YAML_DEPTH"):
             load_source(path)
 
+    def test_yaml_excede_max_request_body_bytes_rejected(self, tmp_path: Path) -> None:
+        # YAML com payload > 1 MB (MAX_REQUEST_BODY_BYTES) — bloqueio defensivo
+        # antes do parsing pra evitar DoS via arquivo gigante.
+        from monitoritcd.core import limits  # noqa: PLC0415
+
+        big_content = "x" * (limits.MAX_REQUEST_BODY_BYTES + 100)
+        oversized = f"id: huge\nblob: {big_content}\n"
+        path = _write_yaml(tmp_path / "huge.yaml", oversized)
+        with pytest.raises(SourceConfigError, match="MAX_REQUEST_BODY_BYTES"):
+            load_source(path)
+
+    def test_yaml_sem_url_pula_validacao_anti_ssrf(self, tmp_path: Path) -> None:
+        # Cobre branch 78->85: data sem chave 'url'. Schema do Source vai falhar
+        # depois (linha 85), mas a validação anti-SSRF é pulada — comportamento
+        # correto para evitar AttributeError em YAMLs ainda inválidos.
+        no_url = "id: noresource\nuf: SP\n"
+        path = _write_yaml(tmp_path / "no_url.yaml", no_url)
+        with pytest.raises(SourceConfigError, match="Schema"):
+            load_source(path)
+
 
 @pytest.mark.unit
 class TestLoadAllSources:

@@ -600,3 +600,217 @@ class TestRelatorio:
             ParsedCommand(name="relatorio", args=["semanal"]),
         )
         assert "Semanal" in result.text
+
+    @pytest.mark.asyncio
+    async def test_relatorio_doc_sem_llm_aparece_no_total_mas_nao_em_tier(self) -> None:
+        # Cobre branch 486->485: doc sem llm é contado no total mas pulado
+        # no tier_counts e top-rated.
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import RawItem  # noqa: PLC0415
+
+        ctx = await _ctx()
+        raw = RawItem(
+            source_id="s",
+            titulo_raw="Sem LLM",
+            url="https://x.gov.br/sl",
+            fetched_at=datetime.now(UTC),
+            content_hash="d" * 64,
+        )
+        doc_sem_llm = _doc().model_copy(update={"original": raw, "llm": None})
+        await ctx.storage.save_documento(doc_sem_llm)
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["diario"]),
+        )
+        # Total = 1, mas nenhum tier nem top-rated
+        assert "1 documentos" in result.text
+        assert "Top 5" not in result.text
+
+    @pytest.mark.asyncio
+    async def test_relatorio_so_docs_sem_llm_pula_top5(self) -> None:
+        # Cobre branch 501->508: `rated` vazio quando todos docs têm llm=None.
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import RawItem  # noqa: PLC0415
+
+        ctx = await _ctx()
+        for hash_seed in ("e", "f"):
+            raw = RawItem(
+                source_id="s",
+                titulo_raw=f"Sem LLM {hash_seed}",
+                url=f"https://x.gov.br/{hash_seed}",
+                fetched_at=datetime.now(UTC),
+                content_hash=hash_seed * 64,
+            )
+            doc = _doc(doc_id=f"d{hash_seed}").model_copy(update={"original": raw, "llm": None})
+            await ctx.storage.save_documento(doc)
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["diario"]),
+        )
+        assert "Top 5" not in result.text
+
+
+@pytest.mark.integration
+class TestBuscarTopicHeader:
+    """Cobre branches de header e topics no resultado de /buscar."""
+
+    @pytest.mark.asyncio
+    async def test_busca_com_topic_filter_inclui_topico_no_header(self) -> None:
+        # Cobre linha 193: header += "(tópico: ...)" quando filtro aplicado.
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD herança"))
+        result = await handle_buscar(
+            ctx,
+            ParsedCommand(name="buscar", args=["ITCMD", "topico=itcd"]),
+        )
+        assert "tópico: itcd" in result.text
+
+    @pytest.mark.asyncio
+    async def test_busca_doc_sem_llm_omite_topics_no_resultado(self) -> None:
+        # Cobre branch 197->199: d.llm None pula montagem de topics_str.
+        ctx = await _ctx()
+        doc_sem_llm = _doc(titulo="ITCMD direto").model_copy(update={"llm": None})
+        await ctx.storage.save_documento(doc_sem_llm)
+        result = await handle_buscar(
+            ctx,
+            ParsedCommand(name="buscar", args=["ITCMD"]),
+        )
+        # Resultado vem com [UF] mas sem topics adicionais (sem · entre [SP] e título)
+        assert "[SP] ITCMD direto" in result.text
+
+
+@pytest.mark.integration
+class TestWatchAdicionarDirect:
+    """Tests do `_watch_adicionar` chamado direto (não via handle_observar)."""
+
+    @pytest.mark.asyncio
+    async def test_args_insuficientes_retorna_uso(self) -> None:
+        # Cobre linha 308: handle_observar prepende "adicionar", mas _watch_adicionar
+        # chamado direto com args=["adicionar"] (sem termo) ainda dá Uso.
+        from monitoritcd.bot.handlers import _watch_adicionar  # noqa: PLC0415
+
+        ctx = await _ctx()
+        result = await _watch_adicionar(
+            ctx,
+            ParsedCommand(name="observar", args=["adicionar"]),
+        )
+        assert result.is_error
+        assert "Uso:" in result.text
+
+
+class _FailingSaveStorage:
+    """Storage que delega tudo para InMemoryStorage exceto save_watch (raise)."""
+
+    def __init__(self, owner: str) -> None:
+        self._inner = InMemoryStorage(owner)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+    async def save_watch(self, _watch: object) -> None:
+        msg = "simulated firestore quota error"
+        raise RuntimeError(msg)
+
+
+class _FailingTagStorage:
+    """Storage que falha em add_user_tag."""
+
+    def __init__(self, owner: str) -> None:
+        self._inner = InMemoryStorage(owner)
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(self._inner, name)
+
+    async def add_user_tag(self, _doc_id: str, _tag: str) -> None:
+        msg = "simulated firestore unavailable"
+        raise RuntimeError(msg)
+
+
+@pytest.mark.integration
+class TestObservarSaveFalha:
+    @pytest.mark.asyncio
+    async def test_save_watch_falha_loga_audit_failure(self) -> None:
+        # Cobre 332-340: save_watch raises -> log_bot_action(result="failure")
+        # + retorna erro pro user.
+        ctx = BotContext(
+            settings=_settings(),
+            storage=_FailingSaveStorage(OWNER),  # type: ignore[arg-type]
+            confirmation=TwoStepConfirmation(),
+        )
+        from monitoritcd.bot.handlers import _watch_adicionar  # noqa: PLC0415
+
+        result = await _watch_adicionar(
+            ctx,
+            ParsedCommand(name="observar", args=["adicionar", "termo", "valido"]),
+        )
+        assert result.is_error
+        assert "Erro:" in result.text
+
+
+@pytest.mark.integration
+class TestMarcarFalhas:
+    @pytest.mark.asyncio
+    async def test_tag_excede_max_length(self) -> None:
+        # Cobre linha 416: tag > MAX_TAG_LENGTH (50 chars) é rejeitada.
+        from monitoritcd.core import limits  # noqa: PLC0415
+
+        ctx = await _ctx()
+        doc = _doc()
+        await ctx.storage.save_documento(doc)
+        long_tag = "x" * (limits.MAX_TAG_LENGTH + 1)
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], long_tag]),
+        )
+        assert result.is_error
+        assert "muito longa" in result.text
+
+    @pytest.mark.asyncio
+    async def test_add_user_tag_falha_loga_audit_failure(self) -> None:
+        # Cobre 437-445: add_user_tag raises -> failure path.
+        failing_storage = _FailingTagStorage(OWNER)
+        # Seedaa doc no inner storage para passar pela busca de prefixo.
+        doc = _doc()
+        await failing_storage._inner.save_documento(doc)
+        ctx = BotContext(
+            settings=_settings(),
+            storage=failing_storage,  # type: ignore[arg-type]
+            confirmation=TwoStepConfirmation(),
+        )
+        result = await handle_marcar(
+            ctx,
+            ParsedCommand(name="marcar", args=[doc.doc_id[:6], "tag"]),
+        )
+        assert result.is_error
+        assert "Erro ao marcar" in result.text
+
+
+@pytest.mark.integration
+class TestConfirmarConsumeFalha:
+    @pytest.mark.asyncio
+    async def test_consume_lanca_token_invalido_apos_find(self) -> None:
+        # Cobre 279-280: find_action retorna ação, mas consume falha
+        # (race entre find e consume — token expirou no meio).
+        from monitoritcd.bot.auth import (  # noqa: PLC0415
+            InvalidConfirmationTokenError,
+        )
+
+        ctx = await _ctx()
+
+        class _RacyConfirmation:
+            def find_action(self, _token: str) -> str:
+                return "estados.desativar:SP"
+
+            def consume(self, _token: str, _action: str) -> None:
+                msg = "token expired"
+                raise InvalidConfirmationTokenError(msg)
+
+        ctx.confirmation = _RacyConfirmation()  # type: ignore[assignment]
+        result = await handle_confirmar(
+            ctx,
+            ParsedCommand(name="confirmar", args=["any-token"]),
+        )
+        assert result.is_error
+        assert "inválido" in result.text.lower()

@@ -108,7 +108,7 @@ class LLMProvider(Protocol):
 
     async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
         """Recebe lista de textos, retorna lista de dicts (um por item)."""
-        ...
+        ...  # pragma: no cover - Protocol method body
 
 
 def map_relevancia_to_tier(relevancia: int) -> SeverityTier:
