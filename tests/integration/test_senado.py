@@ -215,6 +215,7 @@ class TestSenadoCollector:
 
     @pytest.mark.asyncio
     async def test_dedupe_across_keywords(self) -> None:
+        # 1 request único cobrindo N keywords; cada item passa se QUALQUER keyword bate.
         src = _src().model_copy(
             update={
                 "selectors": {
@@ -225,15 +226,15 @@ class TestSenadoCollector:
             },
         )
         async with respx.mock:
-            respx.get(url__startswith="https://legis.senado.leg.br/").mock(
+            route = respx.get(url__startswith="https://legis.senado.leg.br/").mock(
                 return_value=httpx.Response(200, text=SENADO_RESPONSE),
             )
             async with SenadoCollector(src) as c:
                 items = await c.collect()
-        # 2 keywords retornam mesma fixture; dedup por identificacao
-        # ITCMD: pega VET 8/2026 (ementa tem ITCMD)
-        # sucessão: pega PLS 100/2024 (ementa "Sucessão hereditária")
+        # ITCMD: VET 8/2026 (ementa); sucessão: PLS 100/2024 (ementa)
         assert len(items) == 2
+        # Otimização: 1 request único independente de N keywords
+        assert route.call_count == 1
 
 
 class TestExtractRecords:

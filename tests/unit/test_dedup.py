@@ -86,6 +86,17 @@ class TestAssignClusters:
     def test_empty_input(self) -> None:
         assert assign_clusters([]) == {}
 
+    def test_lote_excessivo_levanta(self) -> None:
+        # MAX_BATCH_LLM=10, sanity guard em > 1000 items
+        from monitoritcd.core import limits  # noqa: PLC0415
+
+        big_batch = [
+            _item(f"Item {i}", content_hash=f"{i:064x}")
+            for i in range(limits.MAX_BATCH_LLM * 100 + 1)
+        ]
+        with pytest.raises(ValueError, match="lote muito grande"):
+            assign_clusters(big_batch)
+
     def test_two_items_with_same_numero_clustered_together(self) -> None:
         i1 = _item("PL nº 1234/2026 — texto A", content_hash="a" * 64)
         i2 = _item(
