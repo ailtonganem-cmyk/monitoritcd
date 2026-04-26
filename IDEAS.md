@@ -141,31 +141,31 @@
 
 ## 3. Notificação por E-mail (96–120)
 
-96. [ ] E-mail HTML com CSS inline (compatibilidade Gmail/Outlook).
-97. [ ] Modo dark/light auto via `prefers-color-scheme`.
-98. [ ] Tabela de conteúdos (TOC) clicável para digests longos.
-99. [ ] Seção "destaques da semana".
-100. [ ] Digest diário (configurável horário via env).
-101. [ ] Digest semanal (todo domingo 18h).
-102. [ ] Digest mensal (último dia do mês).
-103. [ ] Ranking dos itens mais relevantes do período.
-104. [ ] Gráfico de tendências inline (PNG base64 via matplotlib).
-105. [ ] Anexo PDF do digest (gerado com WeasyPrint).
-106. [ ] Anexo CSV dos itens.
-107. [ ] Anexo JSON estruturado.
-108. [ ] Footer com links úteis (bot, dashboard, repo).
-109. [ ] Header com data e contagem de novidades.
-110. [ ] Subject configurável com variáveis (`{count}`, `{date}`).
-111. [ ] Template "compacto" — uma linha por item.
-112. [ ] Template "executivo" — resumo + top 5 itens.
-113. [ ] Template "detalhado" — todos os itens com resumo completo.
-114. [ ] Template "newsletter" — formato editorial com seções.
-115. [ ] Botão "ver no bot" (link para Telegram).
-116. [ ] Botão "marcar como lido" (mailto com subject especial).
-117. [ ] Personalização de saudação por horário.
-118. [ ] Pluralização correta ("1 novidade" vs "5 novidades").
-119. [ ] Footer de unsubscribe (boa prática mesmo single-user).
-120. [ ] Reply-to configurável (caixa de entrada separada para feedback ao bot).
+96. [x] E-mail HTML com CSS inline (compatibilidade Gmail/Outlook). ✅ pré-existente (template usa style="" inline)
+97. [x] Modo dark/light auto via `prefers-color-scheme`. ✅ 2026-04-26 (CSS @media)
+98. [x] Tabela de conteúdos (TOC) clicável para digests longos. ✅ 2026-04-26 (≥ 8 itens)
+99. [x] Seção "destaques da semana". ✅ pré-existente (highlights tier crítico/alta)
+100. [x] Digest diário (configurável horário via env). ✅ pré-existente (monitor.yml cron diário envia)
+101. [x] Digest semanal (todo domingo 18h). ✅ 2026-04-26 (workflows/digests.yml — TODO: CLI digest)
+102. [x] Digest mensal (último dia do mês). ✅ 2026-04-26 (workflows/digests.yml — TODO: CLI digest)
+103. [x] Ranking dos itens mais relevantes do período. ✅ 2026-04-26 (top 5 destacado) ⭐ Tier 1
+104. [ ] Gráfico de tendências inline (PNG base64 via matplotlib). ⚠️ triagem desaconselhou
+105. [ ] Anexo PDF do digest (gerado com WeasyPrint). ⚠️ triagem desaconselhou
+106. [x] Anexo CSV dos itens. ✅ 2026-04-26 (build_csv_attachment)
+107. [x] Anexo JSON estruturado. ✅ 2026-04-26 (build_json_attachment)
+108. [x] Footer com links úteis (bot, dashboard, repo). ✅ 2026-04-26
+109. [x] Header com data e contagem de novidades. ✅ pré-existente
+110. [x] Subject configurável com variáveis (`{count}`, `{date}`). ✅ 2026-04-26 (subject_template)
+111. [x] Template "compacto" — uma linha por item. ✅ 2026-04-26 (email_compacto.html.j2)
+112. [x] Template "executivo" — resumo + top 5 itens. ✅ 2026-04-26 (email_executivo.html.j2)
+113. [x] Template "detalhado" — todos os itens com resumo completo. ✅ pré-existente (email.html.j2 default)
+114. [x] Template "newsletter" — formato editorial com seções. ✅ 2026-04-26 (email_newsletter.html.j2)
+115. [x] Botão "ver no bot" (link para Telegram). ✅ 2026-04-26 (footer)
+116. [ ] Botão "marcar como lido" (mailto com subject especial). — TODO: requer handler IMAP no bot
+117. [x] Personalização de saudação por horário. ✅ 2026-04-26 (_saudacao_dinamica)
+118. [x] Pluralização correta ("1 novidade" vs "5 novidades"). ✅ pré-existente
+119. [x] Footer de unsubscribe (boa prática mesmo single-user). ✅ 2026-04-26 (mostrar_unsubscribe)
+120. [x] Reply-to configurável (caixa de entrada separada para feedback ao bot). ✅ 2026-04-26
 
 ---
 

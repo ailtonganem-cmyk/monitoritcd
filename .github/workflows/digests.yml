@@ -1,0 +1,83 @@
+name: Digests recurrentes (semanal/mensal)
+
+# IDEAS.md #101 (semanal) e #102 (mensal). #100 (diário) já é feito pelo
+# monitor.yml — pipeline completa roda diariamente e notifica via e-mail.
+#
+# Workflows aqui agregam por janela de tempo: semanal (domingo 18h BRT)
+# e mensal (último dia do mês 18h BRT). Disparam quando o subcomando
+# `monitoritcd digest --periodicidade <X>` for adicionado ao CLI.
+
+on:
+  schedule:
+    # Semanal — domingo às 21h UTC = 18h BRT (#101)
+    - cron: '0 21 * * 0'
+    # Mensal — dia 28 (cobre todos os meses) às 21h UTC = 18h BRT (#102)
+    # Nota: para "último dia do mês" exato, GitHub Actions cron não suporta
+    # "L"; alternativa é workflow_dispatch manual ou rodar 28/29/30/31 e
+    # filtrar dentro do script.
+    - cron: '0 21 28 * *'
+  workflow_dispatch:
+    inputs:
+      periodicidade:
+        description: 'Periodicidade (semanal | mensal)'
+        type: choice
+        options: [semanal, mensal]
+        required: true
+        default: semanal
+
+permissions:
+  contents: read
+
+concurrency:
+  group: digest-${{ github.event.schedule || github.event.inputs.periodicidade }}
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    name: Enviar digest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Determine periodicidade
+        id: per
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "value=${{ github.event.inputs.periodicidade }}" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event.schedule }}" = "0 21 * * 0" ]; then
+            echo "value=semanal" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=mensal" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run digest
+        env:
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          # NOTE: subcomando `digest` ainda não existe no CLI; este step
+          # vira no-op enquanto não implementado. PR futuro: adicionar
+          # `monitoritcd digest --periodicidade ${{ steps.per.outputs.value }}`.
+          echo "Periodicidade: ${{ steps.per.outputs.value }}"
+          echo "TODO: wire monitoritcd CLI subcommand 'digest'."

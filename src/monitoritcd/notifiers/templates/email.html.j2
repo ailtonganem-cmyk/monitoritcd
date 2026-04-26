@@ -4,38 +4,71 @@
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:;">
   <title>{{ subject }}</title>
+  <style>
+    /* #97 dark/light mode auto via prefers-color-scheme */
+    @media (prefers-color-scheme: dark) {
+      .bg-page { background:#1a1a1a !important; }
+      .bg-card { background:#2a2a2a !important; }
+      .border-soft { border-color:#3a3a3a !important; }
+      .text-primary { color:#f0f0f0 !important; }
+      .text-secondary { color:#bbb !important; }
+      .text-muted { color:#888 !important; }
+      .link { color:#6db4ff !important; }
+      .destaque-bg { background:#3a2f00 !important; }
+      .destaque-text { color:#ffd966 !important; }
+    }
+  </style>
 </head>
-<body style="margin:0; padding:0; background:#f5f5f7; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f7;">
+<body class="bg-page" style="margin:0; padding:0; background:#f5f5f7; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-page" style="background:#f5f5f7;">
     <tr>
       <td align="center" style="padding:24px 12px;">
-        <table role="presentation" width="640" cellpadding="0" cellspacing="0" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+        <table role="presentation" width="640" cellpadding="0" cellspacing="0" class="bg-card" style="max-width:640px; width:100%; background:#ffffff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,0.05);">
 
-          {# ── Header ─────────────────────────────────── #}
+          {# ── Header (#109) com saudação dinâmica (#117) ─────────── #}
           <tr>
-            <td style="padding:24px 24px 8px 24px; border-bottom:1px solid #ececec;">
-              <h1 style="margin:0; font-size:18px; color:#111;">📊 MonitorITCD — {{ digest_label }}</h1>
-              <p style="margin:6px 0 0 0; font-size:13px; color:#666;">{{ data_geracao }} · {{ items|length }} {% if items|length == 1 %}novidade{% else %}novidades{% endif %}</p>
+            <td class="border-soft" style="padding:24px 24px 8px 24px; border-bottom:1px solid #ececec;">
+              {% if saudacao %}
+              <p class="text-secondary" style="margin:0 0 6px 0; font-size:13px; color:#666;">{{ saudacao }}</p>
+              {% endif %}
+              <h1 class="text-primary" style="margin:0; font-size:18px; color:#111;">📊 MonitorITCD — {{ digest_label }}</h1>
+              <p class="text-secondary" style="margin:6px 0 0 0; font-size:13px; color:#666;">{{ data_geracao }} · {{ items|length }} {% if items|length == 1 %}novidade{% else %}novidades{% endif %}</p>
             </td>
           </tr>
 
           {# ── Empty state ────────────────────────────── #}
           {% if items|length == 0 %}
           <tr>
-            <td style="padding:32px 24px; text-align:center; color:#888;">
+            <td class="text-muted" style="padding:32px 24px; text-align:center; color:#888;">
               Sem novidades relevantes neste período. Pacífico no front do ITCD.
             </td>
           </tr>
           {% else %}
 
-          {# ── Highlights ─────────────────────────────── #}
-          {% if highlights %}
+          {# ── Ranking top 5 (#103) ──────────────────────────── #}
+          {% if ranking %}
           <tr>
-            <td style="padding:16px 24px; background:#fff8e1;">
-              <strong style="font-size:14px; color:#7a5c00;">⭐ Destaques</strong>
-              <ul style="margin:8px 0 0 0; padding-left:20px; color:#333; font-size:13px;">
-                {% for h in highlights %}
-                <li style="margin-bottom:4px;">{{ h.titulo }}</li>
+            <td class="destaque-bg" style="padding:16px 24px; background:#fff8e1;">
+              <strong class="destaque-text" style="font-size:14px; color:#7a5c00;">🏆 Top {{ ranking|length }} mais relevantes</strong>
+              <ol class="text-primary" style="margin:8px 0 0 0; padding-left:20px; color:#333; font-size:13px;">
+                {% for h in ranking %}
+                <li style="margin-bottom:4px;"><a href="#item-{{ loop.index0 }}" class="link" style="color:#0066cc; text-decoration:none;">{{ h.titulo }}</a> <span class="text-muted" style="color:#999; font-size:11px;">({{ h.uf }} · score {{ h.relevancia }})</span></li>
+                {% endfor %}
+              </ol>
+            </td>
+          </tr>
+          {% endif %}
+
+          {# ── TOC (#98) — só para digests grandes (>= 8 itens) ──── #}
+          {% if items|length >= 8 %}
+          <tr>
+            <td class="border-soft" style="padding:12px 24px; background:#fafafa; border-bottom:1px solid #ececec;">
+              <strong class="text-secondary" style="font-size:12px; color:#666;">📑 Índice</strong>
+              <ul class="text-secondary" style="margin:6px 0 0 0; padding-left:18px; font-size:12px; color:#666; list-style:none;">
+                {% for item in items %}
+                <li style="margin-bottom:2px;">
+                  <a href="#item-{{ loop.index0 }}" class="link" style="color:#0066cc; text-decoration:none;">{{ item.tier_emoji }} {{ item.titulo }}</a>
+                </li>
                 {% endfor %}
               </ul>
             </td>
@@ -45,23 +78,23 @@
           {# ── Items ──────────────────────────────────── #}
           {% for item in items %}
           <tr>
-            <td style="padding:16px 24px; border-bottom:1px solid #f0f0f0;">
+            <td id="item-{{ loop.index0 }}" class="border-soft" style="padding:16px 24px; border-bottom:1px solid #f0f0f0;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:top;">
-                    <div style="font-size:11px; color:#999; margin-bottom:4px;">
+                    <div class="text-muted" style="font-size:11px; color:#999; margin-bottom:4px;">
                       <span style="background:{{ item.tier_color }}; color:#fff; padding:2px 6px; border-radius:3px; font-weight:600;">
                         {{ item.tier_emoji }} {{ item.tier_label }}
                       </span>
                       &nbsp;·&nbsp;{{ item.uf }}&nbsp;·&nbsp;{{ item.tipo_label }}
                       {% if item.data_pub %}&nbsp;·&nbsp;{{ item.data_pub }}{% endif %}
                     </div>
-                    <h2 style="margin:0 0 6px 0; font-size:15px; line-height:1.4; color:#111;">
-                      <a href="{{ item.url }}" style="color:#0066cc; text-decoration:none;">{{ item.titulo }}</a>
+                    <h2 class="text-primary" style="margin:0 0 6px 0; font-size:15px; line-height:1.4; color:#111;">
+                      <a href="{{ item.url }}" class="link" style="color:#0066cc; text-decoration:none;">{{ item.titulo }}</a>
                     </h2>
-                    <p style="margin:0; font-size:13px; color:#444; line-height:1.5;">{{ item.resumo }}</p>
+                    <p class="text-secondary" style="margin:0; font-size:13px; color:#444; line-height:1.5;">{{ item.resumo }}</p>
                     {% if item.fonte_nome %}
-                    <p style="margin:6px 0 0 0; font-size:11px; color:#999;">Fonte: {{ item.fonte_nome }}</p>
+                    <p class="text-muted" style="margin:6px 0 0 0; font-size:11px; color:#999;">Fonte: {{ item.fonte_nome }}</p>
                     {% endif %}
                   </td>
                 </tr>
@@ -72,11 +105,23 @@
 
           {% endif %}
 
-          {# ── Footer ─────────────────────────────────── #}
+          {# ── Footer (#108, #115, #119) ─────────────────────────── #}
           <tr>
-            <td style="padding:16px 24px; text-align:center; font-size:11px; color:#999;">
-              Enviado por MonitorITCD · {{ data_geracao }}<br>
-              Sistema de uso pessoal — não responder a este e-mail.
+            <td class="text-muted" style="padding:20px 24px; text-align:center; font-size:11px; color:#999;">
+              {% if bot_url %}
+              <p style="margin:0 0 8px 0;">
+                <a href="{{ bot_url }}" class="link" style="color:#0066cc; text-decoration:none;">💬 Ver no bot</a>
+                {% if dashboard_url %}&nbsp;·&nbsp;<a href="{{ dashboard_url }}" class="link" style="color:#0066cc; text-decoration:none;">📊 Dashboard</a>{% endif %}
+                {% if repo_url %}&nbsp;·&nbsp;<a href="{{ repo_url }}" class="link" style="color:#0066cc; text-decoration:none;">⚙️ Repositório</a>{% endif %}
+              </p>
+              {% endif %}
+              <p style="margin:0;">Enviado por MonitorITCD · {{ data_geracao }}</p>
+              <p style="margin:4px 0 0 0;">Sistema de uso pessoal — não responder a este e-mail.</p>
+              {% if mostrar_unsubscribe %}
+              <p style="margin:6px 0 0 0; font-size:10px; color:#bbb;">
+                Para desativar este digest, edite a configuração em <code>config.email.enabled</code>.
+              </p>
+              {% endif %}
             </td>
           </tr>
 
