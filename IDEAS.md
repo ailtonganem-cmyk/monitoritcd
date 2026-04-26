@@ -286,41 +286,41 @@
 
 ## 7. Análise & Inteligência (221–255)
 
-221. [ ] Dashboard estático em GitHub Pages com métricas atualizadas.
-222. [ ] Gráfico itens por UF/mês (Plotly, JSON estático).
-223. [ ] Gráfico relevância média por UF.
-224. [ ] Trending topics — last 7d, 30d, 90d.
-225. [ ] Detecção de outliers em volume de coleta.
-226. [ ] Comparativo período atual vs anterior.
-227. [ ] Wordcloud das keywords mais frequentes.
-228. [ ] Heatmap de atividade por dia da semana × hora.
-229. [ ] Top fontes por relevância média entregue.
-230. [ ] Top UFs por volume.
-231. [ ] Análise de gap (UFs sem novidades em N dias).
-232. [ ] Velocidade média de tramitação de PL por UF.
-233. [ ] Taxa de aprovação de PLs sobre ITCD por UF.
-234. [ ] Tempo médio entre PL inicial → sanção.
-235. [ ] Detecção de "movimentos sincronizados" entre UFs no mesmo tema.
-236. [ ] Análise de cobertura jornalística (volume + diversidade).
-237. [ ] Análise de divergência entre fontes sobre o mesmo ato.
-238. [ ] Tracking de citações cruzadas (PL X cita Lei Y de outra UF).
-239. [ ] Mapa de conexões entre normas (graph DOT/Mermaid gerado).
-240. [ ] Linha do tempo interativa (HTML estático, vis.js).
-241. [ ] Tabela comparativa de alíquotas atualizada.
-242. [ ] Comparativo de regimes (progressivo × proporcional × híbrido).
-243. [ ] Estimativa de impacto fiscal (a partir de valores no texto).
-244. [ ] Estatísticas de keywords (frequência, tendência, sazonalidade).
-245. [ ] "Vencedores e perdedores" em jurisprudência (fisco × contribuinte).
-246. [ ] Detecção de mudanças de orientação jurisprudencial.
-247. [ ] Análise de teses repetitivas (STF/STJ).
-248. [ ] Score de "maturidade legislativa" por UF.
-249. [ ] Detecção de tendência regional (Norte × Sul × etc.).
-250. [ ] Score de proatividade da SEFAZ por UF (frequência de IN).
-251. [ ] Score de atualidade da legislação (idade média da norma vigente).
-252. [ ] Predição simples de relevância futura (Prophet local, sem Cloud ML).
-253. [ ] Detecção de sazonalidade (final de ano fiscal, etc.).
-254. [ ] Análise de correlação entre eventos legislativos.
-255. [ ] Comparativo Brasil × Internacional (briefing manual, contextualizado).
+221. [x] Dashboard estático em GitHub Pages com métricas atualizadas. ✅ pré-existente (build_dashboard.py)
+222. [ ] Gráfico itens por UF/mês (Plotly, JSON estático). — TODO: requer Plotly
+223. [ ] Gráfico relevância média por UF. — TODO: requer Plotly
+224. [x] Trending topics — last 7d, 30d, 90d. ✅ 2026-04-26 (analytics.trending_topics)
+225. [ ] Detecção de outliers em volume de coleta. — TODO: requer estatística avançada
+226. [ ] Comparativo período atual vs anterior. — TODO: requer state previo
+227. [ ] Wordcloud das keywords mais frequentes. — TODO: requer wordcloud lib
+228. [ ] Heatmap de atividade por dia da semana × hora. — TODO: requer Plotly
+229. [x] Top fontes por relevância média entregue. ✅ 2026-04-26 (top_sources_by_relevance)
+230. [x] Top UFs por volume. ✅ 2026-04-26 (top_ufs_by_volume)
+231. [x] Análise de gap (UFs sem novidades em N dias). ✅ 2026-04-26 (gap_analysis)
+232. [ ] Velocidade média de tramitação de PL por UF. — TODO: requer tracking de tramitação
+233. [ ] Taxa de aprovação de PLs sobre ITCD por UF. — TODO: requer outcome tracking
+234. [ ] Tempo médio entre PL inicial → sanção. — TODO: requer outcome tracking
+235. [ ] Detecção de "movimentos sincronizados" entre UFs no mesmo tema. — TODO: cross-UF
+236. [ ] Análise de cobertura jornalística (volume + diversidade). — TODO: cross-source
+237. [ ] Análise de divergência entre fontes sobre o mesmo ato. — TODO: cross-source
+238. [ ] Tracking de citações cruzadas (PL X cita Lei Y de outra UF). — TODO: requer parsing avançado
+239. [ ] Mapa de conexões entre normas (graph DOT/Mermaid gerado). — TODO: heavy
+240. [ ] Linha do tempo interativa (HTML estático, vis.js). — TODO: vis.js
+241. [x] Tabela comparativa de alíquotas atualizada. ✅ 2026-04-26 (aliquotas_por_uf)
+242. [ ] Comparativo de regimes (progressivo × proporcional × híbrido). — TODO: classificação manual
+243. [x] Estimativa de impacto fiscal (a partir de valores no texto). ✅ 2026-04-26 (count, não soma)
+244. [x] Estatísticas de keywords (frequência, tendência, sazonalidade). ✅ 2026-04-26 (keyword_frequency)
+245. [ ] "Vencedores e perdedores" em jurisprudência (fisco × contribuinte). — TODO: análise sentiment
+246. [ ] Detecção de mudanças de orientação jurisprudencial. — TODO: requer tracking temporal
+247. [ ] Análise de teses repetitivas (STF/STJ). — TODO: cross-decisões
+248. [x] Score de "maturidade legislativa" por UF. ✅ 2026-04-26 (maturity_score_per_uf)
+249. [ ] Detecção de tendência regional (Norte × Sul × etc.). — TODO: classificação por região
+250. [x] Score de proatividade da SEFAZ por UF (frequência de IN). ✅ 2026-04-26 (sefaz_proactivity_per_uf)
+251. [x] Score de atualidade da legislação (idade média da norma vigente). ✅ 2026-04-26 (actuality_score_per_uf)
+252. [ ] Predição simples de relevância futura (Prophet local, sem Cloud ML). — TODO: Prophet
+253. [x] Detecção de sazonalidade (final de ano fiscal, etc.). ✅ 2026-04-26 (seasonality_by_month)
+254. [ ] Análise de correlação entre eventos legislativos. — TODO: estatística avançada
+255. [ ] Comparativo Brasil × Internacional (briefing manual, contextualizado). — TODO: fonte externa
 
 ---
 
