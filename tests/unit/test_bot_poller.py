@@ -331,3 +331,15 @@ class TestMakeStorageForPoller:
             storage = _make_storage_for_poller(s)
         assert isinstance(storage, InMemoryStorage)
         assert storage.owner_id == OWNER
+
+    def test_env_production_com_async_client_falhando_faz_fallback(self) -> None:
+        # CI Linux limpo: AsyncClient(project=...) levanta DefaultCredentialsError
+        # antes de FirestoreStorage rodar. Fallback amplo (Exception) cobre.
+        s = _settings_production()
+        with patch(
+            "google.cloud.firestore.AsyncClient",
+            side_effect=ValueError("ADC missing"),
+        ):
+            storage = _make_storage_for_poller(s)
+        assert isinstance(storage, InMemoryStorage)
+        assert storage.owner_id == OWNER
