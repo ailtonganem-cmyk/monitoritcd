@@ -643,9 +643,7 @@ class TestRelatorio:
                 fetched_at=datetime.now(UTC),
                 content_hash=hash_seed * 64,
             )
-            doc = _doc(doc_id=f"d{hash_seed}").model_copy(
-                update={"original": raw, "llm": None}
-            )
+            doc = _doc(doc_id=f"d{hash_seed}").model_copy(update={"original": raw, "llm": None})
             await ctx.storage.save_documento(doc)
         result = await handle_relatorio(
             ctx,
