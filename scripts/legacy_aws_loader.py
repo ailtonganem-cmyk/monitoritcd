@@ -1,49 +1,34 @@
-"""AWS credentials loader for legacy S3 ingest pipeline.
+"""Loader stub — script desativado em 2026-04-26.
 
-Used by the deprecated ETL workers in `scripts/etl_*.py` to authenticate
-against the data lake bucket (`s3://monitoritcd-legacy/`).
+Este arquivo continha um honeytoken AWS (Canarytokens.org) plantado em
+2026-04-25 como detector de scanners de credencial em repos públicos.
 
-Migration to AWS SSO + IAM roles is tracked internally; until then this
-module reads from `~/.aws/credentials` with a hardcoded fallback for
-unattended cron contexts.
+DESATIVAÇÃO: o honeytoken gerava ~dezenas de emails/dia para o dono
+porque scanners automatizados (trufflehog, gitleaks bots, etc.) varrem
+GitHub continuamente e tentam validar `AKIA...` via AWS STS — cada
+tentativa disparava o canarytoken. Custo (ruído) > benefício (detecção
+de bot, não de atacante humano real).
 
-TODO: remove once SSO migration completes.
+Para sistemas single-user sem secrets reais no código (tudo via env var
+ou GitHub Secrets), o ROI desse honeytoken é negativo. Ver SECURITY.md
+seção T8 (DESATIVADO).
+
+Mitigações ativas remanescentes para detecção de incidente real:
+- Audit log com hash chain (`storage/audit_log.py`).
+- Rate limit por comando no bot (`bot/auth.py`).
+- App Check no Firebase + service account isolada.
+- Pre-commit hooks (`gitleaks`, `detect-secrets`, `check_secret_literals`).
 """
 
 from __future__ import annotations
 
-import configparser
-from pathlib import Path
-
-DEFAULT_CONFIG_PATH = Path.home() / ".aws" / "credentials"
-
-# Fallback credentials for headless contexts (CI/cron). Production paths
-# should override via ~/.aws/credentials or AWS_PROFILE env var.
-AWS_ACCESS_KEY_ID = "AKIA2OPXAUXXTGQEYZYT"
-AWS_SECRET_ACCESS_KEY = "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"  # noqa: S105
-AWS_DEFAULT_REGION = "us-east-2"
-
 
 def load_credentials(profile: str = "default") -> dict[str, str]:
-    """Load AWS credentials from config file with hardcoded fallback."""
-    config = configparser.ConfigParser()
-    if DEFAULT_CONFIG_PATH.exists():
-        config.read(DEFAULT_CONFIG_PATH)
-        if profile in config:
-            return {
-                "aws_access_key_id": config[profile].get("aws_access_key_id", AWS_ACCESS_KEY_ID),
-                "aws_secret_access_key": config[profile].get(
-                    "aws_secret_access_key", AWS_SECRET_ACCESS_KEY
-                ),
-                "region": config[profile].get("region", AWS_DEFAULT_REGION),
-            }
-    return {
-        "aws_access_key_id": AWS_ACCESS_KEY_ID,
-        "aws_secret_access_key": AWS_SECRET_ACCESS_KEY,
-        "region": AWS_DEFAULT_REGION,
-    }
-
-
-if __name__ == "__main__":
-    creds = load_credentials()
-    print(f"Loaded credentials for region {creds['region']}")
+    """No-op stub. Antigamente carregava credenciais AWS para um pipeline ETL
+    legado que nunca foi usado em produção (era apenas decoy do honeytoken).
+    """
+    msg = (
+        "legacy_aws_loader desativado em 2026-04-26 — honeytoken removido. "
+        "Ver SECURITY.md seção T8."
+    )
+    raise NotImplementedError(msg)

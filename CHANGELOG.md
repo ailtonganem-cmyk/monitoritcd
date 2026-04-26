@@ -5,6 +5,34 @@ Todas as mudanças notáveis ao MonitorITCD são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Honeytoken AWS desativado (2026-04-26)
+
+### Removido / Desativado
+
+- **Honeytoken AWS** plantado em `scripts/legacy_aws_loader.py` foi
+  **DESATIVADO** após avaliação custo/benefício: gerava ruído de emails
+  contínuo (scanners automatizados em GitHub público) sem captura de
+  ataque humano real.
+- `scripts/legacy_aws_loader.py`: agora é stub `NotImplementedError`.
+- `.gitleaks.toml` e `scripts/check_secret_literals.py`: allowlists do
+  caminho do honeytoken removidas.
+- `SECURITY.md` T8: marcado como **DESATIVADO** com análise completa.
+
+### Adicionado
+
+- `docs/runbooks/canarytoken_emails.md`: runbook em 3 camadas para o dono
+  finalizar a desativação no painel canarytokens.org + filtro Gmail
+  defensive-in-depth.
+
+### Notas operacionais
+
+A Cloud Function `canary_filter` permanece deployada porém **inerte**
+(sem trigger). Pode ser removida em PR futuro. Ações remanescentes pelo
+dono (manuais, documentadas no runbook):
+
+1. Apagar token em canarytokens.org (link "Manage" no email original).
+2. Criar filtro Gmail server-side para `noreply@canarytokens.org`.
+
 ## [Unreleased] — 50 melhorias gratuitas (2026-04-26)
 
 > Hardening abrangente: qualidade de código, testes, segurança, observabilidade,

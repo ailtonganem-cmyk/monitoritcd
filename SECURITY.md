@@ -155,28 +155,51 @@ runner US. Por ser ponto de entrada HTTP autenticado, é alvo SSRF natural.
 
 Localização: `functions/proxy_br/main.py`. Testes em `test_main.py`.
 
-### T8: Honeytokens
-**Estado**: ativo (2026-04-25).
+### T8: Honeytokens — DESATIVADO em 2026-04-26
+**Estado**: ❌ **DESATIVADO** desde 2026-04-26 (foi ativo de 2026-04-25 a 2026-04-26).
 
-**Token plantado**:
-- Tipo: AWS API Key (Canarytokens.org)
-- Localização: `scripts/legacy_aws_loader.py`
-- Memo no provedor: `MonitorITCD repo / scripts/legacy_aws_loader.py`
-- Notificação: e-mail do dono (`ailtonganemcarro@gmail.com`)
-- Allowlists: `.gitleaks.toml` + `scripts/check_secret_literals.py` (decoy
-  intencional, scanners locais devem ignorar para não criar ruído).
+**Motivo da desativação**:
+Em repos públicos GitHub, scanners automatizados (trufflehog, gitleaks bots,
+secret-scanner SaaS, scrappers de credencial em geral) varrem continuamente.
+Cada vez que encontravam o `AKIA...` em `scripts/legacy_aws_loader.py`,
+tentavam validar via AWS STS — disparando o canarytokens.org dezenas de
+vezes/dia. Resultado: caixa de entrada do dono inundada de emails de
+"canary triggered", todos eles bots automatizados (não atacantes humanos).
 
-**Comportamento esperado**:
-- Atacante encontra a string `AKIA...` em `git grep aws_access_key`.
-- Tenta autenticar com `aws sts get-caller-identity` ou similar.
-- Canarytokens.org detecta a chamada à AWS e dispara e-mail em segundos.
-- Resposta: rotacionar todos os secrets reais, auditar acessos recentes,
-  reescrever histórico Git se necessário (ver "Resposta a incidente" abaixo).
+**Análise custo/benefício**:
+- ✅ Benefício original: detectar tentativa de exploração de secret.
+- ❌ Custo: spam recorrente de emails — operacionalmente insustentável.
+- ⚠️ Mitigação tentada (Cloud Function `canary_filter`): filtra UA/IP de
+  scanners, mas só atua **se** o canal "email" for desabilitado em
+  canarytokens.org e substituído pelo webhook → não foi configurado.
 
-**Operacional**:
-- O honeytoken NÃO concede privilégios reais — é detectivo, não preventivo.
-- Para desativar/rotacionar: apagar token em canarytokens.org (via e-mail
-  de gerência recebido na criação), depois remover/substituir no arquivo.
+**Para sistemas single-user sem secrets reais no código** (caso atual:
+todos via env var/GitHub Secrets, com Princípio Canônico 3 do CLAUDE.md
+proibindo secrets no fonte), o honeytoken só captura ruído. A detecção
+real de incidente vem de outras camadas:
+- Audit log com hash chain.
+- Rate limit por comando no bot.
+- App Check + Firestore rules `deny all`.
+- Pre-commit hooks (gitleaks, detect-secrets).
+- CodeQL + SAST no CI.
+
+**Estado dos artefatos**:
+- `scripts/legacy_aws_loader.py`: agora é stub sem secret (raise NotImplementedError).
+- `.gitleaks.toml`: allowlist do path removida.
+- `scripts/check_secret_literals.py`: allowlist do path removida.
+- Cloud Function `canary_filter` (T10) **continua deployada** mas inerte —
+  sem trigger, sem invocação. Pode ser removida em PR futuro.
+
+**Para reativar futuro** (não recomendado em repo público):
+1. Criar novo canary em canarytokens.org com tipo **DNS-only** ou **Sensitive
+   Command** (não AWS Key — atrai bots).
+2. Plantar artefato em path significativo.
+3. Configurar **apenas webhook** em canarytokens.org (canal email DESABILITADO).
+4. Webhook aponta para `canary_filter` Cloud Function → Telegram.
+5. Adicionar allowlists de novo em `.gitleaks.toml` e `check_secret_literals.py`.
+
+**Runbook de gestão do canary atual no canarytokens.org**: ver
+`docs/runbooks/canarytoken_emails.md`.
 
 ## Pre-commit checks
 
