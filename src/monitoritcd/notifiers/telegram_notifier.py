@@ -53,7 +53,7 @@ logger = structlog.get_logger(__name__)
 
 TELEGRAM_API_BASE = "https://api.telegram.org"
 
-# #131 — DND noturno automático (22h–7h BRT por default)
+# #131 — DND noturno automático (22h-7h BRT por default)
 DND_INICIO_BRT: Final[int] = 22
 DND_FIM_BRT: Final[int] = 7
 BRT_OFFSET_HOURS: Final[int] = 3  # UTC -3 = BRT
