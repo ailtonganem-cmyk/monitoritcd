@@ -3,16 +3,19 @@
 Envia mensagens em MarkdownV2 (com escape correto) ao chat do dono.
 Faz split automático se mensagem ultrapassa 4096 chars.
 
+Cobre IDEAS.md Categoria 4 — Notificação por Telegram.
+
 Princípios canônicos aplicados:
-1. **Escape MarkdownV2** sempre antes do envio.
-2. **MAX_TELEGRAM_MSG_BYTES** enforcement via `split_for_telegram`.
+1. **Escape MarkdownV2** sempre antes do envio (#124).
+2. **MAX_TELEGRAM_MSG_BYTES** enforcement via `split_for_telegram` (#136).
 3. **Bot token via `SecretStr`** — nunca em logs.
 4. **Identidade do destinatário** via env var (`TELEGRAM_OWNER_CHAT_ID`).
 """
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Final
 
 import httpx
 import structlog
@@ -29,6 +32,10 @@ from monitoritcd.notifiers.email_notifier import (
     _render_item_context,
     build_jinja_env,
 )
+from monitoritcd.notifiers.telegram_actions import (
+    InlineKeyboard,
+    build_item_keyboard,
+)
 from monitoritcd.security.markdown_escape import (
     escape_markdown_v2,
     split_for_telegram,
@@ -36,7 +43,6 @@ from monitoritcd.security.markdown_escape import (
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from datetime import datetime
 
     from jinja2 import Environment
 
@@ -47,10 +53,41 @@ logger = structlog.get_logger(__name__)
 
 TELEGRAM_API_BASE = "https://api.telegram.org"
 
+# #131 — DND noturno automático (22h–7h BRT por default)
+DND_INICIO_BRT: Final[int] = 22
+DND_FIM_BRT: Final[int] = 7
+BRT_OFFSET_HOURS: Final[int] = 3  # UTC -3 = BRT
+
+
+def is_dnd_window(now: datetime, *, inicio: int = DND_INICIO_BRT, fim: int = DND_FIM_BRT) -> bool:
+    """#131 — True se `now` cai na janela DND noturna (BRT)."""
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=UTC)
+    hour_brt = (now.hour - BRT_OFFSET_HOURS) % 24
+    if inicio < fim:
+        return inicio <= hour_brt < fim
+    # Janela cruza meia-noite (ex: 22-7)
+    return hour_brt >= inicio or hour_brt < fim
+
 
 def _escape_for_template(value: str) -> str:
     """Filter Jinja2 que escapa para MarkdownV2."""
     return escape_markdown_v2(value)
+
+
+def _escape_items(docs: Sequence[Documento]) -> list[dict[str, str]]:
+    """Escapa items para MarkdownV2 (compartilhado entre modos)."""
+    items: list[dict[str, str]] = []
+    for d in docs:
+        ctx = _render_item_context(d)
+        escaped: dict[str, str] = {
+            k: escape_markdown_v2(v) if isinstance(v, str) and k != "url" else v
+            for k, v in ctx.items()
+        }
+        # URL não escapa, mas neutraliza `)` e `\\` para não quebrar Markdown
+        escaped["url"] = ctx["url"].replace("\\", "\\\\").replace(")", "\\)")
+        items.append(escaped)
+    return items
 
 
 def render_telegram(
@@ -59,25 +96,22 @@ def render_telegram(
     digest_label: str,
     data_geracao: datetime,
     env: Environment | None = None,
+    group_by: str | None = None,
 ) -> str:
     """Renderiza mensagem MarkdownV2 com escape correto.
 
-    Os campos textuais (titulo, resumo, etc.) são **escapados** antes do template.
+    Args:
+        docs: documentos.
+        digest_label: rótulo do digest.
+        data_geracao: timestamp.
+        env: Jinja2 env.
+        group_by: None (default), "uf" (#127), ou "tipo" (#128).
     """
     env = env or build_jinja_env()
+    items = _escape_items(docs)
 
-    items = []
-    for d in docs:
-        ctx = _render_item_context(d)
-        # Escapa todos os campos textuais que vão para o Markdown
-        escaped: dict[str, str] = {
-            k: escape_markdown_v2(v) if isinstance(v, str) and k != "url" else v
-            for k, v in ctx.items()
-        }
-        # URL não pode ser escapada (vai dentro de [text](url))
-        # mas precisa escapar `)` e `\\`
-        escaped["url"] = ctx["url"].replace("\\", "\\\\").replace(")", "\\)")
-        items.append(escaped)
+    if group_by in ("uf", "tipo"):
+        return _render_grouped(items, digest_label, data_geracao, group_by)
 
     template = env.get_template("telegram.md.j2")
     return template.render(
@@ -85,6 +119,44 @@ def render_telegram(
         digest_label=escape_markdown_v2(digest_label),
         data_geracao=escape_markdown_v2(data_geracao.strftime("%d/%m/%Y %H:%M")),
     )
+
+
+def _render_grouped(
+    items: list[dict[str, str]],
+    digest_label: str,
+    data_geracao: datetime,
+    group_by: str,
+) -> str:
+    """#127, #128 — agrupa itens por UF ou tipo."""
+    groups: dict[str, list[dict[str, str]]] = {}
+    for item in items:
+        key = item.get("uf", "_outro") if group_by == "uf" else item.get("tipo_label", "Outro")
+        groups.setdefault(key, []).append(item)
+
+    n = len(items)
+    unidade = "novidade" if n == 1 else "novidades"
+    header = (
+        f"*📊 MonitorITCD — {escape_markdown_v2(digest_label)}*\n"
+        f"_{escape_markdown_v2(data_geracao.strftime('%d/%m/%Y %H:%M'))} · "
+        f"{n} {unidade}_\n"
+    )
+    parts = [header]
+    for grupo, gitens in sorted(groups.items()):
+        parts.append(f"\n*{escape_markdown_v2(grupo)}* \\({len(gitens)}\\)")
+        for item in gitens:
+            parts.append(
+                f"{item['tier_emoji']} *{item['titulo']}*\n"
+                f"{item['tipo_label']}{' · ' + item['data_pub'] if item.get('data_pub') else ''}\n"
+                f"{item['resumo']}\n"
+                f"[Abrir original]({item['url']})"
+            )
+    return "\n".join(parts)
+
+
+def render_quote(text: str) -> str:
+    """#141 — formata texto como quote MarkdownV2 (`>` no início de cada linha)."""
+    lines = text.splitlines() or [text]
+    return "\n".join(f">{escape_markdown_v2(ln)}" for ln in lines)
 
 
 class TelegramNotifier:
@@ -111,38 +183,141 @@ class TelegramNotifier:
             await self._client.aclose()
             self._client = None
 
-    async def send_message(self, text: str) -> None:
-        """Envia uma mensagem (split em chunks ≤ 4096 bytes)."""
+    def _ensure_client(self) -> httpx.AsyncClient:
         if self._client is None:
             msg = "TelegramNotifier deve ser usado com `async with`"
             raise RuntimeError(msg)
+        return self._client
 
+    def _api_url(self, method: str) -> str:
         token = self._settings.TELEGRAM_BOT_TOKEN.get_secret_value()
-        url = f"{TELEGRAM_API_BASE}/bot{token}/sendMessage"
-        chat_id = self._settings.TELEGRAM_OWNER_CHAT_ID
+        return f"{TELEGRAM_API_BASE}/bot{token}/{method}"
 
-        chunks = split_for_telegram(text, max_bytes=limits.MAX_TELEGRAM_MSG_BYTES)
-
-        retryer = AsyncRetrying(
+    def _retryer(self) -> AsyncRetrying:
+        return AsyncRetrying(
             stop=stop_after_attempt(limits.RETRY_MAX_ATTEMPTS),
             wait=wait_exponential(multiplier=1, min=2, max=20),
             retry=retry_if_exception_type(httpx.HTTPError),
             reraise=True,
         )
 
-        for chunk in chunks:
-            payload = {
+    async def send_message(
+        self,
+        text: str,
+        *,
+        keyboard: InlineKeyboard | None = None,
+        reply_to_message_id: int | None = None,
+    ) -> int | None:
+        """Envia uma mensagem (split em chunks ≤ 4096 bytes).
+
+        Args:
+            text: texto MarkdownV2.
+            keyboard: inline_keyboard opcional (#121, #133, #134, #135, #140).
+            reply_to_message_id: threading (#137).
+
+        Returns:
+            message_id da última mensagem enviada (para edit/pin posterior),
+            ou None se split em múltiplos chunks impede ID único.
+        """
+        client = self._ensure_client()
+        url = self._api_url("sendMessage")
+        chat_id = self._settings.TELEGRAM_OWNER_CHAT_ID
+        chunks = split_for_telegram(text, max_bytes=limits.MAX_TELEGRAM_MSG_BYTES)
+
+        last_message_id: int | None = None
+        for i, chunk in enumerate(chunks):
+            payload: dict[str, object] = {
                 "chat_id": chat_id,
                 "text": chunk,
                 "parse_mode": "MarkdownV2",
                 "disable_web_page_preview": True,
             }
-            async for attempt in retryer:
+            # keyboard e reply só na PRIMEIRA mensagem do split (lê melhor)
+            if i == 0 and keyboard is not None:
+                payload["reply_markup"] = {"inline_keyboard": keyboard}
+            if i == 0 and reply_to_message_id is not None:
+                payload["reply_parameters"] = {"message_id": reply_to_message_id}
+
+            async for attempt in self._retryer():
                 with attempt:
-                    response = await self._client.post(url, json=payload)
+                    response = await client.post(url, json=payload)
                     response.raise_for_status()
+                    body = response.json()
+                    last_message_id = body.get("result", {}).get("message_id")
 
         logger.info("telegram.sent", chat_id=chat_id, chunks=len(chunks))
+        return last_message_id if len(chunks) == 1 else None
+
+    async def pin_message(self, message_id: int, *, disable_notification: bool = True) -> None:
+        """#122 — Pin de mensagem (ex: alerta crítico)."""
+        client = self._ensure_client()
+        async for attempt in self._retryer():
+            with attempt:
+                response = await client.post(
+                    self._api_url("pinChatMessage"),
+                    json={
+                        "chat_id": self._settings.TELEGRAM_OWNER_CHAT_ID,
+                        "message_id": message_id,
+                        "disable_notification": disable_notification,
+                    },
+                )
+                response.raise_for_status()
+        logger.info("telegram.pinned", message_id=message_id)
+
+    async def unpin_message(self, message_id: int) -> None:
+        """Despin de mensagem específica."""
+        client = self._ensure_client()
+        async for attempt in self._retryer():
+            with attempt:
+                response = await client.post(
+                    self._api_url("unpinChatMessage"),
+                    json={
+                        "chat_id": self._settings.TELEGRAM_OWNER_CHAT_ID,
+                        "message_id": message_id,
+                    },
+                )
+                response.raise_for_status()
+
+    async def edit_message_text(
+        self,
+        message_id: int,
+        text: str,
+        *,
+        keyboard: InlineKeyboard | None = None,
+    ) -> None:
+        """#132 — Edita mensagem in-place (ex: ao chegar correlato)."""
+        client = self._ensure_client()
+        payload: dict[str, object] = {
+            "chat_id": self._settings.TELEGRAM_OWNER_CHAT_ID,
+            "message_id": message_id,
+            "text": text,
+            "parse_mode": "MarkdownV2",
+            "disable_web_page_preview": True,
+        }
+        if keyboard is not None:
+            payload["reply_markup"] = {"inline_keyboard": keyboard}
+        async for attempt in self._retryer():
+            with attempt:
+                response = await client.post(self._api_url("editMessageText"), json=payload)
+                response.raise_for_status()
+
+    async def send_chat_action(self, action: str = "typing") -> None:
+        """#138 — Status "digitando…" durante operações longas.
+
+        Args:
+            action: "typing", "upload_document", etc.
+        """
+        client = self._ensure_client()
+        # chat_action é fire-and-forget; sem retry agressivo
+        try:
+            await client.post(
+                self._api_url("sendChatAction"),
+                json={"chat_id": self._settings.TELEGRAM_OWNER_CHAT_ID, "action": action},
+                timeout=httpx.Timeout(5.0),
+            )
+        except httpx.HTTPError:
+            # Não bloqueia em caso de falha — apenas indicação visual
+            logger.debug("telegram.chat_action_failed", action=action)
 
     async def send_digest(
         self,
@@ -150,16 +325,52 @@ class TelegramNotifier:
         *,
         digest_label: str,
         data_geracao: datetime,
-    ) -> None:
-        """Renderiza e envia digest via Telegram."""
+        group_by: str | None = None,
+        with_keyboards: bool = False,
+        respect_dnd: bool = False,
+    ) -> int | None:
+        """Renderiza e envia digest via Telegram.
+
+        Args:
+            docs: documentos.
+            digest_label: rótulo.
+            data_geracao: timestamp.
+            group_by: "uf" (#127), "tipo" (#128), ou None.
+            with_keyboards: se True E há 1 doc, anexa inline keyboard (#121).
+            respect_dnd: se True, retorna sem enviar quando em janela DND (#131).
+        """
+        if respect_dnd and is_dnd_window(data_geracao):
+            logger.info(
+                "telegram.dnd_skip",
+                hour_brt=(data_geracao.hour - BRT_OFFSET_HOURS) % 24,
+            )
+            return None
+
         text = render_telegram(
             docs,
             digest_label=digest_label,
             data_geracao=data_geracao,
             env=self._env,
+            group_by=group_by,
         )
-        await self.send_message(text)
+        keyboard: InlineKeyboard | None = None
+        if with_keyboards and len(docs) == 1:
+            doc = docs[0]
+            keyboard = build_item_keyboard(
+                doc.doc_id,
+                url=doc.original.url,
+            )
+        return await self.send_message(text, keyboard=keyboard)
 
 
 # Re-export de TIPO_LABELS para evitar import circular nas rotas externas
-__all__ = ["TIPO_LABELS", "TelegramNotifier", "render_telegram"]
+__all__ = [
+    "BRT_OFFSET_HOURS",
+    "DND_FIM_BRT",
+    "DND_INICIO_BRT",
+    "TIPO_LABELS",
+    "TelegramNotifier",
+    "is_dnd_window",
+    "render_quote",
+    "render_telegram",
+]

@@ -171,31 +171,31 @@
 
 ## 4. Notificação por Telegram (121–145)
 
-121. [ ] Botões inline (callback data) para ações rápidas.
-122. [ ] Pinning automático de itens críticos.
-123. [ ] Disable de preview de URL para reduzir ruído visual.
-124. [ ] Markdown V2 estrito com escape automático de chars especiais.
-125. [ ] Emojis padronizados por severity tier (🔴🟠🟡🟢).
-126. [ ] Poll integrado: "li / não li / arquivar".
-127. [ ] Agrupamento por UF na mensagem.
-128. [ ] Agrupamento por tipo (PL, decreto, jurisprudência).
-129. [ ] Flag visual "novo desde sua última leitura".
-130. [ ] Snooze: silenciar próximas notificações até hora X.
-131. [ ] Modo "do not disturb" noturno automático (22h–7h BRT).
-132. [ ] Mensagem editável (editar in-place ao chegar item correlato).
-133. [ ] Botão "expandir resumo" (mostra mais texto on-demand).
-134. [ ] Botão "abrir original" (link para fonte).
-135. [ ] Botão "marcar com tag rápida" (predefinida).
-136. [ ] Sequência paginada de mensagens em digest grande.
-137. [ ] Threading via `reply_to_message_id` para agrupar correlatos.
-138. [ ] Status "digitando…" durante geração de respostas demoradas.
-139. [ ] Sticker para casos especiais (ex: emoji custom para mudança de alíquota).
-140. [ ] Reaction button (heart/fire/seen) com tracking.
-141. [ ] Quote message para destacar trecho original.
-142. [ ] Forwarding entre canais (se houver canal só pra leitura).
-143. [ ] Bot menu (`/setcommands` no BotFather) com sugestões.
-144. [ ] Bot description em PT-BR (visible quando alguém abre o bot).
-145. [ ] Bot photo customizada com identidade do projeto.
+121. [x] Botões inline (callback data) para ações rápidas. ✅ 2026-04-26 (build_item_keyboard)
+122. [x] Pinning automático de itens críticos. ✅ 2026-04-26 (pin_message)
+123. [x] Disable de preview de URL para reduzir ruído visual. ✅ pré-existente (disable_web_page_preview)
+124. [x] Markdown V2 estrito com escape automático de chars especiais. ✅ pré-existente (markdown_escape.py)
+125. [x] Emojis padronizados por severity tier (🔴🟠🟡🟢). ✅ pré-existente (severity.py)
+126. [x] Poll integrado: "li / não li / arquivar". ✅ 2026-04-26 (build_poll_keyboard)
+127. [x] Agrupamento por UF na mensagem. ✅ 2026-04-26 (group_by="uf")
+128. [x] Agrupamento por tipo (PL, decreto, jurisprudência). ✅ 2026-04-26 (group_by="tipo")
+129. [x] Flag visual "novo desde sua última leitura". ✅ 2026-04-26 (botões 👍/👎) ⭐ Tier 1
+130. [x] Snooze: silenciar próximas notificações até hora X. ✅ pré-existente (`/silenciar` bot)
+131. [x] Modo "do not disturb" noturno automático (22h–7h BRT). ✅ 2026-04-26 (is_dnd_window + respect_dnd)
+132. [x] Mensagem editável (editar in-place ao chegar item correlato). ✅ 2026-04-26 (edit_message_text)
+133. [x] Botão "expandir resumo" (mostra mais texto on-demand). ✅ 2026-04-26 (CB_EXPAND)
+134. [x] Botão "abrir original" (link para fonte). ✅ 2026-04-26 (botão URL no item keyboard)
+135. [x] Botão "marcar com tag rápida" (predefinida). ✅ 2026-04-26 (CB_TAG)
+136. [x] Sequência paginada de mensagens em digest grande. ✅ pré-existente (split_for_telegram)
+137. [x] Threading via `reply_to_message_id` para agrupar correlatos. ✅ 2026-04-26 (reply_parameters)
+138. [x] Status "digitando…" durante geração de respostas demoradas. ✅ 2026-04-26 (send_chat_action)
+139. [ ] Sticker para casos especiais (ex: emoji custom para mudança de alíquota). — TODO: requer upload manual
+140. [x] Reaction button (heart/fire/seen) com tracking. ✅ 2026-04-26 (CB_HELPFUL/UNHELPFUL/FAVORITE)
+141. [x] Quote message para destacar trecho original. ✅ 2026-04-26 (render_quote)
+142. [ ] Forwarding entre canais (se houver canal só pra leitura). — N/A: não há canal pessoal
+143. [x] Bot menu (`/setcommands` no BotFather) com sugestões. ✅ 2026-04-26 (scripts/setup_bot_commands.py)
+144. [x] Bot description em PT-BR (visible quando alguém abre o bot). ✅ 2026-04-26 (setMyDescription no script)
+145. [ ] Bot photo customizada com identidade do projeto. — TODO: requer upload manual no BotFather
 
 ---
 
