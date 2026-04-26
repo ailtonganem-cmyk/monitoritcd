@@ -72,6 +72,7 @@ from monitoritcd.dedup import assign_clusters
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, matches_keywords
 from monitoritcd.filters.llm_classifier import classify_with_provider
 from monitoritcd.filters.prescore import passes_cutoff, prescore
+from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
 from monitoritcd.storage.audit_log import AuditLog
@@ -218,6 +219,36 @@ async def classify_and_store(
                 llm_provider,
                 llm_model=llm_provider.name,
             )
+        except LLMProvidersExhaustedError as e:
+            # Tier 3: ambos LLMs em quota. Defere classificação salvando os
+            # itens como pending (sem llm). Próxima execução tenta classificar.
+            logger.warning(
+                "classify.batch_deferred_quota_exhausted",
+                batch_size=len(batch),
+                error=str(e),
+            )
+            report.errors.append(f"classify_deferred ({len(batch)} items): quota exhausted")
+            for source, item in batch:
+                doc_id = f"{source.id}:{item.content_hash[:16]}"
+                deferred = Documento(
+                    owner_id=owner_id,
+                    doc_id=doc_id,
+                    source=source,
+                    original=item,
+                    llm=None,  # write-once original; llm fica nulo até próxima exec
+                    status=StatusDocumento.PENDING,
+                    cluster_id=cluster_map.get(item.content_hash),
+                )
+                try:
+                    await storage.save_documento(deferred)
+                    report.items_stored += 1
+                except (ValueError, RuntimeError) as save_exc:
+                    logger.exception(
+                        "storage.save_deferred_failed",
+                        doc_id=doc_id,
+                        error=str(save_exc),
+                    )
+            continue
         except (ValueError, TimeoutError) as e:
             logger.exception("classify.batch_failed", error=str(e))
             report.errors.append(f"classify_batch: {e}")

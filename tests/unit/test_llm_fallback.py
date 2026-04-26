@@ -6,7 +6,11 @@ from typing import Any
 
 import pytest
 
-from monitoritcd.llm.fallback import FallbackLLMProvider, _is_quota_error
+from monitoritcd.llm.fallback import (
+    FallbackLLMProvider,
+    LLMProvidersExhaustedError,
+    _is_quota_error,
+)
 
 
 class _StubProvider:
@@ -82,3 +86,37 @@ class TestFallbackProvider:
         provider = FallbackLLMProvider(primary, fallback)
         assert "gemini-2.5-flash" in provider.name
         assert "llama-3.3" in provider.name
+
+
+@pytest.mark.unit
+class TestTier3DeferQuandoAmbosFalham:
+    """Cobre LLMProvidersExhaustedError quando Gemini E Groq estão sem quota."""
+
+    @pytest.mark.asyncio
+    async def test_ambos_quota_levanta_providers_exhausted(self) -> None:
+        # Cenário real do cron 24957305420: Gemini 429 → fallback Groq → Groq 429
+        primary = _StubProvider("gemini", [Exception("RESOURCE_EXHAUSTED 429")])
+        fallback = _StubProvider("groq", [Exception("HTTP 429 Too Many Requests")])
+        provider = FallbackLLMProvider(primary, fallback)
+        with pytest.raises(LLMProvidersExhaustedError) as exc_info:
+            await provider.classify_batch(["item1"])
+        # Mensagem deve identificar AMBOS provedores
+        assert "gemini" in str(exc_info.value)
+        assert "groq" in str(exc_info.value)
+        assert primary._calls == 1
+        assert fallback._calls == 1
+
+    @pytest.mark.asyncio
+    async def test_fallback_erro_nao_quota_propaga(self) -> None:
+        # Se Gemini cair em quota mas Groq cair em erro NÃO-quota (network),
+        # o erro do Groq propaga (não é LLMProvidersExhausted).
+        primary = _StubProvider("gemini", [Exception("RESOURCE_EXHAUSTED 429")])
+        fallback = _StubProvider("groq", [Exception("connection refused")])
+        provider = FallbackLLMProvider(primary, fallback)
+        with pytest.raises(Exception, match="connection refused"):
+            await provider.classify_batch(["item1"])
+
+    def test_providers_exhausted_e_runtime_error(self) -> None:
+        # Garante que o orchestrator pode capturar como RuntimeError genérico
+        # se quiser, e que herda corretamente.
+        assert issubclass(LLMProvidersExhaustedError, RuntimeError)
