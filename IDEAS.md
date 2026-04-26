@@ -356,31 +356,31 @@
 
 ## 9. Watch List & Observadores (281–305)
 
-281. [ ] Watch por termo livre (texto).
-282. [ ] Watch por número de PL específico.
-283. [ ] Watch por UF + tema combinado.
-284. [ ] Watch por relator/parlamentar.
-285. [ ] Watch por tribunal.
-286. [ ] Watch com regex.
-287. [ ] Watch com expressão lógica (AND/OR/NOT).
-288. [ ] Watch com janela temporal (válido só nesta semana).
-289. [ ] Watch com expiração automática.
-290. [ ] Watch com prioridade (sobrepõe silêncios).
-291. [ ] Watch que dispara só em alta relevância.
-292. [ ] Watch que dispara em qualquer match.
-293. [ ] Watch com cooldown (não disparar 2x mesmo tema em 24h).
-294. [ ] Watch compartilhável (URL/JSON para clonar).
-295. [ ] Watch derivado de busca (transformar busca recorrente em watch).
-296. [ ] Watch por hash exato de título.
-297. [ ] Watch por similaridade > 0.85.
-298. [ ] Watch por tipo (só decretos, só sanções, só PLs aprovados).
-299. [ ] Watch por mudança de alíquota.
-300. [ ] Watch por revogação.
-301. [ ] Watch por modulação de efeitos.
-302. [ ] Watch por cluster (agrupado por tema).
-303. [ ] Watch por sequência (PL → comissão → plenário → sanção).
-304. [ ] Notificação de "estágio mudou" no PL observado.
-305. [ ] Templates de watch (presets: "alíquota SP", "holding familiar", etc.).
+281. [x] Watch por termo livre (texto). ✅ 2026-04-26 (pattern_type="term")
+282. [x] Watch por número de PL específico. ✅ 2026-04-26 (pattern_type="pl_number")
+283. [x] Watch por UF + tema combinado. ✅ 2026-04-26 (pattern_type="uf_topic")
+284. [ ] Watch por relator/parlamentar. — TODO: requer match por metadados.relator
+285. [ ] Watch por tribunal. — TODO: requer filtro por source_id pattern
+286. [x] Watch com regex. ✅ 2026-04-26 (pattern_type="regex")
+287. [x] Watch com expressão lógica (AND/OR/NOT). ✅ 2026-04-26 (term suporta operators)
+288. [x] Watch com janela temporal (válido só nesta semana). ✅ 2026-04-26 (expires_at)
+289. [x] Watch com expiração automática. ✅ 2026-04-26 (is_watch_active + expires_at)
+290. [ ] Watch com prioridade (sobrepõe silêncios). — TODO: lógica de override em notifier
+291. [x] Watch que dispara só em alta relevância. ✅ 2026-04-26 (relevancia_min)
+292. [x] Watch que dispara em qualquer match. ✅ pré-existente (default)
+293. [x] Watch com cooldown (não disparar 2x mesmo tema em 24h). ✅ 2026-04-26 (cooldown_hours)
+294. [x] Watch compartilhável (URL/JSON para clonar). ✅ 2026-04-26 (model_dump pydantic)
+295. [ ] Watch derivado de busca. — TODO: orquestração externa (UI flow)
+296. [x] Watch por hash exato de título. ✅ pré-existente (dedup.content_hash)
+297. [x] Watch por similaridade > 0.85. ✅ 2026-04-26 (matches_similar)
+298. [x] Watch por tipo (só decretos, só sanções, só PLs aprovados). ✅ 2026-04-26 (matches_tipo)
+299. [x] Watch por mudança de alíquota. ✅ 2026-04-26 (matches_aliquota_change)
+300. [x] Watch por revogação. ✅ 2026-04-26 (matches_revogacao)
+301. [x] Watch por modulação de efeitos. ✅ 2026-04-26 (matches_modulacao)
+302. [x] Watch por cluster (agrupado por tema). ✅ 2026-04-26 (matches_cluster)
+303. [ ] Watch por sequência (PL → comissão → plenário → sanção). — TODO: state machine
+304. [ ] Notificação de "estágio mudou" no PL observado. — TODO: requer #303
+305. [x] Templates de watch (presets: "alíquota SP", "holding familiar", etc.). ✅ 2026-04-26 (get_templates)
 
 ---
 
