@@ -1,0 +1,29 @@
+id: tjce-jurisprudencia
+uf: CE
+nome: "TJ-CE — Jurisprudência (stub)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "div.fundocinza1"
+  titulo: "a.linkTitulo"
+  link: "a.linkTitulo@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #38 do IDEAS.md (parcial) — TJ-CE.
+  Stub. TJCE usa eSAJ (mesmo da SP); selectors candidatos vêm do TJSP.

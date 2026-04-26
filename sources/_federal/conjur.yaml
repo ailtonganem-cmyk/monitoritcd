@@ -1,0 +1,36 @@
+id: conjur-feed
+uf: _federal
+nome: "Conjur — Consultor Jurídico (feed principal)"
+tipo: noticia
+parser: generic_rss
+url: "https://www.conjur.com.br/rss.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - ITD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - "regime de bens"
+  - "pacto antenupcial"
+  - herdeiros
+  - "Súmula 377"
+  - "união estável"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: false
+fragile: false
+notas: |
+  Conjur — Consultor Jurídico. Mídia jurídica especializada de alto sinal
+  para tributário e civil. Feed RSS público, sem autenticação.
+
+  Item #40 do IDEAS.md. Cobre decisões STF/STJ comentadas, pareceres
+  doutrinários, mudanças jurisprudenciais sobre ITCD/sucessões.

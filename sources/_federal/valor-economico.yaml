@@ -1,0 +1,30 @@
+id: valor-economico-feed
+uf: _federal
+nome: "Valor Econômico — Feed público (stub paywall)"
+tipo: noticia
+parser: generic_rss
+url: "https://valor.globo.com/rss/legislacao/feed.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - ITD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento sucessório"
+  - "holding familiar"
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: false
+fragile: true
+notas: |
+  Item #43 do IDEAS.md — Valor Econômico.
+  Stub: feed RSS pode existir mas conteúdo completo está atrás de paywall.
+  Antes de ativar:
+    1. Validar URL do feed (Globo migrou estruturas em 2023-2024)
+    2. Avaliar se o resumo no RSS é suficiente (sem acesso ao corpo)
+    3. Se conteúdo for cortado, considerar reduzir relevância no scoring

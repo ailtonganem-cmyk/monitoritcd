@@ -1,0 +1,33 @@
+id: receita-federal-atos
+uf: _federal
+nome: "Receita Federal — Atos sobre sucessão/doação (stub)"
+tipo: sefaz
+parser: generic_html
+url: "https://www.gov.br/receitafederal/pt-br/assuntos/orientacao-tributaria"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "imposto de renda"
+  - "ganho de capital"
+  - "instrução normativa"
+selectors:
+  item: "div.tileItem"
+  titulo: "h2.tileHeadline a"
+  link: "h2.tileHeadline a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #34 do IDEAS.md — Receita Federal.
+  Stub generic_html. Cobre IN/Atos Declaratórios sobre IRPF de espólio,
+  ganho de capital em transmissão, IN sobre declaração de bens.
+
+  Antes de ativar:
+    1. Validar selectors no portal gov.br (provável drift)
+    2. Considerar custom collector se layout for SPA com lazy load

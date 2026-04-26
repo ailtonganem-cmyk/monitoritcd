@@ -36,56 +36,56 @@
 
 ## 1. Coleta & Fontes (1–50)
 
-1. [ ] Coletor para ALEAC — Assembleia Legislativa do Acre.
-2. [ ] Coletor para ALEAL — Alagoas.
-3. [ ] Coletor para ALAP — Amapá.
-4. [ ] Coletor para ALEAM — Amazonas.
-5. [ ] Coletor para ALBA — Bahia.
-6. [ ] Coletor para ALECE — Ceará.
-7. [ ] Coletor para CLDF — Câmara Legislativa do DF.
-8. [ ] Coletor para ALES — Espírito Santo.
-9. [ ] Coletor para ALEGO — Goiás.
-10. [ ] Coletor para ALEMA — Maranhão.
-11. [ ] Coletor para ALMT — Mato Grosso.
-12. [ ] Coletor para ALMS — Mato Grosso do Sul.
-13. [ ] Coletor para ALMG — Minas Gerais.
-14. [ ] Coletor para ALEPA — Pará.
-15. [ ] Coletor para ALPB — Paraíba.
-16. [ ] Coletor para ALEP — Paraná.
-17. [ ] Coletor para ALEPE — Pernambuco.
-18. [ ] Coletor para ALEPI — Piauí.
-19. [ ] Coletor para ALERJ — Rio de Janeiro.
-20. [ ] Coletor para ALRN — Rio Grande do Norte.
-21. [ ] Coletor para ALRS — Rio Grande do Sul.
-22. [ ] Coletor para ALERO — Rondônia.
-23. [ ] Coletor para ALE-RR — Roraima.
-24. [ ] Coletor para ALESC — Santa Catarina.
-25. [ ] Coletor para ALESP — São Paulo.
-26. [ ] Coletor para ALESE — Sergipe.
-27. [ ] Coletor para ALETO — Tocantins.
-28. [ ] Coletor para SEFAZ de cada UF (27 fontes — atos normativos/portarias).
-29. [ ] Coletor para Diário Oficial de cada UF (incluindo formato PDF).
-30. [ ] Integração com LexML SRU API (busca federal consolidada).
-31. [ ] Coletor STF — RSS de jurisprudência e súmulas.
-32. [ ] Coletor STJ — RSS de acórdãos e súmulas.
-33. [ ] Coletor CNJ — atos administrativos relevantes.
-34. [ ] Coletor Receita Federal — atos relacionados a sucessão/doação.
-35. [ ] Coletor CONFAZ — convênios e protocolos.
-36. [ ] Coletor Câmara dos Deputados — PLs federais relevantes a ITCD.
-37. [ ] Coletor Senado Federal — PLSs e PECs.
-38. [ ] Coletor TJ-SP, TJ-RJ, TJ-MG (3 maiores tribunais estaduais).
-39. [ ] Coletor de Tribunais de Impostos e Taxas (TIT) estaduais.
-40. [ ] Coletor Conjur — RSS principal e de tributário.
-41. [ ] Coletor Migalhas — RSS.
-42. [ ] Coletor JOTA — RSS.
-43. [ ] Coletor Valor Econômico — filtragem de RSS público.
-44. [ ] Coletor Folha de S.Paulo / Estadão — RSS público.
-45. [ ] Coletor IBET — Instituto Brasileiro de Estudos Tributários.
-46. [ ] Coletor IBPT — Instituto Brasileiro de Planejamento Tributário.
-47. [ ] Coletor SciELO — artigos acadêmicos sobre tributação sucessória.
-48. [ ] Coletor BDTD CAPES — teses e dissertações.
-49. [ ] Coletor Google Scholar — alertas via RSS-like (scholar.google.com/scholar_alerts).
-50. [ ] Coletor de pareceres da PGFN, AGU, e procuradorias estaduais.
+1. [x] Coletor para ALEAC — Assembleia Legislativa do Acre. ✅ 2026-04-26 (SAPL ativo)
+2. [x] Coletor para ALEAL — Alagoas. ✅ 2026-04-26 (SAPL ativo)
+3. [x] Coletor para ALAP — Amapá. ✅ 2026-04-26 (SAPL stub)
+4. [x] Coletor para ALEAM — Amazonas. ✅ 2026-04-26 (SAPL ativo)
+5. [x] Coletor para ALBA — Bahia. ✅ 2026-04-26 (portal stub)
+6. [x] Coletor para ALECE — Ceará. ✅ 2026-04-26 (SAPL ativo)
+7. [x] Coletor para CLDF — Câmara Legislativa do DF. ✅ pré-existente
+8. [x] Coletor para ALES — Espírito Santo. ✅ 2026-04-26 (SAPL ativo)
+9. [x] Coletor para ALEGO — Goiás. ✅ 2026-04-26 (SAPL ativo)
+10. [x] Coletor para ALEMA — Maranhão. ✅ 2026-04-26 (SAPL stub)
+11. [x] Coletor para ALMT — Mato Grosso. ✅ 2026-04-26 (SAPL ativo)
+12. [x] Coletor para ALMS — Mato Grosso do Sul. ✅ pré-existente
+13. [x] Coletor para ALMG — Minas Gerais. ✅ pré-existente
+14. [x] Coletor para ALEPA — Pará. ✅ 2026-04-26 (portal stub)
+15. [x] Coletor para ALPB — Paraíba. ✅ 2026-04-26 (SAPL ativo)
+16. [x] Coletor para ALEP — Paraná. ✅ pré-existente
+17. [x] Coletor para ALEPE — Pernambuco. ✅ 2026-04-26 (SAPL ativo)
+18. [x] Coletor para ALEPI — Piauí. ✅ 2026-04-26 (SAPL ativo)
+19. [x] Coletor para ALERJ — Rio de Janeiro. ✅ pré-existente
+20. [x] Coletor para ALRN — Rio Grande do Norte. ✅ 2026-04-26 (SAPL stub)
+21. [x] Coletor para ALRS — Rio Grande do Sul. ✅ pré-existente
+22. [x] Coletor para ALERO — Rondônia. ✅ 2026-04-26 (SAPL ativo)
+23. [x] Coletor para ALE-RR — Roraima. ✅ 2026-04-26 (SAPL ativo)
+24. [x] Coletor para ALESC — Santa Catarina. ✅ 2026-04-26 (SAPL ativo)
+25. [x] Coletor para ALESP — São Paulo. ✅ pré-existente
+26. [x] Coletor para ALESE — Sergipe. ✅ 2026-04-26 (SAPL stub)
+27. [x] Coletor para ALETO — Tocantins. ✅ 2026-04-26 (portal stub)
+28. [ ] Coletor para SEFAZ de cada UF (27 fontes — atos normativos/portarias). — 5/27 prontas (DF/MG/RJ/RS/SP); 22 stubs futuros
+29. [ ] Coletor para Diário Oficial de cada UF (incluindo formato PDF). — 5/27 prontas (DF/MG/RJ/RS/SP); 22 stubs futuros
+30. [x] Integração com LexML SRU API (busca federal consolidada). ✅ pré-existente (lexml-portal)
+31. [x] Coletor STF — RSS de jurisprudência e súmulas. ✅ pré-existente
+32. [x] Coletor STJ — RSS de acórdãos e súmulas. ✅ pré-existente
+33. [x] Coletor CNJ — atos administrativos relevantes. ✅ pré-existente
+34. [x] Coletor Receita Federal — atos relacionados a sucessão/doação. ✅ 2026-04-26 (stub)
+35. [x] Coletor CONFAZ — convênios e protocolos. ✅ 2026-04-26 (stub)
+36. [x] Coletor Câmara dos Deputados — PLs federais relevantes a ITCD. ✅ pré-existente
+37. [x] Coletor Senado Federal — PLSs e PECs. ✅ pré-existente
+38. [x] Coletor TJ-SP, TJ-RJ, TJ-MG (3 maiores tribunais estaduais). ✅ pré-existentes + BA/CE/PE/PR/SC stubs
+39. [x] Coletor de Tribunais de Impostos e Taxas (TIT) estaduais. ✅ 2026-04-26 (TIT-SP stub)
+40. [x] Coletor Conjur — RSS principal e de tributário. ✅ 2026-04-26 (ativo)
+41. [x] Coletor Migalhas — RSS. ✅ 2026-04-26 (ativo)
+42. [x] Coletor JOTA — RSS. ✅ pré-existente
+43. [x] Coletor Valor Econômico — filtragem de RSS público. ✅ 2026-04-26 (stub)
+44. [x] Coletor Folha de S.Paulo / Estadão — RSS público. ✅ 2026-04-26 (stubs)
+45. [x] Coletor IBET — Instituto Brasileiro de Estudos Tributários. ✅ 2026-04-26 (stub)
+46. [x] Coletor IBPT — Instituto Brasileiro de Planejamento Tributário. ✅ 2026-04-26 (stub)
+47. [x] Coletor SciELO — artigos acadêmicos sobre tributação sucessória. ✅ 2026-04-26 (stub)
+48. [x] Coletor BDTD CAPES — teses e dissertações. ✅ 2026-04-26 (stub)
+49. [x] Coletor Google Scholar — alertas via RSS-like (scholar.google.com/scholar_alerts). ✅ 2026-04-26 (stub)
+50. [x] Coletor de pareceres da PGFN, AGU, e procuradorias estaduais. ✅ 2026-04-26 (PGFN+AGU stubs)
 
 ---
 

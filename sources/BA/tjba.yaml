@@ -1,0 +1,29 @@
+id: tjba-jurisprudencia
+uf: BA
+nome: "TJ-BA — Jurisprudência (stub)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://www5.tjba.jus.br/portal/jurisprudencia"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "div.resultado"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #38 do IDEAS.md (parcial) — TJ-BA.
+  Stub. Validar URL e selectors antes de ativar.

@@ -1,0 +1,33 @@
+id: sapl-ap
+uf: AP
+nome: "ALAP — Proposições em tramitação (SAPL — candidato)"
+tipo: assembleia
+parser: sapl
+url: "https://sapl.al.ap.leg.br/api/materia/materialegislativa/"
+selectors:
+  palavras_chave: "ITCMD|ITCD|transmissão causa mortis|sucessão|doação|regime de bens"
+  dias: "365"
+  page_size: "50"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #3 do IDEAS.md — ALAP (Amapá).
+  Stub SAPL não validado: a ALAP pode ou não usar a plataforma SAPL/Interlegis.
+  Antes de ativar:
+    1. curl -I https://sapl.al.ap.leg.br/api/materia/materialegislativa/?format=json
+    2. Se 200 OK → ativo: true e fragile: false
+    3. Se 404/timeout → mudar parser para generic_html apontando para portal próprio.

@@ -1,0 +1,28 @@
+id: pgfn-pareceres
+uf: _federal
+nome: "PGFN — Pareceres e súmulas (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://www.gov.br/pgfn/pt-br/assuntos/legislacao-e-normas"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - parecer
+  - súmula
+selectors:
+  item: "div.tileItem"
+  titulo: "h2.tileHeadline a"
+  link: "h2.tileHeadline a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: true
+fragile: true
+notas: |
+  Item #50 do IDEAS.md (parcial) — PGFN (Procuradoria-Geral da Fazenda Nacional).
+  Stub: cobre pareceres e súmulas vinculantes da PGFN.
+  Validar selectors no portal gov.br antes de ativar.

@@ -1,0 +1,29 @@
+id: alepa-portal
+uf: PA
+nome: "ALEPA — Assembleia Legislativa do Pará (portal — stub)"
+tipo: assembleia
+parser: generic_html
+url: "https://www.alepa.pa.gov.br/projetos-de-lei"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+selectors:
+  item: "div.projeto"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: false
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Item #14 do IDEAS.md — ALEPA (Pará).
+  Stub: ALEPA não usa SAPL. Validar selectors manualmente antes de ativar.

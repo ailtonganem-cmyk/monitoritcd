@@ -1,0 +1,27 @@
+id: ibpt-noticias
+uf: _federal
+nome: "IBPT — Instituto Brasileiro de Planejamento e Tributação (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://ibpt.com.br/noticia"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento tributário"
+  - "carga tributária"
+selectors:
+  item: "div.noticia-item"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: false
+fragile: true
+notas: |
+  Item #46 do IDEAS.md — IBPT.
+  Stub: portal institucional. Validar antes de ativar.

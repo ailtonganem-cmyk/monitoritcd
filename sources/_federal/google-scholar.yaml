@@ -1,0 +1,26 @@
+id: google-scholar-itcd
+uf: _federal
+nome: "Google Scholar — Alertas ITCD/sucessões (stub)"
+tipo: doutrina
+parser: generic_html
+url: "https://scholar.google.com/scholar?q=ITCMD+sucess%C3%A3o&hl=pt-BR&as_sdt=0,5&as_ylo=2023"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - sucessão
+selectors:
+  item: "div.gs_ri"
+  titulo: "h3.gs_rt a"
+  link: "h3.gs_rt a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: false
+fragile: true
+notas: |
+  Item #49 do IDEAS.md — Google Scholar.
+  Stub: ATENÇÃO — Google Scholar bloqueia scrapers agressivamente.
+  Considerar usar Scholar Alerts via email forwarding em vez de scraping direto.
+  Risco de IP banido se ativar sem cuidado de rate limit.

@@ -1,0 +1,23 @@
+id: estadao-feed
+uf: _federal
+nome: "Estadão — Feed economia (stub paywall)"
+tipo: noticia
+parser: generic_rss
+url: "https://www.estadao.com.br/rss/economia.xml"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento sucessório"
+  - "holding familiar"
+topics:
+  - itcd
+  - sucessoes
+ativo: false
+trusted: false
+fragile: true
+notas: |
+  Item #44 do IDEAS.md (parcial) — Estadão.
+  Stub: feed público de Economia. Conteúdo completo atrás de paywall.

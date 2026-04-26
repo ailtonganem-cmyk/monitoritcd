@@ -1,0 +1,36 @@
+id: migalhas-feed
+uf: _federal
+nome: "Migalhas — Notícias jurídicas (feed principal)"
+tipo: noticia
+parser: generic_rss
+url: "https://www.migalhas.com.br/rss/principais"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - ITD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - "regime de bens"
+  - "pacto antenupcial"
+  - herdeiros
+  - "Súmula 377"
+  - "união estável"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: false
+fragile: true
+notas: |
+  Migalhas — Portal jurídico tradicional. Cobre tributário e civil com
+  enfoque em decisões e pareceres. Feed RSS público.
+
+  Item #41 do IDEAS.md. fragile=true porque o portal historicamente muda
+  estrutura de feed sem aviso; revisar trimestralmente.
