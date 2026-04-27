@@ -161,7 +161,7 @@ class TestClassifyAndStoreEdgeCases:
 
             async def classify_batch(
                 self, items_text: list[str], *, system_prompt: str | None = None
-            ) -> list[dict[str, Any]]:  # noqa: ARG002
+            ) -> list[dict[str, Any]]:
                 # Relevancia 1 mapeia para DESCARTADO em map_relevancia_to_tier
                 return [
                     {
@@ -200,7 +200,7 @@ class TestClassifyAndStoreErrorPaths:
 
             async def classify_batch(
                 self, items_text: list[str], *, system_prompt: str | None = None
-            ) -> list[dict[str, Any]]:  # noqa: ARG002
+            ) -> list[dict[str, Any]]:
                 msg = "LLM offline"
                 raise ValueError(msg)
 
@@ -249,7 +249,7 @@ class TestClassifyAndStoreErrorPaths:
 
             async def classify_batch(
                 self, _items_text: list[str], *, system_prompt: str | None = None
-            ) -> list[dict[str, Any]]:  # noqa: ARG002
+            ) -> list[dict[str, Any]]:
                 msg = "Both LLM providers exhausted: gemini, groq"
                 raise LLMProvidersExhaustedError(msg)
 
@@ -283,7 +283,7 @@ class TestClassifyAndStoreErrorPaths:
 
             async def classify_batch(
                 self, _items_text: list[str], *, system_prompt: str | None = None
-            ) -> list[dict[str, Any]]:  # noqa: ARG002
+            ) -> list[dict[str, Any]]:
                 raise LLMProvidersExhaustedError("both exhausted")
 
         storage = InMemoryStorage(OWNER)
@@ -318,7 +318,7 @@ class TestReprocessErrorPaths:
 
             async def classify_batch(
                 self, items_text: list[str], *, system_prompt: str | None = None
-            ) -> list[dict[str, Any]]:  # noqa: ARG002
+            ) -> list[dict[str, Any]]:
                 msg = "timeout"
                 raise TimeoutError(msg)
 

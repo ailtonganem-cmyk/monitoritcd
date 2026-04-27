@@ -23,9 +23,9 @@ class _StubProvider:
 
     async def classify_batch(
         self,
-        items_text: list[str],  # noqa: ARG002
+        items_text: list[str],
         *,
-        system_prompt: str | None = None,  # noqa: ARG002
+        system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
         idx = self._calls
         self._calls += 1

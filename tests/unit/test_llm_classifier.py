@@ -41,7 +41,7 @@ class _FakeProvider:
 
     async def classify_batch(
         self, items_text: list[str], *, system_prompt: str | None = None
-    ) -> list[dict[str, Any]]:  # noqa: ARG002
+    ) -> list[dict[str, Any]]:
         self.call_count += 1
         return self.responses[: len(items_text)]
 
@@ -54,7 +54,7 @@ class _FailingProvider:
 
     async def classify_batch(
         self, items_text: list[str], *, system_prompt: str | None = None
-    ) -> list[dict[str, Any]]:  # noqa: ARG002
+    ) -> list[dict[str, Any]]:
         self.call_count += 1
         return [{"invalid": "schema"}]  # falta campos obrigatórios
 
