@@ -17,4 +17,7 @@ trusted: true
 fragile: true
 notas: |
   TRF3 cobre SP e MS.
-  Verificar URL do feed antes de ativar.
+
+  VALIDADA 2026-04-27 — URL retorna timeout. Variantes testadas
+  (`/feed/`, `/noticias/feed`) também timeout. TRF3 não expõe feed RSS
+  público acessível. Manter ativo: false.

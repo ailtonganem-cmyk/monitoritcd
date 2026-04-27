@@ -15,9 +15,14 @@ selectors:
   link: "a.titulo@href, td.titulo a@href"
 topics:
   - itcd
-ativo: false
+ativo: true
 trusted: true
 fragile: true
+geo_restricted: true
 notas: |
   SEFAZ-MG — Atos sobre ITCD em MG.
   Alíquota MG: 5% fixa (Lei 14.941/2003).
+
+  Reativada em 2026-04-27 — URL responde HTTP 200; selectors HTML pré-existentes
+  podem ter drift (portal pode ter mudado layout). fragile=true; revisar seletores
+  se vier zero items por mais de 1 semana.

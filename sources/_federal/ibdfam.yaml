@@ -26,4 +26,8 @@ notas: |
   IBDFAM é referência em Direito de Família e Sucessões.
   AVISO 2026-04-25: site IBDFAM não publica feed RSS público.
   Endpoints testados (Joomla padrão, raiz, /noticias) retornam HTML sem RSS.
-  Não-implementável sem scraping HTML. Pendência registrada em PLAN.md.
+
+  CONFIRMADO 2026-04-27 — URL `/rss/noticias` retorna HTTP 404 (validado
+  novamente). WebSearch confirma que IBDFAM distribui notícias via newsletter
+  semanal por email, não via RSS público. Não-implementável sem scraping HTML
+  ou parsing de email. Pendência registrada em PLAN.md.

@@ -17,4 +17,8 @@ trusted: true
 fragile: true
 notas: |
   TRF4 cobre RS, PR, SC.
-  Verificar URL do feed antes de ativar.
+
+  VALIDADA 2026-04-27 — URL `?acao=noticia_rss` retorna HTTP 200 mas com
+  Content-Type `text/html` (portal HTML, não RSS). TRF4 não expõe feed
+  RSS público real nessa URL. Manter ativo: false até descobrir endpoint
+  alternativo.

@@ -24,3 +24,8 @@ notas: |
   Stub: ATENÇÃO — Google Scholar bloqueia scrapers agressivamente.
   Considerar usar Scholar Alerts via email forwarding em vez de scraping direto.
   Risco de IP banido se ativar sem cuidado de rate limit.
+
+  VALIDADA 2026-04-27 — URL retorna HTTP 200 do BR, mas Google bloqueia
+  rapidamente IPs de cloud providers (GH Actions US e GCP southamerica-east1
+  mesmo padrão observado em TJMG). Ativar via runner cloud é arriscado.
+  Manter ativo: false até implementar Scholar Alerts via email forwarding.

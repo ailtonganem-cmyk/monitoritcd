@@ -19,7 +19,7 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
 fragile: true
 notas: |

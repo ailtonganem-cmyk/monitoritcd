@@ -19,7 +19,7 @@ selectors:
 topics:
   - itcd
   - sucessoes
-ativo: false
+ativo: true
 trusted: true
 fragile: true
 notas: |

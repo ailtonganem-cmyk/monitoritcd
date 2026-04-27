@@ -20,9 +20,10 @@ selectors:
 topics:
   - itcd
   - sucessoes
-ativo: false
+ativo: true
 trusted: true
 fragile: true
+geo_restricted: true
 notas: |
   Item #34 do IDEAS.md — Receita Federal.
   Stub generic_html. Cobre IN/Atos Declaratórios sobre IRPF de espólio,

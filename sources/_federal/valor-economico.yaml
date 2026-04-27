@@ -24,7 +24,7 @@ fragile: true
 notas: |
   Item #43 do IDEAS.md — Valor Econômico.
   Stub: feed RSS pode existir mas conteúdo completo está atrás de paywall.
-  Antes de ativar:
-    1. Validar URL do feed (Globo migrou estruturas em 2023-2024)
-    2. Avaliar se o resumo no RSS é suficiente (sem acesso ao corpo)
-    3. Se conteúdo for cortado, considerar reduzir relevância no scoring
+
+  VALIDADA 2026-04-27 — URL `/rss/legislacao/feed.xml` retorna HTTP 404.
+  Globo descontinuou feed RSS de Legislação. Manter ativo: false até
+  localizar novo feed (improvável).

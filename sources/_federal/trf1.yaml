@@ -19,4 +19,7 @@ notas: |
   TRF1 cobre DF, AC, AM, AP, BA, GO, MA, MT, MG, PA, PI, RO, RR, TO.
   ITCD é tributo estadual — TRF aparece quando há disputa federal-estadual
   ou execução fiscal envolvendo herdeiros pessoa física.
-  Verificar URL do feed antes de ativar (`fragile: true`).
+
+  VALIDADA 2026-04-27 — URL retorna HTTP 504 (server closed abruptly, SSL).
+  Variantes testadas (`/trf1/noticias/feed/`, raiz) retornam HTML, não RSS.
+  TRF1 não expõe feed RSS público estável. Manter ativo: false.

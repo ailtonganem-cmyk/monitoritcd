@@ -17,9 +17,9 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: true
-fragile: false
+fragile: true
 geo_restricted: true
 notas: |
   TJMG — MG mantém alíquota fixa de 5% sobre ITCMD.
@@ -28,3 +28,11 @@ notas: |
   URL antiga `/portal-tjmg/noticias/rss/` retornava 404 (validado 2026-04-27).
   URL atual `/data/rss/noticiasTJMG.xml` é o feed RSS 2.0 oficial publicado em
   `suportepje.tjmg.jus.br/portal-tjmg/rss/` (hub de feeds do tribunal).
+  Do BR (curl local): retorna RSS 2.0 com ~50 notícias recentes.
+
+  DESATIVADA em 2026-04-27 (smoke prod 25006927443):
+  - GH Actions runner US: HTTP 403 Forbidden (geo-block).
+  - Fallback proxy_br (GCP southamerica-east1): também 403 (TJMG bloqueia
+    ranges de IPs de cloud, não só geo).
+  - Único caminho viável: worker local Windows com `--only-geo-restricted`.
+  Manter ativo: false até worker local cobrir, ou TJMG relaxar bloqueio.

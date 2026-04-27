@@ -19,3 +19,10 @@ fragile: true
 notas: |
   CNJ — provimentos sobre cartórios, inventários extrajudiciais.
   Relevante para ITCD via Provimento 56 (CNJ) e correlatos.
+
+  VALIDADA 2026-04-27 — URL `/feed/` retorna HTTP 200 mas com Content-Type
+  `text/html` (não RSS). Variantes testadas (`/feed.xml`, `/feed.atom`,
+  `/?feed=rss2`, `/comments/feed/`, `/agencia-cnj/?feed=rss2`, `/feed/atom/`)
+  todas retornam 404 ou HTML. CNJ não expõe feed RSS público real.
+  Manter ativo: false até implementar scraping customizado de
+  `gov.br/cnj/agencia-cnj/noticias-do-cnj/` ou `gov.br/cnj/category/noticias/`.

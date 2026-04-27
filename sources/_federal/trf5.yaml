@@ -17,4 +17,7 @@ trusted: true
 fragile: true
 notas: |
   TRF5 cobre PE, AL, CE, PB, RN, SE.
-  Verificar URL do feed antes de ativar.
+
+  VALIDADA 2026-04-27 — URL retorna HTTP 404. Variantes (`/feed/`,
+  `/noticias/feed`) também 404. TRF5 não expõe feed RSS público.
+  Manter ativo: false.

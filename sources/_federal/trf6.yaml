@@ -3,7 +3,7 @@ uf: _federal
 nome: "TRF6 — Tribunal Regional Federal da 6ª Região"
 tipo: jurisprudencia
 parser: generic_rss
-url: "https://www.trf6.jus.br/noticias/rss"
+url: "https://portal.trf6.jus.br/noticias/feed/"
 keywords_required:
   - ITCMD
   - ITCD
@@ -22,6 +22,7 @@ fragile: false
 geo_restricted: true
 notas: |
   TRF6 cobre Minas Gerais (criado em 2022, o mais novo TRF).
-  URL do feed validada em 2026-04-27: retorna RSS 2.0 com Content-Type
-  `application/rss+xml`. Feed pequeno (≤ 1KB no momento da validação),
-  esperado para tribunal jovem.
+  URL `www.trf6.jus.br/noticias/rss` redireciona 301→301→200 para a URL
+  final `portal.trf6.jus.br/noticias/feed/` (apontada diretamente aqui
+  para evitar 2 hops). Validado em smoke prod 25006447123 (2026-04-27):
+  GH runner US acessa direto, sem precisar de proxy_br.

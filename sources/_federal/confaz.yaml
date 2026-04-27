@@ -17,15 +17,16 @@ selectors:
   link: "h3 a@href"
 topics:
   - itcd
-ativo: false
+ativo: true
 trusted: true
 fragile: true
+geo_restricted: true
 notas: |
   Item #35 do IDEAS.md — CONFAZ (Conselho Nacional de Política Fazendária).
   Stub crítico para ITCD: CONFAZ regula alíquotas mínimas/máximas
   inter-estaduais via convênios. PEC ITCD federal depende de Convênio.
 
-  Antes de ativar:
-    1. Validar URL (CONFAZ migrou domínio em 2023)
-    2. Selectors precisam revisão manual
-    3. Considerar custom collector com filtro por tema "ITCD"
+  Reativada em 2026-04-27 — URL responde HTTP 200. fragile=true porque
+  selectors (`div.convenio`) ainda não validados em produção; revisar se
+  coleta vier zero por mais de 1 semana. Considerar custom collector
+  com filtro por tema "ITCD" se sinal estiver baixo.

@@ -25,4 +25,8 @@ fragile: true
 notas: |
   Item #50 do IDEAS.md (parcial) — PGFN (Procuradoria-Geral da Fazenda Nacional).
   Stub: cobre pareceres e súmulas vinculantes da PGFN.
-  Validar selectors no portal gov.br antes de ativar.
+
+  VALIDADA 2026-04-27 — URL retorna HTTP 404. WebSearch identificou páginas
+  válidas em `gov.br/pgfn/pt-br/acesso-a-informacao/atos-da-pgfn-1/atos-da-pgfn`
+  mas sem feed RSS público. Manter ativo: false até implementar scraping
+  customizado da página de Atos.
