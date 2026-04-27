@@ -4,6 +4,10 @@ on:
   schedule:
     # 10:13 UTC = 07:13 BRT — fora dos minutos "redondos" para evitar atrasos
     - cron: '13 10 * * *'
+    # 14:47 UTC = 11:47 BRT — backup. GitHub Actions cron pode ser pulado em
+    # períodos de alta carga; pipeline é idempotente (Firestore dedup por
+    # content_hash), então segundo run cobre o primeiro sem duplicar.
+    - cron: '47 14 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

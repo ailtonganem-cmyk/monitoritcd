@@ -105,7 +105,8 @@ TOTAL_RUN_TIMEOUT_SECONDS: Final[float] = 1800.0  # 30 min
 # ─────────────────────────────────────────────────────────────────────────────
 BOT_COMMANDS_PER_MINUTE: Final[int] = 10
 DOMAIN_REQUESTS_INTERVAL_SECONDS: Final[float] = 2.0
-LLM_BATCH_DELAY_SECONDS: Final[float] = 4.0  # 15 RPM = 1 req/4s
+# Groq Free: 30 RPM = 1 req/2s; margem de segurança em 2.5s
+LLM_BATCH_DELAY_SECONDS: Final[float] = 2.5
 RETRY_MAX_ATTEMPTS: Final[int] = 3
 CONFIRMATION_TOKEN_TTL_SECONDS: Final[int] = 60
 

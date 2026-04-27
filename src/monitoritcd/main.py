@@ -62,11 +62,14 @@ def _make_backends(
         firestore_client = AsyncClient(project=settings.FIREBASE_PROJECT_ID)
         storage: Any = FirestoreStorage(firestore_client, settings.OWNER_ID)
 
+        # Gemini Free Tier limita 20 req/dia/modelo — insuficiente para 19+ UFs.
+        # Groq Llama 3.3 70B Free aguenta 30 RPM sem teto diário rígido, então
+        # entra como primário. Gemini fica como fallback caso Groq oscile (rede,
+        # 429 momentâneo). Quando GROQ_API_KEY não configurado, mantém Gemini-only.
         gemini = GeminiProvider(settings.GEMINI_API_KEY)
         if settings.GROQ_API_KEY:
-            # Wire fallback automático: Gemini → Groq em quota error
             llm: Any = FallbackLLMProvider(
-                primary=gemini, fallback=GroqProvider(settings.GROQ_API_KEY)
+                primary=GroqProvider(settings.GROQ_API_KEY), fallback=gemini
             )
         else:
             llm = gemini
