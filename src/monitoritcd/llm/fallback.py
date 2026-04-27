@@ -21,13 +21,23 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-# Substrings em mensagens de erro que indicam quota esgotada
+# Substrings em mensagens de erro que indicam recuperação possível na próxima
+# execução: cota esgotada (429/RESOURCE_EXHAUSTED) ou indisponibilidade transiente
+# do provedor (503/502/504). Em ambos os casos, deferimos o batch e tentamos de
+# novo no próximo run, evitando derrubar o pipeline por instabilidade externa.
 _QUOTA_MARKERS = (
     "RESOURCE_EXHAUSTED",
     "429",
     "quota",
     "rate limit",
     "rate_limit",
+    # Transient server errors (Gemini 503 visto em prod 2026-04-27 run 25007589463)
+    "503",
+    "502",
+    "504",
+    "service unavailable",
+    "bad gateway",
+    "gateway timeout",
 )
 
 

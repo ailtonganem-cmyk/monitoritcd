@@ -47,6 +47,17 @@ class TestIsQuotaError:
     def test_unrelated_error(self) -> None:
         assert not _is_quota_error(Exception("connection refused"))
 
+    def test_503_service_unavailable(self) -> None:
+        # Gemini 503 visto em prod (run 25007589463): tratado como recuperável
+        # para defer-and-retry em vez de derrubar pipeline.
+        assert _is_quota_error(Exception("HTTP 503 Service Unavailable"))
+
+    def test_502_bad_gateway(self) -> None:
+        assert _is_quota_error(Exception("HTTP 502 Bad Gateway"))
+
+    def test_504_gateway_timeout(self) -> None:
+        assert _is_quota_error(Exception("HTTP 504 Gateway Timeout"))
+
 
 @pytest.mark.unit
 class TestFallbackProvider:
