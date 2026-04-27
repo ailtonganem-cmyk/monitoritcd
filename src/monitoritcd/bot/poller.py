@@ -204,8 +204,10 @@ async def handle_update(
         )
         return
 
-    # Enviar resposta (escape pra MarkdownV2)
-    await send_message(client, settings, chat_id, escape_markdown_v2(result.text))
+    # Enviar resposta — handlers podem opt-out do escape automático passando
+    # `pre_escaped=True` quando precisam de Markdown rico (ex.: links clicáveis).
+    text_to_send = result.text if result.pre_escaped else escape_markdown_v2(result.text)
+    await send_message(client, settings, chat_id, text_to_send)
     log.info("bot.dispatched", command=cmd.name, is_error=result.is_error)
 
 

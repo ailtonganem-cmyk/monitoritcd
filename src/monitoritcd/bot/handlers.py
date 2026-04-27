@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 from monitoritcd.bot.audit import log_bot_action
@@ -21,7 +22,8 @@ from monitoritcd.bot.auth import (
     TwoStepConfirmation,
 )
 from monitoritcd.core import limits
-from monitoritcd.core.models import StatusDocumento, Topic
+from monitoritcd.core.models import SeverityTier, StatusDocumento, TipoAto, Topic
+from monitoritcd.security.markdown_escape import escape_markdown_v2, safe_link
 
 if TYPE_CHECKING:
     from monitoritcd.core.config import Settings
@@ -38,10 +40,16 @@ MIN_PATTERN_LENGTH = 3  # termo mínimo de watch list
 
 @dataclass
 class HandlerResult:
-    """Resposta de um handler. `text` é enviado ao chat."""
+    """Resposta de um handler. `text` é enviado ao chat.
+
+    Quando `pre_escaped=True`, o webhook/poller não aplica `escape_markdown_v2`
+    sobre o texto: o handler é responsável por entregar MarkdownV2 válido,
+    permitindo links clicáveis (`[label](url)`) e formatação rica.
+    """
 
     text: str
     is_error: bool = False
+    pre_escaped: bool = False
 
 
 @dataclass
@@ -111,7 +119,8 @@ async def handle_start(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
             "*Comandos*:\n"
             "• /help — lista de comandos\n"
             "• /status — saúde do sistema\n"
-            "• /buscar <termo> [topico=...] — busca no histórico\n"
+            "• /buscar <termos> [uf=XX] [ano=YYYY] [topico=...] [tipo=...]\n"
+            "          [severidade=...] [limite=N] — busca com links clicáveis\n"
             "• /topicos — lista divisões temáticas\n"
             "• /observar <termo> | listar | remover <id>\n"
             "• /marcar <doc_id_prefix> <tag> — tag pessoal num doc\n"
@@ -149,55 +158,248 @@ async def handle_status(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
     )
 
 
-async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+_BUSCAR_DEFAULT_LIMIT = 10
+_BUSCAR_MAX_LIMIT = 50
+_BUSCAR_FIRESTORE_FETCH = 1000  # janela máxima a varrer no Firestore por busca
+_BUSCAR_RESUMO_PREVIEW = 220
+_BUSCAR_MIN_YEAR = 2020
+_BUSCAR_MAX_YEAR = 2099
+
+_SEVERITY_EMOJI = {
+    SeverityTier.CRITICO: "🔴",
+    SeverityTier.ALTA: "🟠",
+    SeverityTier.NORMAL: "🟡",
+    SeverityTier.BAIXA: "🟢",
+}
+
+
+@dataclass
+class _BuscarFilters:
+    """Filtros parseados do comando /buscar. Acessados por _apply_filters."""
+
+    termos: list[str]
+    uf: str | None = None
+    ano: int | None = None
+    topico: Topic | None = None
+    tipo: TipoAto | None = None
+    severidade: SeverityTier | None = None
+    limite: int = _BUSCAR_DEFAULT_LIMIT
+
+
+def _parse_buscar_filters(args: list[str]) -> _BuscarFilters | str:  # noqa: PLR0911, PLR0912
+    """Parseia args do /buscar. Retorna filtros válidos ou mensagem de erro PT-BR.
+
+    Many returns/branches são intencionais: cada filtro tem mensagem PT-BR
+    específica. Refator para dicionário de validators dificultaria a legibilidade
+    sem benefício real (todas as branches são "case-like").
+    """
+    termos: list[str] = []
+    f = _BuscarFilters(termos=termos)
+    for arg in args:
+        if "=" not in arg:
+            termos.append(arg)
+            continue
+        key, _, raw_value = arg.partition("=")
+        key = key.lower()
+        value = raw_value.strip()
+        if not value:
+            return f"❌ Filtro `{key}=` vazio."
+        try:
+            if key == "uf":
+                v = value.upper()
+                if v == "_FEDERAL":
+                    f.uf = "_federal"
+                elif v in limits.VALID_UFS:
+                    f.uf = v
+                else:
+                    return (
+                        f"❌ UF inválida: `{value}`. "
+                        f"Use 2 letras de UF brasileira (ex: PR) ou `_federal`."
+                    )
+            elif key == "ano":
+                year = int(value)
+                if not (_BUSCAR_MIN_YEAR <= year <= _BUSCAR_MAX_YEAR):
+                    return f"❌ Ano fora do intervalo {_BUSCAR_MIN_YEAR}-{_BUSCAR_MAX_YEAR}."
+                f.ano = year
+            elif key == "topico":
+                try:
+                    f.topico = Topic(value.lower())
+                except ValueError:
+                    return f"❌ Tópico inválido: `{value}`. Válidos: itcd, sucessoes, regime_bens."
+            elif key == "tipo":
+                try:
+                    f.tipo = TipoAto(value.lower())
+                except ValueError:
+                    return (
+                        f"❌ Tipo inválido: `{value}`. Válidos: "
+                        f"projeto_lei, lei_sancionada, decreto, instrucao_normativa, "
+                        f"portaria, noticia, jurisprudencia, doutrina, outro."
+                    )
+            elif key == "severidade":
+                try:
+                    f.severidade = SeverityTier(value.lower())
+                except ValueError:
+                    return (
+                        f"❌ Severidade inválida: `{value}`. Válidas: critico, alta, normal, baixa."
+                    )
+            elif key == "limite":
+                lim = int(value)
+                if not (1 <= lim <= _BUSCAR_MAX_LIMIT):
+                    return f"❌ `limite` deve estar entre 1 e {_BUSCAR_MAX_LIMIT}."
+                f.limite = lim
+            else:
+                return f"❌ Filtro desconhecido: `{key}`."
+        except ValueError:
+            return f"❌ Valor inválido para `{key}`: `{value}`."
+    return f
+
+
+def _matches_text(termos: list[str], doc: object) -> bool:
+    """Termo livre: AND de substrings em titulo+resumo+tags+numero_ato (case-insensitive)."""
+    if not termos:
+        return True
+    titulo = (doc.original.titulo_raw or "").lower()  # type: ignore[attr-defined]
+    texto_raw = (doc.original.texto_raw or "").lower()  # type: ignore[attr-defined]
+    resumo = ""
+    tags_blob = ""
+    numero = ""
+    if doc.llm is not None:  # type: ignore[attr-defined]
+        resumo = (doc.llm.resumo or "").lower()  # type: ignore[attr-defined]
+        tags_blob = " ".join(t.lower() for t in (doc.llm.tags or []))  # type: ignore[attr-defined]
+        numero = str(doc.llm.metadados_extraidos.get("numero_ato", "")).lower()  # type: ignore[attr-defined]
+    haystack = f"{titulo}\n{resumo}\n{tags_blob}\n{numero}\n{texto_raw}"
+    return all(t.lower() in haystack for t in termos)
+
+
+def _format_buscar_card(doc: object) -> str:
+    """Renderiza um resultado em MarkdownV2 (link clicável + meta + resumo curto)."""
+    titulo = doc.original.titulo_raw or "(sem título)"  # type: ignore[attr-defined]
+    url = doc.original.url or ""  # type: ignore[attr-defined]
+    link = safe_link(titulo, url) if url else f"*{escape_markdown_v2(titulo)}*"
+
+    uf_str = escape_markdown_v2(doc.source.uf or "?")  # type: ignore[attr-defined]
+    meta_parts = [uf_str]
+    if doc.llm is not None:  # type: ignore[attr-defined]
+        emoji = _SEVERITY_EMOJI.get(doc.llm.severity_tier, "")  # type: ignore[attr-defined]
+        if emoji:
+            sev = escape_markdown_v2(doc.llm.severity_tier.value)  # type: ignore[attr-defined]
+            meta_parts.append(f"{emoji} {sev}")
+        tipo = escape_markdown_v2(doc.llm.tipo.value)  # type: ignore[attr-defined]
+        meta_parts.append(tipo)
+    fetched = doc.original.fetched_at  # type: ignore[attr-defined]
+    if fetched:
+        meta_parts.append(escape_markdown_v2(fetched.strftime("%Y-%m-%d")))
+    meta = " · ".join(meta_parts)
+
+    resumo_line = ""
+    if doc.llm is not None and doc.llm.resumo:  # type: ignore[attr-defined]
+        snippet = doc.llm.resumo[:_BUSCAR_RESUMO_PREVIEW]  # type: ignore[attr-defined]
+        if len(doc.llm.resumo) > _BUSCAR_RESUMO_PREVIEW:  # type: ignore[attr-defined]
+            snippet += "…"
+        resumo_line = f"\n  _{escape_markdown_v2(snippet)}_"
+
+    return f"• {link}\n  {meta}{resumo_line}"
+
+
+async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  # noqa: PLR0912
+    """Repositório pesquisável de notícias coletadas.
+
+    Sintaxe:
+        /buscar <termos...> [uf=XX] [ano=YYYY] [topico=...] [tipo=...]
+                            [severidade=...] [limite=N]
+
+    Termos são combinados em AND. Filtros UF e ano são aplicados no Firestore;
+    demais aplicam-se localmente sobre até `_BUSCAR_FIRESTORE_FETCH` documentos.
+    Resposta usa MarkdownV2 com links clicáveis (`pre_escaped=True`).
+    """
     if not cmd.args:
         return HandlerResult(
-            text="❌ Uso: /buscar <termo> [topico=itcd|sucessoes|regime_bens]", is_error=True
+            text=(
+                "❌ Uso: `/buscar <termos> [uf=XX] [ano=YYYY] "
+                "[topico=itcd|sucessoes|regime_bens] [tipo=lei_sancionada|projeto_lei|...] "
+                "[severidade=critico|alta|normal|baixa] [limite=N]`"
+            ),
+            is_error=True,
         )
 
-    # Separa argumentos: termos vs filtros (topico=...)
-    termos: list[str] = []
-    topic_filter: Topic | None = None
-    for arg in cmd.args:
-        if arg.startswith("topico="):
-            try:
-                topic_filter = Topic(arg.split("=", 1)[1].lower())
-            except ValueError:
-                return HandlerResult(
-                    text=f"❌ Tópico inválido: '{arg}'. Válidos: itcd, sucessoes, regime_bens",
-                    is_error=True,
-                )
-        else:
-            termos.append(arg)
+    parsed = _parse_buscar_filters(cmd.args)
+    if isinstance(parsed, str):
+        return HandlerResult(text=parsed, is_error=True)
 
-    if not termos:
-        return HandlerResult(text="❌ Forneça pelo menos um termo de busca.", is_error=True)
+    has_filter = any([parsed.uf, parsed.ano, parsed.topico, parsed.tipo, parsed.severidade])
+    if not parsed.termos and not has_filter:
+        return HandlerResult(
+            text="❌ Forneça pelo menos um termo de busca ou um filtro.", is_error=True
+        )
 
-    termo = " ".join(termos).lower()
-    docs = await ctx.storage.list_documentos(limit=200)
+    since: datetime | None = None
+    until: datetime | None = None
+    if parsed.ano is not None:
+        since = datetime(parsed.ano, 1, 1, tzinfo=UTC)
+        until = datetime(parsed.ano + 1, 1, 1, tzinfo=UTC)
+
+    docs = await ctx.storage.list_documentos(
+        uf=parsed.uf,
+        since=since,
+        limit=_BUSCAR_FIRESTORE_FETCH,
+    )
+
     matched = []
     for d in docs:
-        text_match = termo in d.original.titulo_raw.lower() or (
-            d.llm is not None and termo in d.llm.resumo.lower()
+        if until is not None and d.original.fetched_at and d.original.fetched_at >= until:
+            continue
+        if parsed.topico is not None and (d.llm is None or parsed.topico not in d.llm.topics):
+            continue
+        if parsed.tipo is not None and (d.llm is None or d.llm.tipo != parsed.tipo):
+            continue
+        if parsed.severidade is not None and (
+            d.llm is None or d.llm.severity_tier != parsed.severidade
+        ):
+            continue
+        if not _matches_text(parsed.termos, d):
+            continue
+        matched.append(d)
+
+    matched.sort(
+        key=lambda d: (
+            -(d.llm.relevancia if d.llm is not None else 0),
+            -(d.original.fetched_at.timestamp() if d.original.fetched_at else 0),
         )
-        topic_match = topic_filter is None or (d.llm is not None and topic_filter in d.llm.topics)
-        if text_match and topic_match:
-            matched.append(d)
+    )
+    truncated = len(matched) > parsed.limite
+    matched = matched[: parsed.limite]
+
+    # Cabeçalho (já em MarkdownV2 escapado)
+    filtros_str_parts: list[str] = []
+    if parsed.termos:
+        filtros_str_parts.append(escape_markdown_v2(" ".join(parsed.termos)))
+    if parsed.uf:
+        filtros_str_parts.append(f"uf\\={escape_markdown_v2(parsed.uf)}")
+    if parsed.ano:
+        filtros_str_parts.append(f"ano\\={parsed.ano}")
+    if parsed.topico:
+        filtros_str_parts.append(f"topico\\={escape_markdown_v2(parsed.topico.value)}")
+    if parsed.tipo:
+        filtros_str_parts.append(f"tipo\\={escape_markdown_v2(parsed.tipo.value)}")
+    if parsed.severidade:
+        filtros_str_parts.append(f"severidade\\={escape_markdown_v2(parsed.severidade.value)}")
+    filtros_str = " · ".join(filtros_str_parts)
 
     if not matched:
-        suffix = f" no tópico {topic_filter.value}" if topic_filter else ""
-        return HandlerResult(text=f"🔍 Nenhum resultado para '{termo}'{suffix}.")
+        return HandlerResult(
+            text=f"🔍 Nenhum resultado para: {filtros_str}", is_error=False, pre_escaped=True
+        )
 
-    header = f"🔍 {len(matched)} resultado(s) para '{termo}'"
-    if topic_filter:
-        header += f" (tópico: {topic_filter.value})"
-    lines = [header + ":"]
-    for d in matched[:10]:
-        topics_str = ""
-        if d.llm and d.llm.topics:
-            topics_str = " " + "·".join(t.value[:3] for t in d.llm.topics)
-        lines.append(f"• [{d.source.uf}{topics_str}] {d.original.titulo_raw}")
-    return HandlerResult(text="\n".join(lines))
+    total_str = f"{len(matched)}\\+" if truncated else str(len(matched))
+    header = f"*🔍 {total_str} resultado\\(s\\)* — {filtros_str}"
+    cards = [_format_buscar_card(d) for d in matched]
+    text = header + "\n\n" + "\n\n".join(cards)
+    if truncated:
+        text += (
+            f"\n\n_Mostrando os primeiros {parsed.limite}\\. "
+            f"Use `limite\\=N` \\(máx {_BUSCAR_MAX_LIMIT}\\) ou refine os filtros\\._"
+        )
+    return HandlerResult(text=text, pre_escaped=True)
 
 
 async def handle_topicos(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
