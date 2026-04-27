@@ -39,7 +39,9 @@ class _FakeProvider:
         self.responses = responses
         self.call_count = 0
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self, items_text: list[str], *, system_prompt: str | None = None
+    ) -> list[dict[str, Any]]:
         self.call_count += 1
         return self.responses[: len(items_text)]
 
@@ -50,7 +52,9 @@ class _FailingProvider:
     def __init__(self) -> None:
         self.call_count = 0
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self, items_text: list[str], *, system_prompt: str | None = None
+    ) -> list[dict[str, Any]]:
         self.call_count += 1
         return [{"invalid": "schema"}]  # falta campos obrigatórios
 
@@ -157,13 +161,12 @@ class TestParseLLMResponse:
             "topics": ["itcd", "valor_invalido", "sucessoes"],
         }
         result = parse_llm_response(resp, llm_model="x")
-        assert {t.value for t in result.topics} == {"itcd", "sucessoes"}
+        # topics agora são strings livres (suporte a topics dinâmicos via /topicos)
+        assert set(result.topics) == {"itcd", "sucessoes"}
 
     def test_todos_topics_invalidos_caem_para_itcd(self) -> None:
         # Se LLM retorna apenas valores inválidos, fallback para ITCD garante
         # que o documento ainda é classificável (ITCD é o tópico canônico).
-        from monitoritcd.core.models import Topic  # noqa: PLC0415
-
         resp = {
             "tipo": "outro",
             "relevancia": 5,
@@ -171,7 +174,8 @@ class TestParseLLMResponse:
             "topics": ["xxx", "yyy"],
         }
         result = parse_llm_response(resp, llm_model="x")
-        assert result.topics == [Topic.ITCD]
+        # topics agora são strings (suporte a topics dinâmicos via /topicos)
+        assert result.topics == ["itcd"]
 
 
 @pytest.mark.unit
@@ -226,3 +230,62 @@ class TestClassifyWithProvider:
         provider.responses = ["not-a-dict"]  # type: ignore[list-item]
         with pytest.raises(ValueError):
             await classify_with_provider([_raw()], provider, llm_model="x")
+
+
+@pytest.mark.unit
+class TestBuildSystemPrompt:
+    """Cobre build_system_prompt com e sem topics extras (PR B)."""
+
+    def test_sem_extras_default(self) -> None:
+        from monitoritcd.filters.llm_classifier import build_system_prompt  # noqa: PLC0415
+
+        prompt = build_system_prompt(None)
+        assert "itcd" in prompt
+        assert "sucessoes" in prompt
+        assert "regime_bens" in prompt
+        # topics_enum: apenas defaults
+        assert "itcd, sucessoes, regime_bens" in prompt
+
+    def test_extras_vazios_caem_no_default(self) -> None:
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import ExtraTopicsConfig  # noqa: PLC0415
+        from monitoritcd.filters.llm_classifier import build_system_prompt  # noqa: PLC0415
+
+        cfg = ExtraTopicsConfig(
+            owner_id="o", topics=[], updated_at=datetime.now(UTC), updated_by="t"
+        )
+        prompt = build_system_prompt(cfg)
+        assert "itcd, sucessoes, regime_bens" in prompt
+
+    def test_com_extras_injetados(self) -> None:
+        from datetime import UTC, datetime  # noqa: PLC0415
+
+        from monitoritcd.core.models import ExtraTopicsConfig, TopicEntry  # noqa: PLC0415
+        from monitoritcd.filters.llm_classifier import build_system_prompt  # noqa: PLC0415
+
+        cfg = ExtraTopicsConfig(
+            owner_id="o",
+            topics=[
+                TopicEntry(
+                    id="holding",
+                    descricao="Holding patrimonial e familiar",
+                    criado_em=datetime.now(UTC),
+                    criado_por="bot",
+                ),
+                TopicEntry(
+                    id="trusts",
+                    descricao="Trusts e estruturas internacionais",
+                    criado_em=datetime.now(UTC),
+                    criado_por="bot",
+                ),
+            ],
+            updated_at=datetime.now(UTC),
+            updated_by="bot",
+        )
+        prompt = build_system_prompt(cfg)
+        assert "holding" in prompt
+        assert "Holding patrimonial e familiar" in prompt
+        assert "trusts" in prompt
+        # topics_enum deve listar todos
+        assert "itcd, sucessoes, regime_bens, holding, trusts" in prompt

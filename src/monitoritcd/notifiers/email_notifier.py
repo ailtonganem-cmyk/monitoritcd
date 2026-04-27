@@ -166,7 +166,8 @@ def _agrupar_por_topic(
     secoes: dict[str, list[dict[str, str]]] = {}
     for doc, item in zip(docs, items, strict=True):
         topics = doc.llm.topics if doc.llm and doc.llm.topics else doc.source.topics
-        topic_key = topics[0].value if topics else "itcd"
+        # topics agora são strings (suporte a topics dinâmicos via /topicos)
+        topic_key = topics[0] if topics else "itcd"
         secao_label = TOPIC_SECAO_LABEL.get(topic_key, topic_key)
         secoes.setdefault(secao_label, []).append(item)
     return secoes

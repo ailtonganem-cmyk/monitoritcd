@@ -68,9 +68,14 @@ class FallbackLLMProvider:
         # quando fallback é usado, vai aparecer como "<primary>+<fallback>"
         return f"{self._primary.name}+{self._fallback.name}"
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
         try:
-            return await self._primary.classify_batch(items_text)
+            return await self._primary.classify_batch(items_text, system_prompt=system_prompt)
         except Exception as primary_exc:
             if not _is_quota_error(primary_exc):
                 raise
@@ -81,7 +86,7 @@ class FallbackLLMProvider:
                 error=type(primary_exc).__name__,
             )
             try:
-                return await self._fallback.classify_batch(items_text)
+                return await self._fallback.classify_batch(items_text, system_prompt=system_prompt)
             except Exception as fallback_exc:
                 if not _is_quota_error(fallback_exc):
                     raise

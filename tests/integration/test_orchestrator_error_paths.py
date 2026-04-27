@@ -159,7 +159,9 @@ class TestClassifyAndStoreEdgeCases:
         class _DescartadoLLM:
             name = "descartado-llm"
 
-            async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+            async def classify_batch(
+                self, items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
                 # Relevancia 1 mapeia para DESCARTADO em map_relevancia_to_tier
                 return [
                     {
@@ -196,7 +198,9 @@ class TestClassifyAndStoreErrorPaths:
         class _FailingLLM:
             name = "failing"
 
-            async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+            async def classify_batch(
+                self, items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
                 msg = "LLM offline"
                 raise ValueError(msg)
 
@@ -243,7 +247,9 @@ class TestClassifyAndStoreErrorPaths:
         class _ExhaustedLLM:
             name = "gemini+groq"
 
-            async def classify_batch(self, _items_text: list[str]) -> list[dict[str, Any]]:
+            async def classify_batch(
+                self, _items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
                 msg = "Both LLM providers exhausted: gemini, groq"
                 raise LLMProvidersExhaustedError(msg)
 
@@ -275,7 +281,9 @@ class TestClassifyAndStoreErrorPaths:
         class _ExhaustedLLM:
             name = "gemini+groq"
 
-            async def classify_batch(self, _items_text: list[str]) -> list[dict[str, Any]]:
+            async def classify_batch(
+                self, _items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
                 raise LLMProvidersExhaustedError("both exhausted")
 
         storage = InMemoryStorage(OWNER)
@@ -308,7 +316,9 @@ class TestReprocessErrorPaths:
         class _FailingLLM:
             name = "failing"
 
-            async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+            async def classify_batch(
+                self, items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
                 msg = "timeout"
                 raise TimeoutError(msg)
 

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
         AuditLogEntry,
         Documento,
         ExtraKeywordsConfig,
+        ExtraTopicsConfig,
         LLMResult,
         NotificacaoStatus,
         StatusDocumento,
@@ -48,6 +49,7 @@ class InMemoryStorage:
         self._documentos: dict[str, Documento] = {}
         self._active_states: ActiveStatesConfig | None = None
         self._extra_keywords: ExtraKeywordsConfig | None = None
+        self._extra_topics: ExtraTopicsConfig | None = None
         self._watches: dict[str, Watch] = {}
         self._audit: list[AuditLogEntry] = []
 
@@ -160,6 +162,15 @@ class InMemoryStorage:
     async def save_extra_keywords(self, config: ExtraKeywordsConfig) -> None:
         self._assert_owner(config.owner_id)
         self._extra_keywords = config.model_copy(deep=True)
+
+    # ─── Extra topics (dinâmicos via /topicos) ────────────────────────────
+
+    async def get_extra_topics(self) -> ExtraTopicsConfig | None:
+        return deepcopy(self._extra_topics) if self._extra_topics else None
+
+    async def save_extra_topics(self, config: ExtraTopicsConfig) -> None:
+        self._assert_owner(config.owner_id)
+        self._extra_topics = config.model_copy(deep=True)
 
     # ─── Watch list ───────────────────────────────────────────────────────
 

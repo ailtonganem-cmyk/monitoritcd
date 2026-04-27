@@ -18,6 +18,7 @@ from monitoritcd.core.models import (
     AuditLogEntry,
     Documento,
     ExtraKeywordsConfig,
+    ExtraTopicsConfig,
     NotificacaoStatus,
     StatusDocumento,
     Watch,
@@ -215,6 +216,25 @@ class FirestoreStorage:
     async def save_extra_keywords(self, config: ExtraKeywordsConfig) -> None:
         self._assert_owner(config.owner_id)
         ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("extra_keywords")
+        await ref.set(config.model_dump(mode="json"))
+
+    # ─── Extra topics (dinâmicos via /topicos) ────────────────────────────
+
+    async def get_extra_topics(self) -> ExtraTopicsConfig | None:
+        ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("extra_topics")
+        snapshot = await ref.get()
+        if not snapshot.exists:
+            return None
+        data = snapshot.to_dict()
+        if data is None:  # pragma: no cover
+            return None
+        if data.get("owner_id") != self._owner_id:
+            self._assert_owner(data.get("owner_id", ""))
+        return ExtraTopicsConfig(**data)
+
+    async def save_extra_topics(self, config: ExtraTopicsConfig) -> None:
+        self._assert_owner(config.owner_id)
+        ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("extra_topics")
         await ref.set(config.model_dump(mode="json"))
 
     # ─── Watch list ───────────────────────────────────────────────────────

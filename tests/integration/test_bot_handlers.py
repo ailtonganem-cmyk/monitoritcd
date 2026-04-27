@@ -283,17 +283,6 @@ class TestConfirmar:
 
 
 @pytest.mark.integration
-class TestTopicos:
-    @pytest.mark.asyncio
-    async def test_topicos_lists_three_divisions(self) -> None:
-        ctx = await _ctx()
-        result = await handle_topicos(ctx, ParsedCommand(name="topicos", args=[]))
-        assert "itcd" in result.text
-        assert "sucessoes" in result.text
-        assert "regime_bens" in result.text
-
-
-@pytest.mark.integration
 class TestBuscarComTopico:
     @pytest.mark.asyncio
     async def test_busca_com_filtro_topico_invalido(self) -> None:
@@ -653,6 +642,174 @@ class TestRelatorio:
             ParsedCommand(name="relatorio", args=["diario"]),
         )
         assert "Top 5" not in result.text
+
+
+@pytest.mark.integration
+class TestTopicos:
+    """Cobre /topicos — gerenciamento de topics dinâmicos (PR B)."""
+
+    @pytest.mark.asyncio
+    async def test_listar_sem_args_mostra_defaults(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(ctx, ParsedCommand(name="topicos", args=[]))
+        assert "itcd" in result.text
+        assert "sucessoes" in result.text
+        assert "regime_bens" in result.text
+        assert "nenhum" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_listar_explicito(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["listar"]))
+        assert "Defaults" in result.text or "defaults" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_subcomando_desconhecido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["xyz"]))
+        assert result.is_error
+
+    @pytest.mark.asyncio
+    async def test_adicionar_args_insuficientes(self) -> None:
+        ctx = await _ctx()
+        r = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["adicionar"]))
+        assert r.is_error
+        assert "Uso" in r.text
+
+    @pytest.mark.asyncio
+    async def test_adicionar_id_invalido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos", args=["adicionar", "1bad", "descrição válida com contexto"]
+            ),
+        )
+        assert result.is_error
+        assert "id inválido" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_id_default_bloqueado(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(
+            ctx,
+            ParsedCommand(name="topicos", args=["adicionar", "itcd", "outra descrição válida"]),
+        )
+        assert result.is_error
+        assert "padrão" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_descricao_curta(self) -> None:
+        ctx = await _ctx()
+        result = await handle_topicos(
+            ctx, ParsedCommand(name="topicos", args=["adicionar", "holding", "curta"])
+        )
+        assert result.is_error
+        assert "descrição" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_e_listar_extra(self) -> None:
+        ctx = await _ctx()
+        r1 = await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos",
+                args=[
+                    "adicionar",
+                    "holding",
+                    "Holding patrimonial e familiar para sucessão",
+                ],
+            ),
+        )
+        assert not r1.is_error
+        assert "holding" in r1.text
+
+        r2 = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["listar"]))
+        assert "holding" in r2.text
+        assert "Holding patrimonial" in r2.text
+
+    @pytest.mark.asyncio
+    async def test_adicionar_duplicado_avisa(self) -> None:
+        ctx = await _ctx()
+        await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos", args=["adicionar", "trusts", "Trusts e estruturas offshore"]
+            ),
+        )
+        r = await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos", args=["adicionar", "trusts", "Outra descrição válida aqui"]
+            ),
+        )
+        assert "já existe" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_args_insuficientes(self) -> None:
+        ctx = await _ctx()
+        r = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["remover"]))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_remover_default_bloqueado(self) -> None:
+        ctx = await _ctx()
+        r = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["remover", "itcd"]))
+        assert r.is_error
+        assert "padrão" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_inexistente_avisa(self) -> None:
+        ctx = await _ctx()
+        r = await handle_topicos(ctx, ParsedCommand(name="topicos", args=["remover", "nao_existe"]))
+        assert "não encontrado" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_existente(self) -> None:
+        ctx = await _ctx()
+        await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos", args=["adicionar", "previdencia", "Previdência privada VGBL/PGBL"]
+            ),
+        )
+        r = await handle_topicos(
+            ctx, ParsedCommand(name="topicos", args=["remover", "previdencia"])
+        )
+        assert not r.is_error
+        assert "removido" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_excede_limite(self) -> None:
+        # Cobre branch `len(cfg.topics) >= MAX_EXTRA_TOPICS`.
+        from monitoritcd.core import limits as _lim  # noqa: PLC0415
+        from monitoritcd.core.models import ExtraTopicsConfig, TopicEntry  # noqa: PLC0415
+
+        ctx = await _ctx()
+        full = ExtraTopicsConfig(
+            owner_id=OWNER,
+            topics=[
+                TopicEntry(
+                    id=f"topico_{i:02d}",
+                    descricao="Descrição genérica para preencher o limite",
+                    criado_em=NOW,
+                    criado_por="seed",
+                )
+                for i in range(_lim.MAX_EXTRA_TOPICS)
+            ],
+            updated_at=NOW,
+            updated_by="seed",
+        )
+        await ctx.storage.save_extra_topics(full)
+        r = await handle_topicos(
+            ctx,
+            ParsedCommand(
+                name="topicos",
+                args=["adicionar", "extra_excede", "Descrição válida que excede o limite"],
+            ),
+        )
+        assert r.is_error
+        assert "limite" in r.text.lower()
 
 
 @pytest.mark.integration

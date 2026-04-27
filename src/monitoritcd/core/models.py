@@ -90,12 +90,15 @@ class Parser(StrEnum):
 
 
 class Topic(StrEnum):
-    """Divisão temática do sistema.
+    """Divisão temática default do sistema.
 
     Permite cobrir áreas correlatas a ITCD sem misturar conceitos:
     - ITCD: tributário (alíquotas, fato gerador, IN, portarias).
     - SUCESSOES: Direito Civil — herança, testamento, inventário, partilha (CC 1.784+).
     - REGIME_BENS: regimes matrimoniais (CC 1.639-1.688) — afeta o que se transmite.
+
+    Topics extras podem ser adicionados em runtime via /topicos (ExtraTopicsConfig),
+    e ficam armazenados em LLMResult.topics como strings livres validadas por regex.
     """
 
     ITCD = "itcd"
@@ -103,11 +106,23 @@ class Topic(StrEnum):
     REGIME_BENS = "regime_bens"
 
 
+# Conjunto imutável de IDs default — útil para validação anti-colisão em /topicos.
+DEFAULT_TOPIC_IDS: frozenset[str] = frozenset(t.value for t in Topic)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Tipos anotados reutilizáveis (com input_limits)
 # ─────────────────────────────────────────────────────────────────────────────
 
 OwnerId = Annotated[str, Field(min_length=1, max_length=limits.MAX_OWNER_ID_LENGTH)]
+TopicId = Annotated[
+    str,
+    Field(
+        min_length=1,
+        max_length=limits.MAX_TOPIC_ID_LENGTH,
+        pattern=r"^[a-z][a-z0-9_]{0,31}$",
+    ),
+]
 SourceId = Annotated[str, Field(min_length=1, max_length=limits.MAX_SOURCE_ID_LENGTH)]
 DocId = Annotated[str, Field(min_length=1, max_length=limits.MAX_DOC_ID_LENGTH)]
 UFCode = Annotated[str, Field(pattern=limits.UF_REGEX)]
@@ -171,7 +186,7 @@ class Source(StrictModel):
     Ver `scripts/install_local_monitor_task.ps1`.
     """
     notas: str | None = Field(default=None, max_length=1000)
-    topics: list[Topic] = Field(default_factory=lambda: [Topic.ITCD], max_length=10)
+    topics: list[TopicId] = Field(default_factory=lambda: [Topic.ITCD.value], max_length=10)
 
     @field_validator("selectors")
     @classmethod
@@ -225,7 +240,7 @@ class LLMResult(StrictModel):
         Annotated[str, Field(max_length=500)],
     ] = Field(default_factory=dict)
     tags: Annotated[list[Tag], Field(default_factory=list, max_length=limits.MAX_TAGS_PER_DOC)]
-    topics: list[Topic] = Field(default_factory=lambda: [Topic.ITCD], max_length=10)
+    topics: list[TopicId] = Field(default_factory=lambda: [Topic.ITCD.value], max_length=10)
 
     @field_validator("metadados_extraidos")
     @classmethod
@@ -349,6 +364,56 @@ class ExtraKeywordsConfig(OwnerScoped):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Configuração de topics extras dinâmicos (Firestore: config/extra_topics)
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class TopicEntry(StrictModel):
+    """Topic dinâmico criado pelo dono via /topicos.
+
+    Topic id é o que aparece em LLMResult.topics (string livre validada por regex).
+    Descrição alimenta o system prompt do LLM em runtime para que ele saiba quando
+    classificar nessa categoria nova.
+    """
+
+    id: TopicId
+    descricao: Annotated[
+        str,
+        Field(
+            min_length=limits.MIN_TOPIC_DESCRIPTION_LENGTH,
+            max_length=limits.MAX_TOPIC_DESCRIPTION_LENGTH,
+        ),
+    ]
+    criado_em: datetime
+    criado_por: Annotated[str, Field(max_length=64)]
+
+
+class ExtraTopicsConfig(OwnerScoped):
+    """Topics dinâmicos persistidos em config/extra_topics no Firestore.
+
+    Defaults (itcd, sucessoes, regime_bens) NÃO são duplicados aqui — são
+    sempre os 3 do enum Topic. Esta config armazena apenas os EXTRAS criados
+    pelo dono via /topicos adicionar.
+    """
+
+    schema_version: int = Field(ge=1, default=1)
+    topics: list[TopicEntry] = Field(default_factory=list, max_length=limits.MAX_EXTRA_TOPICS)
+    updated_at: datetime
+    updated_by: Annotated[str, Field(max_length=64)]
+
+    def topic_ids(self) -> set[str]:
+        """Conjunto de IDs dos topics extras (não inclui defaults)."""
+        return {t.id for t in self.topics}
+
+    def all_topic_ids(self) -> frozenset[str]:
+        """Conjunto de IDs válidos: defaults + extras.
+
+        Use no parse do LLMResult para aceitar topic dinâmico que o LLM emitiu.
+        """
+        return DEFAULT_TOPIC_IDS | self.topic_ids()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Watch list
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -406,12 +471,14 @@ class BotCommand(StrictModel):
 
 
 __all__ = [
+    "DEFAULT_TOPIC_IDS",
     "ActiveStatesConfig",
     "AuditLogEntry",
     "BotCommand",
     "Documento",
     "ExtraKeyword",
     "ExtraKeywordsConfig",
+    "ExtraTopicsConfig",
     "LLMResult",
     "NotificacaoStatus",
     "OwnerScoped",
@@ -424,5 +491,7 @@ __all__ = [
     "TipoAto",
     "TipoFonte",
     "Topic",
+    "TopicEntry",
+    "TopicId",
     "Watch",
 ]
