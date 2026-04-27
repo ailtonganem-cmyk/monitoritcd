@@ -305,14 +305,16 @@ class TestBuscarComTopico:
         assert "Tópico inválido" in result.text
 
     @pytest.mark.asyncio
-    async def test_busca_so_com_filtro_topico_falha(self) -> None:
+    async def test_busca_so_com_filtro_topico_funciona(self) -> None:
+        # Antes: erro. Depois: aceita filtros sozinhos (sem termos livres).
+        # Quando não há docs, retorna "Nenhum resultado".
         ctx = await _ctx()
         result = await handle_buscar(
             ctx,
             ParsedCommand(name="buscar", args=["topico=itcd"]),
         )
-        assert result.is_error
-        assert "termo" in result.text.lower()
+        assert not result.is_error
+        assert "Nenhum resultado" in result.text
 
 
 @pytest.mark.integration
@@ -653,23 +655,132 @@ class TestRelatorio:
 
 
 @pytest.mark.integration
+class TestBuscarRichSyntax:
+    """Cobre os filtros novos do /buscar (uf, ano, tipo, severidade, limite)."""
+
+    @pytest.mark.asyncio
+    async def test_filtro_uf_filtra_por_uf(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(doc_id="d1", titulo="ITCMD doação", uf="PR"))
+        await ctx.storage.save_documento(
+            _doc(doc_id="d2", titulo="ITCMD doação", uf="SP").model_copy(
+                update={"original": _doc(doc_id="d2").original.model_copy(
+                    update={"content_hash": "b" * 64}
+                )}
+            )
+        )
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["doação", "uf=PR"])
+        )
+        assert "uf\\=PR" in result.text
+        assert result.pre_escaped is True
+
+    @pytest.mark.asyncio
+    async def test_filtro_uf_invalida(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "uf=ZZ"])
+        )
+        assert result.is_error
+        assert "UF inválida" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_ano_invalido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "ano=1900"])
+        )
+        assert result.is_error
+        assert "intervalo" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_tipo_invalido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "tipo=foo"])
+        )
+        assert result.is_error
+        assert "Tipo inválido" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_severidade_invalida(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "severidade=foo"])
+        )
+        assert result.is_error
+        assert "Severidade inválida" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_limite_fora_do_intervalo(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "limite=999"])
+        )
+        assert result.is_error
+        assert "limite" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_filtro_desconhecido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["x", "desconhecido=1"])
+        )
+        assert result.is_error
+        assert "desconhecido" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_card_renderiza_link_clicavel(self) -> None:
+        # safe_link gera `[titulo](url)` em MarkdownV2 → Telegram renderiza clicável.
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="PL 1234/2026 ITCMD"))
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["1234"])
+        )
+        assert "[" in result.text and "](" in result.text  # link MarkdownV2
+        assert "https://x.gov.br/" in result.text
+        assert result.pre_escaped is True
+
+    @pytest.mark.asyncio
+    async def test_truncamento_indica_mais_resultados(self) -> None:
+        ctx = await _ctx()
+        # Insere 3 docs com hash distinto e limite=2
+        for i in range(3):
+            doc = _doc(doc_id=f"d{i}", titulo=f"ITCMD {i}").model_copy(
+                update={
+                    "original": _doc(doc_id=f"d{i}", titulo=f"ITCMD {i}").original.model_copy(
+                        update={"content_hash": str(i) * 64}
+                    )
+                }
+            )
+            await ctx.storage.save_documento(doc)
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["ITCMD", "limite=2"])
+        )
+        assert "2\\+" in result.text  # marca de truncamento
+        assert "Mostrando os primeiros 2" in result.text
+
+
+@pytest.mark.integration
 class TestBuscarTopicHeader:
     """Cobre branches de header e topics no resultado de /buscar."""
 
     @pytest.mark.asyncio
     async def test_busca_com_topic_filter_inclui_topico_no_header(self) -> None:
-        # Cobre linha 193: header += "(tópico: ...)" quando filtro aplicado.
+        # Header novo MarkdownV2: filtros aparecem como `topico\=itcd`.
         ctx = await _ctx()
         await ctx.storage.save_documento(_doc(titulo="ITCMD herança"))
         result = await handle_buscar(
             ctx,
             ParsedCommand(name="buscar", args=["ITCMD", "topico=itcd"]),
         )
-        assert "tópico: itcd" in result.text
+        # `=` é escapado em MarkdownV2 ⇒ `\=`
+        assert "topico\\=itcd" in result.text
+        assert result.pre_escaped is True
 
     @pytest.mark.asyncio
-    async def test_busca_doc_sem_llm_omite_topics_no_resultado(self) -> None:
-        # Cobre branch 197->199: d.llm None pula montagem de topics_str.
+    async def test_busca_doc_sem_llm_renderiza_titulo(self) -> None:
+        # Doc sem llm: card mostra título via safe_link (clicável) + UF.
         ctx = await _ctx()
         doc_sem_llm = _doc(titulo="ITCMD direto").model_copy(update={"llm": None})
         await ctx.storage.save_documento(doc_sem_llm)
@@ -677,8 +788,9 @@ class TestBuscarTopicHeader:
             ctx,
             ParsedCommand(name="buscar", args=["ITCMD"]),
         )
-        # Resultado vem com [UF] mas sem topics adicionais (sem · entre [SP] e título)
-        assert "[SP] ITCMD direto" in result.text
+        assert "ITCMD direto" in result.text
+        assert "SP" in result.text  # uf no meta
+        assert result.pre_escaped is True
 
 
 @pytest.mark.integration
