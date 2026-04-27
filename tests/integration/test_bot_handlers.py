@@ -664,41 +664,35 @@ class TestBuscarRichSyntax:
         await ctx.storage.save_documento(_doc(doc_id="d1", titulo="ITCMD doação", uf="PR"))
         await ctx.storage.save_documento(
             _doc(doc_id="d2", titulo="ITCMD doação", uf="SP").model_copy(
-                update={"original": _doc(doc_id="d2").original.model_copy(
-                    update={"content_hash": "b" * 64}
-                )}
+                update={
+                    "original": _doc(doc_id="d2").original.model_copy(
+                        update={"content_hash": "b" * 64}
+                    )
+                }
             )
         )
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["doação", "uf=PR"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["doação", "uf=PR"]))
         assert "uf\\=PR" in result.text
         assert result.pre_escaped is True
 
     @pytest.mark.asyncio
     async def test_filtro_uf_invalida(self) -> None:
         ctx = await _ctx()
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["x", "uf=ZZ"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "uf=ZZ"]))
         assert result.is_error
         assert "UF inválida" in result.text
 
     @pytest.mark.asyncio
     async def test_filtro_ano_invalido(self) -> None:
         ctx = await _ctx()
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["x", "ano=1900"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "ano=1900"]))
         assert result.is_error
         assert "intervalo" in result.text
 
     @pytest.mark.asyncio
     async def test_filtro_tipo_invalido(self) -> None:
         ctx = await _ctx()
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["x", "tipo=foo"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "tipo=foo"]))
         assert result.is_error
         assert "Tipo inválido" in result.text
 
@@ -714,9 +708,7 @@ class TestBuscarRichSyntax:
     @pytest.mark.asyncio
     async def test_filtro_limite_fora_do_intervalo(self) -> None:
         ctx = await _ctx()
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["x", "limite=999"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "limite=999"]))
         assert result.is_error
         assert "limite" in result.text.lower()
 
@@ -734,9 +726,7 @@ class TestBuscarRichSyntax:
         # safe_link gera `[titulo](url)` em MarkdownV2 → Telegram renderiza clicável.
         ctx = await _ctx()
         await ctx.storage.save_documento(_doc(titulo="PL 1234/2026 ITCMD"))
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["1234"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["1234"]))
         assert "[" in result.text and "](" in result.text  # link MarkdownV2
         assert "https://x.gov.br/" in result.text
         assert result.pre_escaped is True
@@ -754,9 +744,7 @@ class TestBuscarRichSyntax:
                 }
             )
             await ctx.storage.save_documento(doc)
-        result = await handle_buscar(
-            ctx, ParsedCommand(name="buscar", args=["ITCMD", "limite=2"])
-        )
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD", "limite=2"]))
         assert "2\\+" in result.text  # marca de truncamento
         assert "Mostrando os primeiros 2" in result.text
 
