@@ -741,6 +741,95 @@ class TestBuscarRichSyntax:
         assert result.pre_escaped is True
 
     @pytest.mark.asyncio
+    async def test_filtro_valor_vazio(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "uf="]))
+        assert result.is_error
+        assert "vazio" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_uf_federal(self) -> None:
+        ctx = await _ctx()
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["x", "uf=_federal"]))
+        # Sem docs → "Nenhum resultado", mas não é erro
+        assert not result.is_error
+        # `_` escapado em MarkdownV2 ⇒ `\_federal`
+        assert "uf\\=\\_federal" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_ano_valido_com_match(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD 2026"))
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD", "ano=2026"]))
+        assert "ano\\=2026" in result.text
+        assert "ITCMD 2026" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_ano_corta_doc_fora_da_janela(self) -> None:
+        # Doc de 2026-04-24 não casa com ano=2025 (until cutoff).
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD doc"))
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD", "ano=2025"]))
+        assert "Nenhum resultado" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_tipo_valido(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD PL"))
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["ITCMD", "tipo=projeto_lei"])
+        )
+        # `_` é escapado em MarkdownV2 ⇒ `projeto\_lei`
+        assert "tipo\\=projeto\\_lei" in result.text
+        assert "ITCMD PL" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_severidade_valida(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD alta"))
+        result = await handle_buscar(
+            ctx, ParsedCommand(name="buscar", args=["ITCMD", "severidade=alta"])
+        )
+        assert "severidade\\=alta" in result.text
+        assert "ITCMD alta" in result.text
+
+    @pytest.mark.asyncio
+    async def test_filtro_limite_valido(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD lim"))
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD", "limite=5"]))
+        assert not result.is_error
+        assert "ITCMD lim" in result.text
+
+    @pytest.mark.asyncio
+    async def test_combinacao_de_filtros(self) -> None:
+        # Cobre o branch onde todos os filtros são montados no header.
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(titulo="ITCMD combo"))
+        result = await handle_buscar(
+            ctx,
+            ParsedCommand(
+                name="buscar",
+                args=[
+                    "ITCMD",
+                    "uf=SP",
+                    "ano=2026",
+                    "topico=itcd",
+                    "tipo=projeto_lei",
+                    "severidade=alta",
+                ],
+            ),
+        )
+        for marker in [
+            "uf\\=SP",
+            "ano\\=2026",
+            "topico\\=itcd",
+            "tipo\\=projeto\\_lei",  # underscore escapado
+            "severidade\\=alta",
+        ]:
+            assert marker in result.text
+
+    @pytest.mark.asyncio
     async def test_truncamento_indica_mais_resultados(self) -> None:
         ctx = await _ctx()
         # Insere 3 docs com hash distinto e limite=2
