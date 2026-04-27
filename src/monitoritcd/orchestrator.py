@@ -211,8 +211,12 @@ async def classify_and_store(
     cluster_map = assign_clusters(raw_items)
 
     docs_saved: list[Documento] = []
-    for batch_start in range(0, len(items), _lim.MAX_BATCH_LLM):
+    for batch_idx, batch_start in enumerate(range(0, len(items), _lim.MAX_BATCH_LLM)):
         batch = items[batch_start : batch_start + _lim.MAX_BATCH_LLM]
+        # Throttle entre batches respeita rate limit do provedor (Groq Free: 30 RPM).
+        # O primeiro batch corre direto; demais aguardam LLM_BATCH_DELAY_SECONDS.
+        if batch_idx > 0:
+            await asyncio.sleep(_lim.LLM_BATCH_DELAY_SECONDS)
         try:
             llm_results = await classify_with_provider(
                 [it for _, it in batch],
@@ -313,8 +317,11 @@ async def reprocess_documents(
         report.finished_at = datetime.now(UTC)
         return report
 
-    for batch_start in range(0, len(docs), _lim.MAX_BATCH_LLM):
+    for batch_idx, batch_start in enumerate(range(0, len(docs), _lim.MAX_BATCH_LLM)):
         batch = docs[batch_start : batch_start + _lim.MAX_BATCH_LLM]
+        # Throttle entre batches em reprocessamento (mesmo motivo de classify_and_store).
+        if batch_idx > 0:
+            await asyncio.sleep(_lim.LLM_BATCH_DELAY_SECONDS)
         try:
             llm_results = await classify_with_provider(
                 [d.original for d in batch],
