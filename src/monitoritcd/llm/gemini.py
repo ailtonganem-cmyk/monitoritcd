@@ -48,18 +48,23 @@ class GeminiProvider:
         self._client = genai.Client(api_key=self._api_key.get_secret_value())
         return self._client
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Envia batch ao Gemini, retorna lista de dicts.
 
         Os items são separados por `---ITEM---` no prompt; o LLM retorna JSON array.
+        Quando `system_prompt` é fornecido, substitui o SYSTEM_PROMPT global.
         """
         if not items_text:
             return []
 
         items_block = "\n\n---ITEM---\n\n".join(items_text)
-        prompt = (
-            f"{SYSTEM_PROMPT}\n\nClassifique os {len(items_text)} itens abaixo:\n\n{items_block}"
-        )
+        sys_p = system_prompt if system_prompt is not None else SYSTEM_PROMPT
+        prompt = f"{sys_p}\n\nClassifique os {len(items_text)} itens abaixo:\n\n{items_block}"
 
         client = self._ensure_client()
 

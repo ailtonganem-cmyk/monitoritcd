@@ -23,11 +23,14 @@ from monitoritcd.bot.auth import (
 )
 from monitoritcd.core import limits
 from monitoritcd.core.models import (
+    DEFAULT_TOPIC_IDS,
     ExtraKeywordsConfig,
+    ExtraTopicsConfig,
     SeverityTier,
     StatusDocumento,
     TipoAto,
     Topic,
+    TopicEntry,
 )
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT
 from monitoritcd.security.markdown_escape import escape_markdown_v2, safe_link
@@ -128,7 +131,8 @@ async def handle_start(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
             "• /status — saúde do sistema\n"
             "• /buscar <termos> [uf=XX] [ano=YYYY] [topico=...] [tipo=...]\n"
             "          [severidade=...] [limite=N] — busca com links clicáveis\n"
-            "• /topicos — lista divisões temáticas\n"
+            "• /topicos listar | adicionar <id> <descrição> | remover <id>\n"
+            "          — divisões temáticas dinâmicas (LLM classifica)\n"
             "• /temas listar | adicionar <termo> [topico=...] | remover | reset\n"
             "          — gerencia keywords extras de busca\n"
             "• /observar <termo> | listar | remover <id>\n"
@@ -411,19 +415,178 @@ async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
     return HandlerResult(text=text, pre_escaped=True)
 
 
-async def handle_topicos(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
+_TOPIC_DEFAULT_DESCRICOES = {
+    "itcd": "Imposto sobre Transmissão Causa Mortis e Doação (ITCD/ITCMD/ITD)",
+    "sucessoes": "Direito Civil das Sucessões (CC 1.784+): herança, testamento, inventário",
+    "regime_bens": "Regime de Bens (CC 1.639-1.688): comunhão, separação, pacto antenupcial",
+}
+
+_TOPIC_ID_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
+
+
+async def _topicos_listar(ctx: BotContext) -> HandlerResult:
+    cfg = await ctx.storage.get_extra_topics()
+    extras = cfg.topics if cfg is not None else []
+    lines = ["🗂️ *Divisões temáticas*", ""]
+    lines.append("*Defaults*:")
+    for tid, desc in _TOPIC_DEFAULT_DESCRICOES.items():
+        lines.append(f"• `{tid}` — {desc}")
+    lines.append("")
+    if extras:
+        lines.append(f"*Extras dinâmicos* ({len(extras)}):")
+        lines.extend(
+            f"• `{entry.id}` — {entry.descricao}" for entry in sorted(extras, key=lambda e: e.id)
+        )
+    else:
+        lines.append("*Extras dinâmicos*: nenhum.")
+    lines.append("")
+    lines.append("Use `/topicos adicionar <id> <descrição>` para criar novo tópico.")
+    lines.append("Use `/buscar <termo> topico=<id>` para filtrar resultados.")
+    return HandlerResult(text="\n".join(lines))
+
+
+async def _topicos_adicionar(  # noqa: PLR0911
+    ctx: BotContext, cmd: ParsedCommand
+) -> HandlerResult:
+    # Args: ["adicionar", <id>, <palavras_descricao...>]
+    if len(cmd.args) < MIN_ARGS_WITH_UF + 1:
+        return HandlerResult(
+            text="❌ Uso: `/topicos adicionar <id> <descrição em palavras>`",
+            is_error=True,
+        )
+    topic_id = cmd.args[1].lower().strip()
+    descricao = " ".join(cmd.args[2:]).strip()
+
+    if not _TOPIC_ID_REGEX.fullmatch(topic_id):
+        return HandlerResult(
+            text=(
+                f"❌ ID inválido: `{topic_id}`. Use letras minúsculas, dígitos e `_`, "
+                "começando por letra."
+            ),
+            is_error=True,
+        )
+    if topic_id in DEFAULT_TOPIC_IDS:
+        return HandlerResult(
+            text=f"❌ `{topic_id}` é um tópico padrão e não pode ser duplicado.",
+            is_error=True,
+        )
+    if (
+        len(descricao) < limits.MIN_TOPIC_DESCRIPTION_LENGTH
+        or len(descricao) > limits.MAX_TOPIC_DESCRIPTION_LENGTH
+    ):
+        return HandlerResult(
+            text=(
+                f"❌ Descrição deve ter entre {limits.MIN_TOPIC_DESCRIPTION_LENGTH} "
+                f"e {limits.MAX_TOPIC_DESCRIPTION_LENGTH} chars (LLM precisa entender)."
+            ),
+            is_error=True,
+        )
+
+    cfg = await ctx.storage.get_extra_topics()
+    if cfg is None:
+        cfg = ExtraTopicsConfig(
+            owner_id=ctx.settings.OWNER_ID,
+            topics=[],
+            updated_at=datetime.now(UTC),
+            updated_by="bot",
+        )
+    if any(t.id == topic_id for t in cfg.topics):
+        return HandlerResult(
+            text=f"⚠️ Tópico `{topic_id}` já existe nos extras.",
+        )
+    if len(cfg.topics) >= limits.MAX_EXTRA_TOPICS:
+        return HandlerResult(
+            text=(
+                f"❌ Limite de {limits.MAX_EXTRA_TOPICS} tópicos extras atingido. "
+                "Remova algum com `/topicos remover` antes."
+            ),
+            is_error=True,
+        )
+
+    new_entry = TopicEntry(
+        id=topic_id,
+        descricao=descricao,
+        criado_em=datetime.now(UTC),
+        criado_por="bot",
+    )
+    new_cfg = cfg.model_copy(
+        update={
+            "topics": [*cfg.topics, new_entry],
+            "updated_at": datetime.now(UTC),
+            "updated_by": "bot",
+        }
+    )
+    try:
+        await ctx.storage.save_extra_topics(new_cfg)
+    except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+        return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+    await log_bot_action(
+        ctx, action="bot.topicos.adicionar", payload={"id": topic_id, "descricao": descricao}
+    )
     return HandlerResult(
         text=(
-            "🗂️ *Divisões temáticas do sistema*:\n\n"
-            "• `itcd` — Imposto sobre Transmissão Causa Mortis e Doação\n"
-            "  (alíquotas, fato gerador, IN, portarias, GIA-ITCMD)\n\n"
-            "• `sucessoes` — Direito Civil das Sucessões (CC 1.784+)\n"
-            "  (herança, testamento, inventário, legítima, herdeiros, partilha)\n\n"
-            "• `regime_bens` — Regime de Bens (CC 1.639-1.688)\n"
-            "  (comunhão parcial/universal, separação, pacto antenupcial, Súmula 377)\n\n"
-            "Use `/buscar <termo> topico=<area>` para filtrar por tópico."
-        ),
+            f"✅ Tópico `{topic_id}` adicionado. Total: {len(new_cfg.topics)} extras. "
+            "LLM passará a classificar próximas coletas nesta categoria."
+        )
     )
+
+
+async def _topicos_remover(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(text="❌ Uso: `/topicos remover <id>`", is_error=True)
+    topic_id = cmd.args[1].lower().strip()
+    if topic_id in DEFAULT_TOPIC_IDS:
+        return HandlerResult(
+            text=f"❌ `{topic_id}` é tópico padrão e não pode ser removido.",
+            is_error=True,
+        )
+
+    cfg = await ctx.storage.get_extra_topics()
+    if cfg is None or not any(t.id == topic_id for t in cfg.topics):
+        return HandlerResult(text=f"⚠️ Tópico `{topic_id}` não encontrado nos extras.")
+
+    new_topics = [t for t in cfg.topics if t.id != topic_id]
+    new_cfg = cfg.model_copy(
+        update={
+            "topics": new_topics,
+            "updated_at": datetime.now(UTC),
+            "updated_by": "bot",
+        }
+    )
+    try:
+        await ctx.storage.save_extra_topics(new_cfg)
+    except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+        return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+    await log_bot_action(ctx, action="bot.topicos.remover", payload={"id": topic_id})
+    return HandlerResult(
+        text=(
+            f"✅ Tópico `{topic_id}` removido. Documentos antigos classificados "
+            "neste tópico continuam pesquisáveis (não migra automaticamente)."
+        )
+    )
+
+
+_TOPICOS_SUBHANDLERS = {
+    "listar": lambda ctx, _cmd: _topicos_listar(ctx),
+    "adicionar": _topicos_adicionar,
+    "remover": _topicos_remover,
+}
+
+
+async def handle_topicos(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """Gerencia tópicos dinâmicos (B2): listar | adicionar | remover.
+
+    Sem args, ou subcomando inválido, devolve uso. Para listagem rápida
+    inline, basta `/topicos listar`.
+    """
+    if not cmd.args:
+        # Compat: chamado puro mostra a listagem (UX preservada).
+        return await _topicos_listar(ctx)
+    sub = cmd.args[0].lower()
+    handler = _TOPICOS_SUBHANDLERS.get(sub)
+    if handler is None:
+        return HandlerResult(text=f"❌ Subcomando desconhecido: '{sub}'", is_error=True)
+    return await handler(ctx, cmd)
 
 
 async def _handle_estados_listar(ctx: BotContext) -> HandlerResult:

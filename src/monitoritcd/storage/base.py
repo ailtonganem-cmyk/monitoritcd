@@ -22,6 +22,7 @@ if TYPE_CHECKING:
         AuditLogEntry,
         Documento,
         ExtraKeywordsConfig,
+        ExtraTopicsConfig,
         LLMResult,
         NotificacaoStatus,
         StatusDocumento,
@@ -94,6 +95,15 @@ class StorageProtocol(Protocol):
 
     async def save_extra_keywords(self, config: ExtraKeywordsConfig) -> None:
         """Persiste config de keywords extras dinâmicas. Substitui o doc anterior."""
+        ...
+
+    # ─── Extra topics (dinâmicos via /topicos) ────────────────────────────
+    async def get_extra_topics(self) -> ExtraTopicsConfig | None:
+        """Retorna config de topics extras dinâmicos, ou None se não configurado."""
+        ...
+
+    async def save_extra_topics(self, config: ExtraTopicsConfig) -> None:
+        """Persiste config de topics extras dinâmicos. Substitui o doc anterior."""
         ...
 
     # ─── Watch list ───────────────────────────────────────────────────────

@@ -33,7 +33,14 @@ from tenacity import (
 )
 
 from monitoritcd.core import limits
-from monitoritcd.core.models import LLMResult, SeverityTier, TipoAto, Topic
+from monitoritcd.core.models import (
+    DEFAULT_TOPIC_IDS,
+    ExtraTopicsConfig,
+    LLMResult,
+    SeverityTier,
+    TipoAto,
+    Topic,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -53,14 +60,51 @@ SEVERITY_THRESHOLDS = (
     (limits.RELEVANCIA_THRESHOLD_BAIXA, SeverityTier.BAIXA),
 )
 
-SYSTEM_PROMPT = """Você é um classificador de atos legislativos, normativos e jurisprudenciais
-brasileiros sobre 3 áreas correlatas:
+_DEFAULT_TOPICS_BLOCK = (
+    "1. **itcd** — Imposto sobre Transmissão Causa Mortis e Doação (ITCD/ITCMD/ITD): "
+    "alíquotas, fato gerador, IN tributária, base de cálculo.\n"
+    "2. **sucessoes** — Direito Civil das Sucessões (CC arts. 1.784+): herança, "
+    "testamento, inventário, partilha, herdeiros necessários, deserdação, união "
+    "estável.\n"
+    "3. **regime_bens** — Regime de Bens (CC arts. 1.639-1.688): comunhão parcial/"
+    "universal, separação, pacto antenupcial, alteração de regime, Súmula 377."
+)
 
-1. **ITCD/ITCMD/ITD** — Imposto sobre Transmissão Causa Mortis e Doação (tributário).
-2. **Direito das Sucessões** — Direito Civil (CC arts. 1.784+): herança, testamento,
-   inventário, partilha, herdeiros necessários, deserdação, união estável, etc.
-3. **Regime de Bens** — Direito Civil (CC arts. 1.639-1.688): comunhão parcial/universal,
-   separação, pacto antenupcial, alteração de regime, Súmula 377, etc.
+_DEFAULT_TOPICS_HINT = (
+    '- "itcd" se discute alíquota, base de cálculo, fato gerador, IN tributária.\n'
+    '- "sucessoes" se discute herança, testamento, inventário, herdeiros (mesmo sem ITCD).\n'
+    '- "regime_bens" se discute comunhão, separação, pacto, divórcio (mesmo sem ITCD).'
+)
+
+
+def build_system_prompt(extras: ExtraTopicsConfig | None = None) -> str:
+    """Monta o system prompt do classifier.
+
+    Quando `extras` está populado, anexa ao prompt as descrições dos topics
+    dinâmicos criados via /topicos. Topic id sempre validado contra regex
+    e lista enumerável; LLM recebe a descrição PT-BR completa.
+    """
+    if extras is None or not extras.topics:
+        topics_block = _DEFAULT_TOPICS_BLOCK
+        topics_hint = _DEFAULT_TOPICS_HINT
+        topics_enum = "itcd, sucessoes, regime_bens"
+    else:
+        extra_lines = []
+        hint_lines = []
+        idx = 4
+        for entry in extras.topics:
+            extra_lines.append(f"{idx}. **{entry.id}** — {entry.descricao}")
+            hint_lines.append(f'- "{entry.id}" se discute: {entry.descricao}')
+            idx += 1
+        topics_block = _DEFAULT_TOPICS_BLOCK + "\n" + "\n".join(extra_lines)
+        topics_hint = _DEFAULT_TOPICS_HINT + "\n" + "\n".join(hint_lines)
+        all_ids = ", ".join(["itcd", "sucessoes", "regime_bens", *(e.id for e in extras.topics)])
+        topics_enum = all_ids
+
+    return f"""Você é um classificador de atos legislativos, normativos e jurisprudenciais
+brasileiros sobre as áreas correlatas:
+
+{topics_block}
 
 REGRAS INEGOCIÁVEIS — você DEVE obedecer SEMPRE:
 1. NÃO modifique nomes próprios, números de atos, datas ou cifras. Preserve verbatim.
@@ -71,21 +115,19 @@ REGRAS INEGOCIÁVEIS — você DEVE obedecer SEMPRE:
 
 Para cada item da lista, retorne um objeto JSON com EXATAMENTE estas chaves:
 
-{
+{{
   "tipo": "<um de: projeto_lei, lei_sancionada, decreto, instrucao_normativa,
            portaria, noticia, jurisprudencia, doutrina, outro>",
-  "topics": ["<um ou mais de: itcd, sucessoes, regime_bens>"],
+  "topics": ["<um ou mais de: {topics_enum}>"],
   "relevancia": <integer 0-10>,
   "resumo": "<1-3 frases factuais em PT-BR>",
   "numero_ato": "<ex: 1234/2026 ou null>",
   "orgao_emissor": "<ex: SEFAZ-SP, STF, ou null>",
   "tags": ["tag1", "tag2"]
-}
+}}
 
 `topics` deve incluir **todas** as áreas tocadas pelo item:
-- "itcd" se discute alíquota, base de cálculo, fato gerador, IN tributária.
-- "sucessoes" se discute herança, testamento, inventário, herdeiros (mesmo sem ITCD).
-- "regime_bens" se discute comunhão, separação, pacto, divórcio (mesmo sem ITCD).
+{topics_hint}
 
 Relevância:
 - 9-10: mudança crítica de alíquota, decisão STF/STJ vinculante, súmula nova.
@@ -95,6 +137,10 @@ Relevância:
 
 Retorne EXCLUSIVAMENTE um JSON array. Nada mais. Sem comentários, sem markdown.
 """
+
+
+# Backward compat: SYSTEM_PROMPT estático (defaults). Provedores antigos lêem este.
+SYSTEM_PROMPT = build_system_prompt(None)
 
 # Limite de texto enviado por item ao LLM (ajuste conforme janela de contexto).
 MAX_ITEM_TEXT_FOR_LLM: int = 3000
@@ -106,8 +152,18 @@ class LLMProvider(Protocol):
     name: str
     """Identificação do modelo (ex: `gemini-2.5-flash`). Vai parar em `LLMResult.llm_model`."""
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
-        """Recebe lista de textos, retorna lista de dicts (um por item)."""
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Recebe lista de textos, retorna lista de dicts (um por item).
+
+        Quando `system_prompt` é fornecido, substitui o `SYSTEM_PROMPT` global
+        para permitir injeção de descrições de topics dinâmicos (criados via
+        /topicos). Sem `system_prompt`, mantém comportamento legado.
+        """
         ...  # pragma: no cover - Protocol method body
 
 
@@ -134,6 +190,7 @@ def parse_llm_response(
     raw_response: dict[str, Any],
     *,
     llm_model: str,
+    allowed_topic_ids: frozenset[str] | None = None,
 ) -> LLMResult:
     """Valida response do LLM e constrói LLMResult.
 
@@ -175,15 +232,12 @@ def parse_llm_response(
     rel_int = max(limits.RELEVANCIA_MIN, min(limits.RELEVANCIA_MAX, int(relevancia)))
 
     # Topics — defaulta a [ITCD] se LLM não retornar (compat).
+    # Aceita defaults (Topic enum) + topics dinâmicos se constarem em allowed_topic_ids.
+    valid = allowed_topic_ids if allowed_topic_ids is not None else DEFAULT_TOPIC_IDS
     topics_raw = raw_response.get("topics") or [Topic.ITCD.value]
-    topics: list[Topic] = []
-    for t in topics_raw:
-        try:
-            topics.append(Topic(t))
-        except ValueError:
-            continue
+    topics: list[str] = [t for t in topics_raw if isinstance(t, str) and t in valid]
     if not topics:
-        topics = [Topic.ITCD]
+        topics = [Topic.ITCD.value]
 
     return LLMResult(
         classified_at=datetime.now(UTC),
@@ -204,6 +258,8 @@ async def classify_with_provider(
     provider: LLMProvider,
     *,
     llm_model: str,
+    allowed_topic_ids: frozenset[str] | None = None,
+    system_prompt: str | None = None,
 ) -> list[LLMResult]:
     """Classifica batch de items via provider, com retry e validação.
 
@@ -235,7 +291,7 @@ async def classify_with_provider(
 
     async for attempt in retryer:
         with attempt:
-            raw_responses = await provider.classify_batch(items_text)
+            raw_responses = await provider.classify_batch(items_text, system_prompt=system_prompt)
             if len(raw_responses) != len(items):
                 msg = f"Provider retornou {len(raw_responses)} respostas para {len(items)} items"
                 raise ValueError(msg)
@@ -245,7 +301,11 @@ async def classify_with_provider(
                 if not isinstance(raw, dict):
                     msg = f"Resposta não-dict do LLM: {type(raw).__name__}"
                     raise ValueError(msg)
-                results.append(parse_llm_response(raw, llm_model=llm_model))
+                results.append(
+                    parse_llm_response(
+                        raw, llm_model=llm_model, allowed_topic_ids=allowed_topic_ids
+                    )
+                )
 
             logger.info(
                 "llm.batch_classified",

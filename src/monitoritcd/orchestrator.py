@@ -70,7 +70,7 @@ from monitoritcd.core.models import (
 from monitoritcd.core.source_loader import load_all_sources
 from monitoritcd.dedup import assign_clusters
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, expand_with_extras, matches_keywords
-from monitoritcd.filters.llm_classifier import classify_with_provider
+from monitoritcd.filters.llm_classifier import build_system_prompt, classify_with_provider
 from monitoritcd.filters.prescore import passes_cutoff, prescore
 from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
@@ -209,8 +209,14 @@ async def classify_and_store(
     storage: StorageProtocol,
     owner_id: str,
     report: RunReport,
+    system_prompt: str | None = None,
+    allowed_topic_ids: frozenset[str] | None = None,
 ) -> list[Documento]:
-    """Classifica via LLM (batches) e persiste."""
+    """Classifica via LLM (batches) e persiste.
+
+    Quando `system_prompt`/`allowed_topic_ids` são fornecidos, suporta topics
+    dinâmicos criados via /topicos. Sem eles, mantém comportamento default.
+    """
     from monitoritcd.core import limits as _lim  # noqa: PLC0415
 
     if not items:
@@ -232,6 +238,8 @@ async def classify_and_store(
                 [it for _, it in batch],
                 llm_provider,
                 llm_model=llm_provider.name,
+                system_prompt=system_prompt,
+                allowed_topic_ids=allowed_topic_ids,
             )
         except LLMProvidersExhaustedError as e:
             # Tier 3: ambos LLMs em quota. Defere classificação salvando os
@@ -521,7 +529,7 @@ async def _collect_all(
     return raw_items
 
 
-async def run_pipeline(
+async def run_pipeline(  # noqa: PLR0915
     settings: Settings,
     *,
     storage: StorageProtocol,
@@ -600,7 +608,17 @@ async def run_pipeline(
     report.items_new = len(new_items)
     bound.info("run.filtered", new=len(new_items))
 
-    # 6. Classify + store
+    # 6. Classify + store (com topics dinâmicos se configurados via /topicos)
+    import contextlib  # noqa: PLC0415
+
+    extra_topics_cfg = None
+    with contextlib.suppress(AttributeError, NotImplementedError):
+        extra_topics_cfg = await storage.get_extra_topics()
+    system_prompt = build_system_prompt(extra_topics_cfg)
+    allowed_topic_ids = extra_topics_cfg.all_topic_ids() if extra_topics_cfg is not None else None
+    if extra_topics_cfg is not None and extra_topics_cfg.topics:
+        bound.info("run.extra_topics_loaded", count=len(extra_topics_cfg.topics))
+
     docs_saved: list[Documento] = []
     if new_items:
         docs_saved = await classify_and_store(
@@ -609,6 +627,8 @@ async def run_pipeline(
             storage=storage,
             owner_id=settings.OWNER_ID,
             report=report,
+            system_prompt=system_prompt,
+            allowed_topic_ids=allowed_topic_ids,
         )
 
     # 7. Notificações (push CRITICO imediato + digest)

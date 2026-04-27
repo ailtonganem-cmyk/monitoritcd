@@ -21,7 +21,12 @@ class _StubProvider:
         self._responses = responses
         self._calls = 0
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self,
+        items_text: list[str],  # noqa: ARG002
+        *,
+        system_prompt: str | None = None,  # noqa: ARG002
+    ) -> list[dict[str, Any]]:
         idx = self._calls
         self._calls += 1
         resp = self._responses[idx]

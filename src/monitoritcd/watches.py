@@ -229,7 +229,8 @@ def _uf_topic_match(pattern: str, doc: Documento) -> bool:
         return False
     # Topico pode estar em llm.topics ou metadados.temas_especificos
     topico_norm = topico.strip().lower()
-    topics_doc = {t.value for t in doc.llm.topics}
+    # topics agora são strings (suporte a topics dinâmicos via /topicos)
+    topics_doc = set(doc.llm.topics)
     if topico_norm in topics_doc:
         return True
     temas_csv = doc.llm.metadados_extraidos.get("temas_especificos", "").lower()

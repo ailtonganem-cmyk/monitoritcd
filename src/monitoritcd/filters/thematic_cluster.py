@@ -36,7 +36,8 @@ class ThematicCluster:
 def _doc_topics(doc: Documento) -> tuple[str, ...]:
     """Extrai tuple de topics ordenada para chave do cluster."""
     if doc.llm and doc.llm.topics:
-        return tuple(sorted(t.value for t in doc.llm.topics))
+        # topics agora são strings (suporte a topics dinâmicos via /topicos)
+        return tuple(sorted(doc.llm.topics))
     return ()
 
 

@@ -42,8 +42,16 @@ class GroqProvider:
         self._api_key = api_key
         self._model_name = model
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
-        """Envia batch ao Groq via OpenAI-compatible API."""
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Envia batch ao Groq via OpenAI-compatible API.
+
+        Quando `system_prompt` é fornecido, substitui o SYSTEM_PROMPT global.
+        """
         if not items_text:
             return []
 
@@ -52,11 +60,12 @@ class GroqProvider:
             f"Classifique os {len(items_text)} itens abaixo. "
             f"Retorne JSON com chave 'items' contendo lista de objetos.\n\n{items_block}"
         )
+        sys_p = system_prompt if system_prompt is not None else SYSTEM_PROMPT
 
         payload = {
             "model": self._model_name,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": sys_p},
                 {"role": "user", "content": user_msg},
             ],
             "response_format": {"type": "json_object"},

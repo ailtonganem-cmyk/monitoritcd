@@ -17,7 +17,12 @@ class FakeLLMProvider:
 
     name: str = "fake-llm"
 
-    async def classify_batch(self, items_text: list[str]) -> list[dict[str, Any]]:
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         for text in items_text:
             topics = detect_topics(text) or [
