@@ -727,8 +727,17 @@ class TestBuscarRichSyntax:
         ctx = await _ctx()
         await ctx.storage.save_documento(_doc(titulo="PL 1234/2026 ITCMD"))
         result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["1234"]))
-        assert "[" in result.text and "](" in result.text  # link MarkdownV2
-        assert "https://x.gov.br/" in result.text
+        assert "](" in result.text  # link MarkdownV2: [titulo](url)
+        # Extrai URL do link e valida via parse, evitando substring-only check
+        # (que CodeQL flagueia como py/incomplete-url-substring-sanitization).
+        import re  # noqa: PLC0415
+        from urllib.parse import urlparse  # noqa: PLC0415
+
+        m = re.search(r"\]\((https?://[^)]+)\)", result.text)
+        assert m is not None
+        parsed_url = urlparse(m.group(1))
+        assert parsed_url.scheme == "https"
+        assert parsed_url.netloc == "x.gov.br"
         assert result.pre_escaped is True
 
     @pytest.mark.asyncio
