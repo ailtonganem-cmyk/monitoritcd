@@ -141,3 +141,32 @@ class TestDetectTopics:
         text = "Inventário judicial. Herdeiros necessários. Testamento. ITCMD mencionado."
         topics = detect_topics(text)
         assert topics[0] == Topic.SUCESSOES
+
+
+@pytest.mark.unit
+class TestExpandWithExtras:
+    def test_none_returns_default(self) -> None:
+        from monitoritcd.filters.keywords import expand_with_extras  # noqa: PLC0415
+
+        assert expand_with_extras(None) == KEYWORDS_DEFAULT
+
+    def test_empty_returns_default(self) -> None:
+        from monitoritcd.filters.keywords import expand_with_extras  # noqa: PLC0415
+
+        assert expand_with_extras([]) == KEYWORDS_DEFAULT
+
+    def test_dedup_against_defaults(self) -> None:
+        # Termo já existente nos defaults não duplica.
+        from monitoritcd.filters.keywords import expand_with_extras  # noqa: PLC0415
+
+        result = expand_with_extras(["ITCMD", "novo termo extra"])
+        assert result.count("ITCMD") == 1
+        assert "novo termo extra" in result
+
+    def test_extras_added_after_defaults(self) -> None:
+        # Defaults preservam ordem; extras vêm no final.
+        from monitoritcd.filters.keywords import expand_with_extras  # noqa: PLC0415
+
+        result = expand_with_extras(["zzz nova keyword"])
+        assert result[: len(KEYWORDS_DEFAULT)] == KEYWORDS_DEFAULT
+        assert result[-1] == "zzz nova keyword"

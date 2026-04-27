@@ -303,6 +303,52 @@ class ActiveStatesConfig(OwnerScoped):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Configuração de keywords extras dinâmicas (Firestore: config/extra_keywords)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Validação de keyword: 3-100 chars, letras/números/espaços/hífens/acentos.
+ExtraKeyword = Annotated[
+    str,
+    Field(
+        min_length=limits.MIN_EXTRA_KEYWORD_LENGTH,
+        max_length=limits.MAX_EXTRA_KEYWORD_LENGTH,
+        pattern=r"^[\w\s\-áéíóúâêîôûãõçÁÉÍÓÚÂÊÎÔÛÃÕÇàèìòùÀÈÌÒÙ.,/]+$",
+    ),
+]
+
+
+class ExtraKeywordsConfig(OwnerScoped):
+    """Keywords adicionadas dinamicamente via /temas, agrupadas por topic.
+
+    Mescla com `KEYWORDS_DEFAULT` no filtro 1 do pipeline. Não substitui:
+    extras AMPLIAM o universo de termos buscados antes do LLM.
+
+    Chave do dict é o topic id ("itcd", "sucessoes", "regime_bens" ou um
+    topic dinâmico criado via /topicos). Topic special "geral" agrega
+    keywords sem topico explícito.
+    """
+
+    schema_version: int = Field(ge=1, default=1)
+    keywords_by_topic: dict[
+        Annotated[str, Field(max_length=64, pattern=r"^[a-z][a-z0-9_]{0,63}$")],
+        list[ExtraKeyword],
+    ] = Field(default_factory=dict)
+    updated_at: datetime
+    updated_by: Annotated[str, Field(max_length=64)]
+
+    def total_count(self) -> int:
+        """Total de keywords extras somando todos os topics."""
+        return sum(len(v) for v in self.keywords_by_topic.values())
+
+    def all_keywords(self) -> list[str]:
+        """Flatten: união de todas as keywords extras (sem duplicatas)."""
+        seen: set[str] = set()
+        for kws in self.keywords_by_topic.values():
+            seen.update(kws)
+        return sorted(seen)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Watch list
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -364,6 +410,8 @@ __all__ = [
     "AuditLogEntry",
     "BotCommand",
     "Documento",
+    "ExtraKeyword",
+    "ExtraKeywordsConfig",
     "LLMResult",
     "NotificacaoStatus",
     "OwnerScoped",

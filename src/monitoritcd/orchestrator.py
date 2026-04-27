@@ -69,7 +69,7 @@ from monitoritcd.core.models import (
 )
 from monitoritcd.core.source_loader import load_all_sources
 from monitoritcd.dedup import assign_clusters
-from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, matches_keywords
+from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, expand_with_extras, matches_keywords
 from monitoritcd.filters.llm_classifier import classify_with_provider
 from monitoritcd.filters.prescore import passes_cutoff, prescore
 from monitoritcd.llm.fallback import LLMProvidersExhaustedError
@@ -155,12 +155,22 @@ async def collect_from_source(
 
 def filter_by_keywords(
     items: list[tuple[Source, RawItem]],
+    *,
+    extra_keywords: list[str] | None = None,
 ) -> list[tuple[Source, RawItem, list[str]]]:
-    """Aplica filtro 1 (keywords). Retorna items aprovados + keywords encontradas."""
+    """Aplica filtro 1 (keywords). Retorna items aprovados + keywords encontradas.
+
+    Quando `extra_keywords` é fornecido, expande o default global com keywords
+    dinâmicas adicionadas via `/temas` (pesistidas em `config/extra_keywords`).
+    Fontes com `keywords_required` próprio mantêm comportamento isolado.
+    """
+    default_kws = (
+        list(expand_with_extras(extra_keywords)) if extra_keywords else list(KEYWORDS_DEFAULT)
+    )
     out: list[tuple[Source, RawItem, list[str]]] = []
     for source, item in items:
         text = (item.titulo_raw or "") + " " + (item.texto_raw or "")
-        kws = source.keywords_required or list(KEYWORDS_DEFAULT)
+        kws = source.keywords_required or default_kws
         matched, found = matches_keywords(text, kws)
         if matched:
             out.append((source, item, found))
@@ -568,8 +578,17 @@ async def run_pipeline(
     )
     bound.info("run.collected", count=len(raw_items))
 
-    # 3. Filtro 1: keywords
-    after_kw = filter_by_keywords(raw_items)
+    # 3. Filtro 1: keywords (expande com extras dinâmicas se configuradas via /temas)
+    extras: list[str] | None = None
+    try:
+        extras_cfg = await storage.get_extra_keywords()
+        if extras_cfg is not None:
+            extras = extras_cfg.all_keywords()
+            if extras:
+                bound.info("run.extra_keywords_loaded", count=len(extras))
+    except (AttributeError, NotImplementedError):  # pragma: no cover - back-compat defensivo
+        pass
+    after_kw = filter_by_keywords(raw_items, extra_keywords=extras)
     report.items_after_keywords = len(after_kw)
 
     # 4. Filtro 2: prescore
