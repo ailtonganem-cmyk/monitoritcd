@@ -22,7 +22,14 @@ from monitoritcd.bot.auth import (
     TwoStepConfirmation,
 )
 from monitoritcd.core import limits
-from monitoritcd.core.models import SeverityTier, StatusDocumento, TipoAto, Topic
+from monitoritcd.core.models import (
+    ExtraKeywordsConfig,
+    SeverityTier,
+    StatusDocumento,
+    TipoAto,
+    Topic,
+)
+from monitoritcd.filters.keywords import KEYWORDS_DEFAULT
 from monitoritcd.security.markdown_escape import escape_markdown_v2, safe_link
 
 if TYPE_CHECKING:
@@ -122,6 +129,8 @@ async def handle_start(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
             "• /buscar <termos> [uf=XX] [ano=YYYY] [topico=...] [tipo=...]\n"
             "          [severidade=...] [limite=N] — busca com links clicáveis\n"
             "• /topicos — lista divisões temáticas\n"
+            "• /temas listar | adicionar <termo> [topico=...] | remover | reset\n"
+            "          — gerencia keywords extras de busca\n"
             "• /observar <termo> | listar | remover <id>\n"
             "• /marcar <doc_id_prefix> <tag> — tag pessoal num doc\n"
             "• /relatorio [diario|semanal] — digest sob demanda\n"
@@ -711,6 +720,240 @@ async def handle_relatorio(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# /temas — gerencia keywords extras dinâmicas (Conceito 1 do design B2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_TEMAS_TOPIC_REGEX = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+_TEMAS_DEFAULT_TOPIC = "geral"
+
+
+def _parse_temas_args(args: list[str]) -> tuple[str, str | None]:
+    """Separa termo livre dos filtros `topico=`. Retorna (termo, topico|None)."""
+    topic: str | None = None
+    parts: list[str] = []
+    for arg in args:
+        if arg.startswith("topico="):
+            topic = arg.split("=", 1)[1].strip().lower()
+        else:
+            parts.append(arg)
+    return " ".join(parts).strip(), topic
+
+
+async def _temas_listar(ctx: BotContext) -> HandlerResult:
+    cfg = await ctx.storage.get_extra_keywords()
+    base = f"🗂 *Defaults*: {len(KEYWORDS_DEFAULT)} termos (união itcd+sucessoes+regime\\_bens)"
+    if cfg is None or cfg.total_count() == 0:
+        return HandlerResult(
+            text=(
+                f"{base}\n\n"
+                "📋 *Extras*: nenhuma adicionada\\.\n"
+                "Use `/temas adicionar <termo> [topico=...]` para ampliar\\."
+            ),
+            pre_escaped=True,
+        )
+    lines = [base, ""]
+    for topic in sorted(cfg.keywords_by_topic):
+        kws = cfg.keywords_by_topic[topic]
+        if not kws:
+            continue
+        topic_esc = escape_markdown_v2(topic)
+        lines.append(f"🔹 *{topic_esc}* \\(\\+{len(kws)} extras\\)")
+        lines.extend(f"  • {escape_markdown_v2(kw)}" for kw in sorted(kws))
+        lines.append("")
+    lines.append(f"_Total de extras: {cfg.total_count()}\\._")
+    return HandlerResult(text="\n".join(lines), pre_escaped=True)
+
+
+async def _temas_adicionar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  # noqa: PLR0911
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(
+            text=(
+                "❌ Uso: `/temas adicionar <termo> [topico=itcd|sucessoes|regime_bens|geral|...]`"
+            ),
+            is_error=True,
+        )
+    termo, topic = _parse_temas_args(cmd.args[1:])
+    if not termo:
+        return HandlerResult(text="❌ Forneça o termo após `/temas adicionar`.", is_error=True)
+    if topic is None:
+        topic = _TEMAS_DEFAULT_TOPIC
+    if not _TEMAS_TOPIC_REGEX.fullmatch(topic):
+        return HandlerResult(
+            text=f"❌ Tópico inválido: `{topic}`. Use letras minúsculas, dígitos e `_`.",
+            is_error=True,
+        )
+    if len(termo) < limits.MIN_EXTRA_KEYWORD_LENGTH or len(termo) > limits.MAX_EXTRA_KEYWORD_LENGTH:
+        return HandlerResult(
+            text=(
+                f"❌ Termo deve ter entre {limits.MIN_EXTRA_KEYWORD_LENGTH} "
+                f"e {limits.MAX_EXTRA_KEYWORD_LENGTH} chars."
+            ),
+            is_error=True,
+        )
+
+    cfg = await ctx.storage.get_extra_keywords()
+    if cfg is None:
+        cfg = ExtraKeywordsConfig(
+            owner_id=ctx.settings.OWNER_ID,
+            keywords_by_topic={},
+            updated_at=datetime.now(UTC),
+            updated_by="bot",
+        )
+
+    if cfg.total_count() >= limits.MAX_EXTRA_KEYWORDS_TOTAL:
+        return HandlerResult(
+            text=(
+                f"❌ Limite de {limits.MAX_EXTRA_KEYWORDS_TOTAL} keywords extras atingido. "
+                "Remova alguma com `/temas remover` antes."
+            ),
+            is_error=True,
+        )
+
+    termo_lower_set = {kw.lower() for kws in cfg.keywords_by_topic.values() for kw in kws}
+    if termo.lower() in {kw.lower() for kw in KEYWORDS_DEFAULT}:
+        return HandlerResult(
+            text=f"⚠️ Termo `{termo}` já existe nos defaults — não precisa adicionar.",
+        )
+    if termo.lower() in termo_lower_set:
+        return HandlerResult(text=f"⚠️ Termo `{termo}` já está nos extras.")
+
+    new_by_topic = {t: list(kws) for t, kws in cfg.keywords_by_topic.items()}
+    new_by_topic.setdefault(topic, []).append(termo)
+    new_cfg = cfg.model_copy(
+        update={
+            "keywords_by_topic": new_by_topic,
+            "updated_at": datetime.now(UTC),
+            "updated_by": "bot",
+        }
+    )
+    try:
+        await ctx.storage.save_extra_keywords(new_cfg)
+    except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+        return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+    await log_bot_action(
+        ctx, action="bot.temas.adicionar", payload={"termo": termo, "topico": topic}
+    )
+    return HandlerResult(
+        text=(
+            f"✅ Keyword `{termo}` adicionada ao tópico `{topic}`. "
+            f"Total extras: {new_cfg.total_count()}."
+        )
+    )
+
+
+async def _temas_remover(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    if len(cmd.args) < MIN_ARGS_WITH_UF:
+        return HandlerResult(text="❌ Uso: `/temas remover <termo> [topico=...]`", is_error=True)
+    termo, topic = _parse_temas_args(cmd.args[1:])
+    if not termo:
+        return HandlerResult(text="❌ Forneça o termo a remover.", is_error=True)
+
+    cfg = await ctx.storage.get_extra_keywords()
+    if cfg is None or cfg.total_count() == 0:
+        return HandlerResult(text="⚠️ Nenhuma keyword extra configurada.")
+
+    new_by_topic: dict[str, list[str]] = {}
+    removed_from: list[str] = []
+    for t, kws in cfg.keywords_by_topic.items():
+        if topic is not None and t != topic:
+            new_by_topic[t] = list(kws)
+            continue
+        if any(kw.lower() == termo.lower() for kw in kws):
+            new_by_topic[t] = [kw for kw in kws if kw.lower() != termo.lower()]
+            removed_from.append(t)
+        else:
+            new_by_topic[t] = list(kws)
+    if not removed_from:
+        suffix = f" no tópico `{topic}`" if topic else ""
+        return HandlerResult(text=f"⚠️ Termo `{termo}` não encontrado nos extras{suffix}.")
+
+    new_cfg = cfg.model_copy(
+        update={
+            "keywords_by_topic": new_by_topic,
+            "updated_at": datetime.now(UTC),
+            "updated_by": "bot",
+        }
+    )
+    try:
+        await ctx.storage.save_extra_keywords(new_cfg)
+    except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+        return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+    await log_bot_action(
+        ctx,
+        action="bot.temas.remover",
+        payload={"termo": termo, "removed_from": removed_from},
+    )
+    topics_csv = ", ".join(sorted(removed_from))
+    return HandlerResult(
+        text=f"✅ `{termo}` removido de {len(removed_from)} tópico(s): {topics_csv}."
+    )
+
+
+async def _temas_reset(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    _, topic = _parse_temas_args(cmd.args[1:])
+
+    cfg = await ctx.storage.get_extra_keywords()
+    if cfg is None or cfg.total_count() == 0:
+        return HandlerResult(text="⚠️ Nenhuma keyword extra para remover.")
+
+    if topic is None:
+        total = cfg.total_count()
+        new_cfg = cfg.model_copy(
+            update={
+                "keywords_by_topic": {},
+                "updated_at": datetime.now(UTC),
+                "updated_by": "bot",
+            }
+        )
+        try:
+            await ctx.storage.save_extra_keywords(new_cfg)
+        except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+            return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+        await log_bot_action(ctx, action="bot.temas.reset", payload={"all": True, "count": total})
+        return HandlerResult(text=f"✅ Todas as {total} keywords extras removidas.")
+
+    if topic not in cfg.keywords_by_topic or not cfg.keywords_by_topic[topic]:
+        return HandlerResult(text=f"⚠️ Tópico `{topic}` não tem keywords extras.")
+
+    count = len(cfg.keywords_by_topic[topic])
+    new_by_topic = {t: list(kws) for t, kws in cfg.keywords_by_topic.items() if t != topic}
+    new_cfg = cfg.model_copy(
+        update={
+            "keywords_by_topic": new_by_topic,
+            "updated_at": datetime.now(UTC),
+            "updated_by": "bot",
+        }
+    )
+    try:
+        await ctx.storage.save_extra_keywords(new_cfg)
+    except (ValueError, RuntimeError) as e:  # pragma: no cover - proteção defensiva
+        return HandlerResult(text=f"❌ Falha ao persistir: {e}", is_error=True)
+    await log_bot_action(ctx, action="bot.temas.reset", payload={"topico": topic, "count": count})
+    return HandlerResult(text=f"✅ {count} keyword(s) extras do tópico `{topic}` removidas.")
+
+
+_TEMAS_SUBHANDLERS = {
+    "listar": lambda ctx, _cmd: _temas_listar(ctx),
+    "adicionar": _temas_adicionar,
+    "remover": _temas_remover,
+    "reset": _temas_reset,
+}
+
+
+async def handle_temas(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """Gerencia keywords extras dinâmicas — listar | adicionar | remover | reset."""
+    if not cmd.args:
+        return HandlerResult(
+            text="❌ Uso: `/temas <listar|adicionar|remover|reset> [args]`", is_error=True
+        )
+    sub = cmd.args[0].lower()
+    handler = _TEMAS_SUBHANDLERS.get(sub)
+    if handler is None:
+        return HandlerResult(text=f"❌ Subcomando desconhecido: '{sub}'", is_error=True)
+    return await handler(ctx, cmd)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatch
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -726,6 +969,7 @@ HANDLERS = {
     "observar": handle_observar,
     "marcar": handle_marcar,
     "relatorio": handle_relatorio,
+    "temas": handle_temas,
 }
 
 

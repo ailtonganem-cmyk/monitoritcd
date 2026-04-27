@@ -133,6 +133,36 @@ class TestMakeCollector:
 
 @pytest.mark.integration
 class TestFilterFunctions:
+    def test_filter_by_keywords_with_extras(self) -> None:
+        from monitoritcd.core.models import Parser, RawItem, Source, TipoFonte  # noqa: PLC0415
+
+        src = Source(
+            id="s",
+            uf="SP",
+            nome="x",
+            tipo=TipoFonte.SEFAZ,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+        )
+        # Item NÃO tem keyword default mas TEM keyword extra dinâmica.
+        items = [
+            (
+                src,
+                RawItem(
+                    source_id="s",
+                    titulo_raw="Notícia sobre trust internacional",
+                    url="https://x.gov.br/3",
+                    fetched_at=NOW,
+                    content_hash="c" * 64,
+                ),
+            ),
+        ]
+        # Sem extras: não casa.
+        assert len(filter_by_keywords(items)) == 0
+        # Com extras: casa.
+        result = filter_by_keywords(items, extra_keywords=["trust internacional"])
+        assert len(result) == 1
+
     def test_filter_by_keywords(self) -> None:
         from monitoritcd.core.models import Parser, RawItem, Source, TipoFonte  # noqa: PLC0415
 

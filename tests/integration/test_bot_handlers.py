@@ -25,6 +25,7 @@ from monitoritcd.bot.handlers import (
     handle_relatorio,
     handle_start,
     handle_status,
+    handle_temas,
     handle_topicos,
 )
 from monitoritcd.core.config import Settings
@@ -652,6 +653,263 @@ class TestRelatorio:
             ParsedCommand(name="relatorio", args=["diario"]),
         )
         assert "Top 5" not in result.text
+
+
+@pytest.mark.integration
+class TestTemas:
+    """Cobre /temas — gerenciamento de keywords extras dinâmicas."""
+
+    @pytest.mark.asyncio
+    async def test_uso_sem_subcomando(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=[]))
+        assert result.is_error
+        assert "Uso" in result.text
+
+    @pytest.mark.asyncio
+    async def test_subcomando_desconhecido(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["xyz"]))
+        assert result.is_error
+        assert "desconhecido" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_listar_vazio(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["listar"]))
+        assert "nenhuma" in result.text.lower()
+        assert result.pre_escaped is True
+
+    @pytest.mark.asyncio
+    async def test_adicionar_e_listar(self) -> None:
+        ctx = await _ctx()
+        r1 = await handle_temas(
+            ctx,
+            ParsedCommand(name="temas", args=["adicionar", "trust internacional"]),
+        )
+        assert not r1.is_error
+        assert "adicionada" in r1.text.lower()
+
+        r2 = await handle_temas(ctx, ParsedCommand(name="temas", args=["listar"]))
+        assert "trust internacional" in r2.text
+
+    @pytest.mark.asyncio
+    async def test_adicionar_com_topico(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(
+            ctx,
+            ParsedCommand(
+                name="temas", args=["adicionar", "holding", "patrimonial", "topico=itcd"]
+            ),
+        )
+        assert not result.is_error
+        assert "itcd" in result.text
+
+        cfg = await ctx.storage.get_extra_keywords()
+        assert cfg is not None
+        assert "holding patrimonial" in cfg.keywords_by_topic["itcd"]
+
+    @pytest.mark.asyncio
+    async def test_adicionar_termo_curto_falha(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "ab"]))
+        assert result.is_error
+        assert "chars" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_topic_invalido(self) -> None:
+        # Topic precisa começar com letra minúscula. "1abc" começa com dígito.
+        ctx = await _ctx()
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["adicionar", "termo válido", "topico=1abc"])
+        )
+        assert result.is_error
+        assert "tópico inválido" in result.text.lower() or "topico inválido" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_termo_em_default_avisa(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "ITCMD"]))
+        # ITCMD já está nos defaults.
+        assert "defaults" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_duplicado_extras_avisa(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo único"]))
+        r2 = await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo único"]))
+        assert "extras" in r2.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_termo_existente(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo a remover"]))
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["remover", "termo a remover"])
+        )
+        assert not result.is_error
+        assert "removido" in result.text.lower()
+
+        cfg = await ctx.storage.get_extra_keywords()
+        assert cfg is not None
+        assert cfg.total_count() == 0
+
+    @pytest.mark.asyncio
+    async def test_remover_inexistente_avisa(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["remover", "inexistente"])
+        )
+        assert "nenhuma" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_reset_global(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo um"]))
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo dois"]))
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["reset"]))
+        assert "removidas" in result.text.lower()
+
+        cfg = await ctx.storage.get_extra_keywords()
+        assert cfg is not None
+        assert cfg.total_count() == 0
+
+    @pytest.mark.asyncio
+    async def test_adicionar_args_insuficientes(self) -> None:
+        # Cobre `len(cmd.args) < MIN_ARGS_WITH_UF` em _temas_adicionar.
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar"]))
+        assert result.is_error
+        assert "Uso" in result.text
+
+    @pytest.mark.asyncio
+    async def test_adicionar_so_topico_sem_termo(self) -> None:
+        # Cobre `if not termo` após _parse_temas_args.
+        ctx = await _ctx()
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["adicionar", "topico=itcd"])
+        )
+        assert result.is_error
+        assert "termo" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_args_insuficientes(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["remover"]))
+        assert result.is_error
+        assert "Uso" in result.text
+
+    @pytest.mark.asyncio
+    async def test_remover_sem_termo_apos_topico(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo extra"]))
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["remover", "topico=geral"])
+        )
+        assert result.is_error
+        assert "termo" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_global_termo_em_apenas_um_topico(self) -> None:
+        # Cobre branch onde NÃO há filtro de topic e o termo está só em UM topic
+        # mas existem outros topics intactos (linha 865: new_by_topic[t] = list(kws)).
+        from monitoritcd.core.models import ExtraKeywordsConfig  # noqa: PLC0415
+
+        ctx = await _ctx()
+        cfg = ExtraKeywordsConfig(
+            owner_id=OWNER,
+            keywords_by_topic={"itcd": ["alvo remover"], "geral": ["preservado"]},
+            updated_at=NOW,
+            updated_by="seed",
+        )
+        await ctx.storage.save_extra_keywords(cfg)
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["remover", "alvo remover"])
+        )
+        assert not result.is_error
+        new_cfg = await ctx.storage.get_extra_keywords()
+        assert new_cfg is not None
+        assert "preservado" in new_cfg.keywords_by_topic["geral"]
+        assert "alvo remover" not in new_cfg.keywords_by_topic.get("itcd", [])
+
+    @pytest.mark.asyncio
+    async def test_remover_em_topico_especifico_sem_match(self) -> None:
+        # Cobre branch onde topic é fornecido mas o termo não está nele.
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo geral"]))
+        result = await handle_temas(
+            ctx,
+            ParsedCommand(name="temas", args=["remover", "termo geral", "topico=itcd"]),
+        )
+        # Não está no topic itcd → mensagem "não encontrado".
+        assert "não encontrado" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_reset_sem_extras(self) -> None:
+        ctx = await _ctx()
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["reset"]))
+        assert "nenhuma" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_reset_topico_inexistente(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo geral"]))
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["reset", "topico=itcd"]))
+        assert "não tem" in result.text.lower() or "nao tem" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_adicionar_excede_limite_total(self) -> None:
+        # Cobre branch `cfg.total_count() >= MAX_EXTRA_KEYWORDS_TOTAL`.
+        from monitoritcd.core import limits as _lim  # noqa: PLC0415
+        from monitoritcd.core.models import ExtraKeywordsConfig  # noqa: PLC0415
+
+        ctx = await _ctx()
+        full = ExtraKeywordsConfig(
+            owner_id=OWNER,
+            keywords_by_topic={
+                "geral": [f"termo_{i:03d}" for i in range(_lim.MAX_EXTRA_KEYWORDS_TOTAL)]
+            },
+            updated_at=NOW,
+            updated_by="seed",
+        )
+        await ctx.storage.save_extra_keywords(full)
+        result = await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["adicionar", "novo termo extra"])
+        )
+        assert result.is_error
+        assert "limite" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_listar_com_topic_vazio_skip(self) -> None:
+        # Cobre `if not kws: continue` no _temas_listar.
+        from monitoritcd.core.models import ExtraKeywordsConfig  # noqa: PLC0415
+
+        ctx = await _ctx()
+        cfg = ExtraKeywordsConfig(
+            owner_id=OWNER,
+            keywords_by_topic={"itcd": ["termo válido"], "vazio": []},
+            updated_at=NOW,
+            updated_by="seed",
+        )
+        await ctx.storage.save_extra_keywords(cfg)
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["listar"]))
+        assert "termo válido" in result.text
+        # Topic "vazio" não aparece no header (sem keywords).
+        assert "vazio" not in result.text
+
+    @pytest.mark.asyncio
+    async def test_reset_topico_especifico(self) -> None:
+        ctx = await _ctx()
+        await handle_temas(
+            ctx, ParsedCommand(name="temas", args=["adicionar", "termo itcd", "topico=itcd"])
+        )
+        await handle_temas(ctx, ParsedCommand(name="temas", args=["adicionar", "termo geral"]))
+        result = await handle_temas(ctx, ParsedCommand(name="temas", args=["reset", "topico=itcd"]))
+        assert "itcd" in result.text.lower()
+        cfg = await ctx.storage.get_extra_keywords()
+        assert cfg is not None
+        assert "termo geral" in cfg.keywords_by_topic["geral"]
+        assert "itcd" not in cfg.keywords_by_topic
 
 
 @pytest.mark.integration

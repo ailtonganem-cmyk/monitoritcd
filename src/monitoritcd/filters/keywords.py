@@ -188,6 +188,30 @@ KEYWORDS_DEFAULT: Final[tuple[str, ...]] = tuple(
 )
 
 
+def expand_with_extras(extras: list[str] | None) -> tuple[str, ...]:
+    """Combina `KEYWORDS_DEFAULT` com keywords extras dinâmicas (via /temas).
+
+    Defaults têm prioridade — duplicatas são removidas (case-sensitive,
+    já que o normalize() faz lower no momento da busca). Mantém ordem
+    estável (defaults primeiro, extras depois) para diff legível.
+
+    Args:
+        extras: lista de keywords extras vinda de `ExtraKeywordsConfig`.
+
+    Returns:
+        Tupla com a união (defaults + extras dedup).
+    """
+    if not extras:
+        return KEYWORDS_DEFAULT
+    seen: set[str] = set(KEYWORDS_DEFAULT)
+    expanded = list(KEYWORDS_DEFAULT)
+    for kw in extras:
+        if kw not in seen:
+            expanded.append(kw)
+            seen.add(kw)
+    return tuple(expanded)
+
+
 def _normalize(text: str) -> str:
     """Normalização para comparação: NFKC + lower + collapse whitespace."""
     text = unicodedata.normalize("NFKC", text).lower()

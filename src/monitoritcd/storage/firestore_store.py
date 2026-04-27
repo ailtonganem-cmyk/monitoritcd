@@ -17,6 +17,7 @@ from monitoritcd.core.models import (
     ActiveStatesConfig,
     AuditLogEntry,
     Documento,
+    ExtraKeywordsConfig,
     NotificacaoStatus,
     StatusDocumento,
     Watch,
@@ -195,6 +196,25 @@ class FirestoreStorage:
     async def save_active_states(self, config: ActiveStatesConfig) -> None:
         self._assert_owner(config.owner_id)
         ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("active_states")
+        await ref.set(config.model_dump(mode="json"))
+
+    # ─── Extra keywords (dinâmicas via /temas) ────────────────────────────
+
+    async def get_extra_keywords(self) -> ExtraKeywordsConfig | None:
+        ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("extra_keywords")
+        snapshot = await ref.get()
+        if not snapshot.exists:
+            return None
+        data = snapshot.to_dict()
+        if data is None:  # pragma: no cover
+            return None
+        if data.get("owner_id") != self._owner_id:
+            self._assert_owner(data.get("owner_id", ""))
+        return ExtraKeywordsConfig(**data)
+
+    async def save_extra_keywords(self, config: ExtraKeywordsConfig) -> None:
+        self._assert_owner(config.owner_id)
+        ref = self._client.collection(COLLECTION_ACTIVE_STATES).document("extra_keywords")
         await ref.set(config.model_dump(mode="json"))
 
     # ─── Watch list ───────────────────────────────────────────────────────
