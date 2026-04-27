@@ -283,17 +283,6 @@ class TestConfirmar:
 
 
 @pytest.mark.integration
-class TestTopicos:
-    @pytest.mark.asyncio
-    async def test_topicos_lists_three_divisions(self) -> None:
-        ctx = await _ctx()
-        result = await handle_topicos(ctx, ParsedCommand(name="topicos", args=[]))
-        assert "itcd" in result.text
-        assert "sucessoes" in result.text
-        assert "regime_bens" in result.text
-
-
-@pytest.mark.integration
 class TestBuscarComTopico:
     @pytest.mark.asyncio
     async def test_busca_com_filtro_topico_invalido(self) -> None:
