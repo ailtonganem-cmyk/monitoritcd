@@ -12,9 +12,16 @@ keywords_required:
   - sucessão
   - inventário
   - espólio
-ativo: false
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
 trusted: true
-fragile: true
+fragile: false
+geo_restricted: true
 notas: |
   TRF6 cobre Minas Gerais (criado em 2022, o mais novo TRF).
-  Verificar URL do feed antes de ativar.
+  URL do feed validada em 2026-04-27: retorna RSS 2.0 com Content-Type
+  `application/rss+xml`. Feed pequeno (≤ 1KB no momento da validação),
+  esperado para tribunal jovem.
