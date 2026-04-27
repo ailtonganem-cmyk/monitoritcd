@@ -24,3 +24,9 @@ fragile: true
 notas: |
   Item #50 do IDEAS.md (parcial) — AGU (Advocacia-Geral da União).
   Stub: pareceres vinculantes e referenciais.
+
+  VALIDADA 2026-04-27 — URL retorna HTTP 404 (estrutura `/composicao/cgu/cgu/pareceres`
+  não existe mais). WebSearch não localizou feed RSS público para pareceres AGU.
+  Páginas de Pareceres Vinculantes existem em `gov.br/agu/pt-br/composicao/cgu/cgu/pareceresvinculantes`
+  mas sem mecanismo de RSS. Manter ativo: false até implementação de scraping
+  customizado ou descoberta de feed oficial.

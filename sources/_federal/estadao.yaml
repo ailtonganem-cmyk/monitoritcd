@@ -21,3 +21,7 @@ fragile: true
 notas: |
   Item #44 do IDEAS.md (parcial) — Estadão.
   Stub: feed público de Economia. Conteúdo completo atrás de paywall.
+
+  VALIDADA 2026-04-27 — URL `/rss/economia.xml` retorna HTTP 404. Estadão
+  parece ter descontinuado RSS público. Manter ativo: false até localizar
+  novo feed (improvável; tendência geral dos veículos é remover RSS).

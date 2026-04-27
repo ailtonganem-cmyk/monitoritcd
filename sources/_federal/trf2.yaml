@@ -17,4 +17,7 @@ trusted: true
 fragile: true
 notas: |
   TRF2 cobre RJ e ES.
-  Verificar URL do feed antes de ativar.
+
+  VALIDADA 2026-04-27 — URL `/portal/rss-noticias/` retorna HTTP 200 mas
+  com Content-Type `text/html` e formulário antibot Drupal. Não é feed
+  RSS válido. TRF2 não expõe feed RSS público. Manter ativo: false.

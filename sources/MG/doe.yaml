@@ -15,9 +15,10 @@ selectors:
   link: "h3 a@href"
 topics:
   - itcd
-ativo: false
+ativo: true
 trusted: true
 fragile: true
+geo_restricted: true
 notas: |
   Jornal Minas Gerais — DOE-MG.
   ⚠️ Layout pode ter mudado em 2024-2026; verificar selectors.
