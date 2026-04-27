@@ -3,7 +3,7 @@ uf: MG
 nome: "TJMG — Tribunal de Justiça de MG (notícias)"
 tipo: jurisprudencia
 parser: generic_rss
-url: "https://www.tjmg.jus.br/portal-tjmg/noticias/rss/"
+url: "https://www.tjmg.jus.br/data/rss/noticiasTJMG.xml"
 keywords_required:
   - ITCMD
   - ITCD
@@ -13,9 +13,18 @@ keywords_required:
   - inventário
   - espólio
   - holding
-ativo: false
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
 trusted: true
-fragile: true
+fragile: false
+geo_restricted: true
 notas: |
   TJMG — MG mantém alíquota fixa de 5% sobre ITCMD.
   Disputas comuns: base de cálculo (valor de mercado vs valor venal).
+
+  URL antiga `/portal-tjmg/noticias/rss/` retornava 404 (validado 2026-04-27).
+  URL atual `/data/rss/noticiasTJMG.xml` é o feed RSS 2.0 oficial publicado em
+  `suportepje.tjmg.jus.br/portal-tjmg/rss/` (hub de feeds do tribunal).

@@ -25,7 +25,7 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: false
 fragile: true
 notas: |
@@ -34,3 +34,8 @@ notas: |
 
   Item #41 do IDEAS.md. fragile=true porque o portal historicamente muda
   estrutura de feed sem aviso; revisar trimestralmente.
+
+  DESATIVADA em 2026-04-27: a URL `https://www.migalhas.com.br/rss/principais`
+  retorna 404 (validado via curl). Variantes testadas e rejeitadas (todas 404):
+  /feed.xml, /feeds/quentes, /quentes/feed, /feed. O portal aparentemente
+  descontinuou o RSS público. Reativar somente após confirmar novo feed.

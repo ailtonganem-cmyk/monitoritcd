@@ -20,14 +20,20 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: true
+ativo: false
 trusted: true
-fragile: false
+fragile: true
 geo_restricted: true
 notas: |
   ALES via SAPL (Sistema de Apoio ao Processo Legislativo / Interlegis).
   API REST Django padronizada. Filtro: ementa__icontains.
   Cobre proposições em tramitação (PLs, PECs, indicações, requerimentos).
 
-  geo_restricted=true: servidor pode rejeitar IPs Azure US.
-  Fallback automático via Cloud Function proxy_br BR.
+  DESATIVADA em 2026-04-27: o endpoint `/sapl/api/materia/materialegislativa/`
+  retorna `text/html` (portal genérico) em vez de JSON, em todas as variantes
+  testadas (`/sapl-api/`, host `sapl.al.es.leg.br`, host `al.es.gov.br`).
+  Sintoma anterior: warning recorrente `sapl.invalid_json` em todos os runs.
+
+  Hipótese: a API SAPL foi descontinuada/migrada para o ALES Digital
+  (https://www3.al.es.gov.br/legislacao/), que não expõe API REST pública
+  documentada. Reativar somente após confirmar novo endpoint estável.
