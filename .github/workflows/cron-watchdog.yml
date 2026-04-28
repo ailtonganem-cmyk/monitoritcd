@@ -1,0 +1,115 @@
+name: Cron watchdog (detecta runs pulados)
+
+# Watchdog independente do Monitor. Roda em horários espalhados e checa via
+# GitHub API quando foi o último run BEM-SUCEDIDO do "Monitor (cron diário)".
+# Se passou mais que THRESHOLD_HOURS sem sucesso, envia alerta no Telegram e
+# pinga /fail no Healthchecks.io (que também tem missed-run alert nativo).
+#
+# Por que existir: GitHub Actions cron pode pular execuções agendadas em
+# períodos de alta carga (documentado oficialmente). Sintoma típico: o cron
+# não dispara, ninguém é notificado, dados ficam desatualizados em silêncio.
+# Este watchdog detecta o silêncio e alerta o dono.
+#
+# Limitação conhecida: o próprio watchdog roda no GitHub Actions, então em
+# teoria também pode ser pulado. Mitigação: três horários distintos (manhã,
+# tarde, noite UTC), todos em minutos não-redondos.
+
+on:
+  schedule:
+    # 06:23 UTC = 03:23 BRT
+    - cron: '23 06 * * *'
+    # 13:37 UTC = 10:37 BRT
+    - cron: '37 13 * * *'
+    # 21:53 UTC = 18:53 BRT
+    - cron: '53 21 * * *'
+  workflow_dispatch:
+    inputs:
+      threshold_hours:
+        description: 'Horas sem run bem-sucedido antes de alertar (default 18)'
+        type: string
+        default: '18'
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cron-watchdog
+  cancel-in-progress: false
+
+jobs:
+  watchdog:
+    name: Verificar última coleta
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Verificar último run bem-sucedido do Monitor
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          THRESHOLD_HOURS: ${{ github.event.inputs.threshold_hours || '18' }}
+        run: |
+          set -euo pipefail
+
+          # Pega o startedAt do último run de sucesso do Monitor (qualquer trigger).
+          LAST_SUCCESS=$(gh run list \
+            --workflow="Monitor (cron diário)" \
+            --status=success \
+            --limit=1 \
+            --json startedAt \
+            --jq '.[0].startedAt // empty')
+
+          if [ -z "$LAST_SUCCESS" ]; then
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            echo "reason=nenhum run bem-sucedido encontrado no histórico" >> "$GITHUB_OUTPUT"
+            echo "last_success=nunca" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          NOW_EPOCH=$(date -u +%s)
+          LAST_EPOCH=$(date -u -d "$LAST_SUCCESS" +%s)
+          DELTA_HOURS=$(( (NOW_EPOCH - LAST_EPOCH) / 3600 ))
+
+          echo "Último sucesso: $LAST_SUCCESS"
+          echo "Δh desde último sucesso: $DELTA_HOURS"
+          echo "Threshold: $THRESHOLD_HOURS"
+
+          echo "delta_hours=$DELTA_HOURS" >> "$GITHUB_OUTPUT"
+          echo "last_success=$LAST_SUCCESS" >> "$GITHUB_OUTPUT"
+
+          if [ "$DELTA_HOURS" -ge "$THRESHOLD_HOURS" ]; then
+            echo "alert=true" >> "$GITHUB_OUTPUT"
+            echo "reason=último sucesso há ${DELTA_HOURS}h (threshold: ${THRESHOLD_HOURS}h)" >> "$GITHUB_OUTPUT"
+          else
+            echo "alert=false" >> "$GITHUB_OUTPUT"
+            echo "reason=ok" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Alertar via Telegram (se cron pulado)
+        if: steps.check.outputs.alert == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          REASON: ${{ steps.check.outputs.reason }}
+          LAST_SUCCESS: ${{ steps.check.outputs.last_success }}
+          DELTA: ${{ steps.check.outputs.delta_hours }}
+        run: |
+          set -euo pipefail
+          # Mensagem em PT-BR conforme regra do projeto. Sem MarkdownV2 para
+          # evitar problemas de escape; texto puro basta para o alerta.
+          MSG=$(printf 'ALERTA: cron do Monitor pulado.\nMotivo: %s\nUltimo sucesso: %s\nDisparar manualmente: gh workflow run "Monitor (cron diario)"' "$REASON" "$LAST_SUCCESS")
+
+          curl -fsS -m 15 \
+            -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_OWNER_CHAT_ID}" \
+            --data-urlencode "text=${MSG}" \
+            --data-urlencode "disable_notification=false" \
+            > /dev/null
+
+      - name: Pingar /fail no Healthchecks.io (se cron pulado)
+        if: steps.check.outputs.alert == 'true' && env.HEALTHCHECKS_URL != ''
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: |
+          curl -fsS -m 10 "${HEALTHCHECKS_URL}/fail" || true
