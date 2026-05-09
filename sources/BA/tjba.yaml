@@ -1,9 +1,9 @@
-id: tjba-jurisprudencia
+id: tjba-noticias
 uf: BA
-nome: "TJ-BA — Jurisprudência (stub)"
+nome: "TJBA — Tribunal de Justiça da Bahia (notícias)"
 tipo: jurisprudencia
-parser: generic_html
-url: "https://www5.tjba.jus.br/portal/jurisprudencia"
+parser: generic_rss
+url: "https://www.tjba.jus.br/portal/feed/"
 keywords_required:
   - ITCMD
   - ITCD
@@ -12,18 +12,17 @@ keywords_required:
   - sucessão
   - inventário
   - "regime de bens"
-selectors:
-  item: "div.resultado"
-  titulo: "h3 a"
-  link: "h3 a@href"
 topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
 fragile: true
-geo_restricted: true
 notas: |
-  Item #38 do IDEAS.md (parcial) — TJ-BA.
-  Stub. Validar URL e selectors antes de ativar.
+  TJBA — feed RSS WordPress oficial em `/portal/feed/` (validado 2026-05-09,
+  retorna RSS 2.0 com 122 KB).
+
+  Reativada 2026-05-09: substitui stub de jurisprudência inativo. Cobre
+  notícias gerais do tribunal — filtro por keywords ITCMD/sucessão/etc.
+  fragile=true: site WordPress pode mudar layout, validar se vier zero items.

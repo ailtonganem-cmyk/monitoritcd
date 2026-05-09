@@ -2,8 +2,8 @@ id: ibdfam-noticias
 uf: _federal
 nome: "IBDFAM — Instituto Brasileiro de Direito de Família"
 tipo: doutrina
-parser: generic_rss
-url: "https://ibdfam.org.br/rss/noticias"
+parser: generic_html
+url: "https://ibdfam.org.br/noticias"
 keywords_required:
   - sucessão
   - herança
@@ -15,19 +15,22 @@ keywords_required:
   - divórcio
   - "ITCMD"
   - "doação"
+selectors:
+  item: "div.news"
+  titulo: "a"
+  link: "a@href"
 topics:
   - sucessoes
   - regime_bens
   - itcd
-ativo: false
+ativo: true
 trusted: true
 fragile: true
 notas: |
-  IBDFAM é referência em Direito de Família e Sucessões.
-  AVISO 2026-04-25: site IBDFAM não publica feed RSS público.
-  Endpoints testados (Joomla padrão, raiz, /noticias) retornam HTML sem RSS.
+  IBDFAM — referência em Direito de Família e Sucessões.
 
-  CONFIRMADO 2026-04-27 — URL `/rss/noticias` retorna HTTP 404 (validado
-  novamente). WebSearch confirma que IBDFAM distribui notícias via newsletter
-  semanal por email, não via RSS público. Não-implementável sem scraping HTML
-  ou parsing de email. Pendência registrada em PLAN.md.
+  Reativada 2026-05-09: feed RSS não existe (validado), mas listagem HTML
+  em `/noticias` retorna 200 com 10 notícias por página no padrão
+  `<div class="news"><div class="data">DD/MM/YYYY</div><a>Título</a>...</div>`.
+  Cobertura excelente para sucessões/regime de bens (notícias com TST/STF/STJ
+  e TJs estaduais). Confiabilidade alta — IBDFAM seleciona o que publicar.

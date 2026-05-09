@@ -1,0 +1,35 @@
+id: cnb-sp-noticias
+uf: _federal
+nome: "CNB-SP — Colégio Notarial do Brasil (Seção SP)"
+tipo: doutrina
+parser: generic_rss
+url: "https://cnbsp.org.br/feed/"
+keywords_required:
+  - escritura
+  - testamento
+  - inventário
+  - "doação"
+  - "regime de bens"
+  - "pacto antenupcial"
+  - sucessão
+  - extrajudicial
+  - cartório
+  - notarial
+  - ITCMD
+  - "ITD"
+topics:
+  - sucessoes
+  - regime_bens
+  - itcd
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  CNB-SP — Colégio Notarial do Brasil seção SP. Cobre notícias e
+  publicações sobre atividade notarial: escrituras, testamentos,
+  inventários extrajudiciais, regime de bens, pactos antenupciais.
+
+  Feed RSS WordPress em `/feed/` (validado 2026-05-09, ~63 KB).
+  Embora seção estadual SP, ementas cobrem provimentos federais (CNJ)
+  e jurisprudência relevante de outros estados — por isso uf=_federal.
+  Fonte primária para inventários extrajudiciais (Provimento 56/CNJ).

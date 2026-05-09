@@ -1,0 +1,25 @@
+id: tjes-noticias
+uf: ES
+nome: "TJES — Tribunal de Justiça do Espírito Santo (notícias)"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.tjes.jus.br/feed/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  TJES — feed RSS WordPress oficial em `/feed/` (validado 2026-05-09,
+  retorna RSS 2.0 padrão UTF-8). Cobre notícias institucionais e
+  jurisprudenciais do tribunal. fragile=false — feed WordPress estável.

@@ -2,8 +2,8 @@ id: cnj-noticias
 uf: _federal
 nome: "CNJ — Conselho Nacional de Justiça"
 tipo: jurisprudencia
-parser: generic_rss
-url: "https://www.cnj.jus.br/feed/"
+parser: generic_html
+url: "https://www.cnj.jus.br/category/noticias/"
 keywords_required:
   - ITCMD
   - ITCD
@@ -13,16 +13,23 @@ keywords_required:
   - inventário
   - "extrajudicial"
   - notarial
-ativo: false
+  - cartório
+  - provimento
+selectors:
+  item: "article.elementor-post"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: true
 trusted: true
 fragile: true
 notas: |
   CNJ — provimentos sobre cartórios, inventários extrajudiciais.
-  Relevante para ITCD via Provimento 56 (CNJ) e correlatos.
+  Relevante via Provimento 56/CNJ e correlatos.
 
-  VALIDADA 2026-04-27 — URL `/feed/` retorna HTTP 200 mas com Content-Type
-  `text/html` (não RSS). Variantes testadas (`/feed.xml`, `/feed.atom`,
-  `/?feed=rss2`, `/comments/feed/`, `/agencia-cnj/?feed=rss2`, `/feed/atom/`)
-  todas retornam 404 ou HTML. CNJ não expõe feed RSS público real.
-  Manter ativo: false até implementar scraping customizado de
-  `gov.br/cnj/agencia-cnj/noticias-do-cnj/` ou `gov.br/cnj/category/noticias/`.
+  Reativada 2026-05-09: feed `/feed/` retorna HTML mesmo com Content-Type
+  `application/rss+xml` (bug do nginx/Yoast). Usamos parsing HTML em
+  `/category/noticias/` — Elementor expõe `article.elementor-post`
+  com `h3 a` (10 posts/página).

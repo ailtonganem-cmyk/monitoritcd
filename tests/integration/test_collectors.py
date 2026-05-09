@@ -329,6 +329,119 @@ class TestGenericHTML:
             "https://www.tjsp.jus.br/Noticias/Noticia?codigoNoticia=114191&pagina=1"
         )
 
+    @pytest.mark.asyncio
+    async def test_tjpr_yaml_real_layout(self) -> None:
+        # Regression: TJPR Liferay com `div.asset-full-content` + `span.asset-title`.
+        from pathlib import Path  # noqa: PLC0415
+
+        from monitoritcd.core.source_loader import load_source  # noqa: PLC0415
+
+        repo_root = Path(__file__).resolve().parent.parent.parent  # noqa: ASYNC240
+        src = load_source(repo_root / "sources" / "PR" / "tjpr.yaml")
+
+        link_url = (
+            "/noticias/-/asset_publisher/9jZB/content/tjpr-julga-inventario-itcmd"
+        )
+        link_url2 = "/noticias/-/asset_publisher/9jZB/content/sucessao-nova-tese"
+        tjpr_html = f"""<!DOCTYPE html>
+<html><body>
+<div class="asset-full-content">
+  <div class="asset-title-header">
+    <p class="component-title h4">
+      <span class="asset-title">TJPR julga inventário com ITCMD</span>
+    </p>
+  </div>
+  <div class="asset-content">Conteúdo</div>
+  <div class="asset-details">
+    <a class="asset-more" href="{link_url}">Visualizar</a>
+  </div>
+</div>
+<div class="asset-full-content">
+  <div class="asset-title-header">
+    <p><span class="asset-title">Sucessão patrimonial — nova tese</span></p>
+  </div>
+  <div class="asset-details">
+    <a href="{link_url2}">Visualizar</a>
+  </div>
+</div>
+</body></html>
+"""
+        async with respx.mock:
+            respx.get("https://www.tjpr.jus.br/noticias").mock(
+                return_value=httpx.Response(200, text=tjpr_html),
+            )
+            async with GenericHTMLCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 2
+        assert items[0].titulo_raw == "TJPR julga inventário com ITCMD"
+        assert items[0].url.startswith("https://www.tjpr.jus.br/noticias/-/asset_publisher/")
+
+    @pytest.mark.asyncio
+    async def test_cnj_yaml_real_layout(self) -> None:
+        # Regression: CNJ Elementor com `article.elementor-post` + `h3 a`.
+        from pathlib import Path  # noqa: PLC0415
+
+        from monitoritcd.core.source_loader import load_source  # noqa: PLC0415
+
+        repo_root = Path(__file__).resolve().parent.parent.parent  # noqa: ASYNC240
+        src = load_source(repo_root / "sources" / "_federal" / "cnj.yaml")
+
+        link1 = "https://www.cnj.jus.br/provimento-50-itcmd/"
+        link2 = "https://www.cnj.jus.br/inventario-extrajudicial/"
+        cnj_html = f"""<!DOCTYPE html>
+<html><body>
+<article class="elementor-post elementor-grid-item post-1">
+  <h3><a href="{link1}">Provimento 50 sobre ITCMD</a></h3>
+</article>
+<article class="elementor-post elementor-grid-item post-2">
+  <h3><a href="{link2}">Inventário extrajudicial — novas regras</a></h3>
+</article>
+</body></html>
+"""
+        async with respx.mock:
+            respx.get("https://www.cnj.jus.br/category/noticias/").mock(
+                return_value=httpx.Response(200, text=cnj_html),
+            )
+            async with GenericHTMLCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 2
+        assert items[0].titulo_raw == "Provimento 50 sobre ITCMD"
+
+    @pytest.mark.asyncio
+    async def test_ibdfam_yaml_real_layout(self) -> None:
+        # Regression: IBDFAM com `div.news` (Joomla custom).
+        from pathlib import Path  # noqa: PLC0415
+
+        from monitoritcd.core.source_loader import load_source  # noqa: PLC0415
+
+        repo_root = Path(__file__).resolve().parent.parent.parent  # noqa: ASYNC240
+        src = load_source(repo_root / "sources" / "_federal" / "ibdfam.yaml")
+
+        ibd_link1 = "https://ibdfam.org.br/noticias/13868/STF+julga+sucess%C3%A3o"
+        ibd_link2 = "https://ibdfam.org.br/noticias/13867/Regime+de+bens"
+        ibdfam_html = f"""<!DOCTYPE html>
+<html><body>
+<div class="news">
+  <div class="data">08/05/2026</div>
+  <a href="{ibd_link1}">STF julga sucessão patrimonial</a>
+  <br/>Conteúdo da matéria.
+</div>
+<div class="news">
+  <div class="data">07/05/2026</div>
+  <a href="{ibd_link2}">Regime de bens — alteração STJ</a>
+</div>
+</body></html>
+"""
+        async with respx.mock:
+            respx.get("https://ibdfam.org.br/noticias").mock(
+                return_value=httpx.Response(200, text=ibdfam_html),
+            )
+            async with GenericHTMLCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 2
+        assert "sucessão" in items[0].titulo_raw.lower()
+        assert items[0].url == "https://ibdfam.org.br/noticias/13868/STF+julga+sucess%C3%A3o"
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LexML
