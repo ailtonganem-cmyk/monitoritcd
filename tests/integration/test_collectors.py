@@ -284,6 +284,51 @@ class TestGenericHTML:
         # link foi extraído como texto (e resolvido contra base)
         assert items[0].url.endswith("texto link") or "texto" in items[0].url
 
+    @pytest.mark.asyncio
+    async def test_tjsp_yaml_real_layout(self) -> None:
+        # Regression: estrutura real do TJSP /Noticias (validada 2026-05-08)
+        # usa <div class="col-sm-9"><a class="noticia-description">
+        # <time>...</time><h1>...</h1></a></div>. Garante que selectors
+        # do YAML (sources/SP/tjsp.yaml) seguem o layout publicado.
+        from pathlib import Path  # noqa: PLC0415
+
+        from monitoritcd.core.source_loader import load_source  # noqa: PLC0415
+
+        repo_root = Path(__file__).resolve().parent.parent.parent
+        src = load_source(repo_root / "sources" / "SP" / "tjsp.yaml")
+
+        tjsp_html = """<!DOCTYPE html>
+<html><body>
+  <div class="col-sm-9">
+    <a class="noticia-description" href="/Noticias/Noticia?codigoNoticia=114197&pagina=1">
+      <time>08/05/2026</time>
+      <h1>Decisão TJSP sobre ITCMD em sucessão</h1>
+      <p class="text-justify">Caso envolvendo doação.</p>
+    </a>
+  </div>
+  <div class="col-sm-9">
+    <a class="noticia-description" href="https://www.tjsp.jus.br/Noticias/Noticia?codigoNoticia=114191&pagina=1">
+      <time>07/05/2026</time>
+      <h1>Inventário extrajudicial — novo entendimento</h1>
+    </a>
+  </div>
+</body></html>
+"""
+        async with respx.mock:
+            respx.get("https://www.tjsp.jus.br/Noticias").mock(
+                return_value=httpx.Response(200, text=tjsp_html),
+            )
+            async with GenericHTMLCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 2
+        assert "ITCMD" in items[0].titulo_raw
+        # URL relativa resolvida contra source.url
+        assert items[0].url.startswith("https://www.tjsp.jus.br/Noticias/Noticia?")
+        # URL absoluta preservada
+        assert items[1].url == (
+            "https://www.tjsp.jus.br/Noticias/Noticia?codigoNoticia=114191&pagina=1"
+        )
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # LexML

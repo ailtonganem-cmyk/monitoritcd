@@ -13,18 +13,30 @@
 - "Valor venal de referência" — base de cálculo definida pela SEFAZ-SP.
 
 ## Fontes mapeadas
-- `alesp.yaml` — projetos de lei.
-- `sefaz.yaml` — atos normativos da SEFAZ.
-- `doe.yaml` — Diário Oficial do Estado.
-- `tjsp.yaml` — Tribunal de Justiça (notícias e jurisprudência).
+- `alesp.yaml` — projetos de lei. **Inativa** (ASP.NET com VIEWSTATE; precisa parser custom).
+- `sefaz.yaml` — atos normativos da SEFAZ. **Inativa** (SharePoint com renderização JS; lento, parsing HTML estático não traz conteúdo).
+- `doe.yaml` — Diário Oficial do Estado. **Inativa** (Imprensa Oficial usa POST/VIEWSTATE).
+- `tit-sp.yaml` — Tribunal de Impostos e Taxas. **Inativa** (URL antiga retorna timeout/redirect).
+- `tjsp.yaml` — Tribunal de Justiça (notícias). **ATIVA desde 2026-05-08** — `parser: generic_html` apontando para `/Noticias`.
 
-## Status
-Todas as fontes mapeadas em `sources/SP/` mas com `ativo: false` e `fragile: true`.
-**Antes de ativar:**
-1. Validar URL do feed/página.
-2. Validar selectors CSS (rodar coletor com `--dry-run`).
-3. Confirmar que coleta retorna ≥ 1 item ITCMD em ambiente de teste.
-4. Ativar via bot: `/estados ativar SP`.
+## Status atual
+Apenas `tjsp.yaml` está ativa. Cobertura legislativa de SP vem ainda do
+`lexml-portal` federal (ativo), que indexa atos estaduais via URN
+`urn:lex:br;sp:estadual:...`.
+
+**Histórico**:
+- 2026-04-25 (MVP): todas as 5 fontes criadas como stubs (`ativo: false`,
+  selectors não validados).
+- 2026-05-08: TJSP reativado com `parser: generic_html`, URL `/Noticias`,
+  selectors validados ao vivo (10 itens/página, layout `<div.col-sm-9><a.noticia-description><h1>`).
+
+**Para ativar as demais (alesp, sefaz, doe, tit)**:
+1. Resolver questões técnicas listadas (ASP.NET POST, SharePoint JS, etc.).
+2. Validar URL e parser via `--dry-run` ou cassette VCR.
+3. Confirmar coleta retorna ≥ 1 item ITCMD em sandbox.
+4. Trocar `ativo: false` → `true` no YAML (PR + CI verde).
+5. SP já está em `active_uf` no Firestore (confirmado 2026-05-08), então
+   YAML reativado entra em coleta na próxima execução do cron.
 
 ## Referências externas
 - ALESP: https://www.al.sp.gov.br/
