@@ -339,9 +339,7 @@ class TestGenericHTML:
         repo_root = Path(__file__).resolve().parent.parent.parent  # noqa: ASYNC240
         src = load_source(repo_root / "sources" / "PR" / "tjpr.yaml")
 
-        link_url = (
-            "/noticias/-/asset_publisher/9jZB/content/tjpr-julga-inventario-itcmd"
-        )
+        link_url = "/noticias/-/asset_publisher/9jZB/content/tjpr-julga-inventario-itcmd"
         link_url2 = "/noticias/-/asset_publisher/9jZB/content/sucessao-nova-tese"
         tjpr_html = f"""<!DOCTYPE html>
 <html><body>
