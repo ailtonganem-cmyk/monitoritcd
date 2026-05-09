@@ -20,4 +20,9 @@ trusted: true
 fragile: true
 notas: |
   DOE-RS — Companhia Rio-Grandense de Comunicação.
-  ⚠️ Verificar URL e selectors.
+
+  Investigação 2026-05-09: URL retorna 200 mas payload mínimo
+  (~544 bytes — landing/redirect). Acesso ao DOE pleno requer
+  login institucional. Sem feed/API pública identificada.
+  Cobertura via lexml-portal (federal) que indexa atos publicados.
+  Reativar se Companhia Rio-Grandense publicar API/feed.

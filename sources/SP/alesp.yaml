@@ -1,26 +1,40 @@
 id: alesp-pls
 uf: SP
-nome: "ALESP — Projetos de Lei"
+nome: "ALESP — Proposituras (dados abertos)"
 tipo: assembleia
-parser: generic_html
-url: "https://www.al.sp.gov.br/alesp/pesquisa-proposicoes/?direction=inicio"
+parser: alesp
+url: "https://www.al.sp.gov.br/repositorioDados/processo_legislativo/proposituras.zip"
+selectors:
+  palavras_chave: "ITCMD|ITCD|causa mortis|transmissão|doação|sucessão|inventário|regime de bens"
+  dias: "60"
+  max_items: "500"
+  # Naturezas relevantes (ALESP IdNatureza):
+  # 1=Projeto de Lei, 2=PEC, 3=PLC, 5=PDL, 6=Mensagem, 7=Veto, 8=Substitutivo
+  # Excluímos 9=Indicação e 10=Requerimento (volume alto e baixa relevância para ITCMD)
+  naturezas: "1,2,3,5,6,7,8"
 keywords_required:
   - ITCMD
   - "causa mortis"
   - "doação"
   - sucessão
   - inventário
-selectors:
-  item: "div.lista-proposicoes article"
-  titulo: "h3 a"
-  link: "h3 a@href"
 topics:
   - itcd
   - sucessoes
-ativo: false
+ativo: true
 trusted: true
-fragile: true
+fragile: false
 notas: |
-  ALESP — Assembleia Legislativa de SP.
-  ⚠️ Selectors precisam ser validados — portal usa ASP.NET com VIEWSTATE.
-  Considerar API oficial se disponível: https://www.al.sp.gov.br/repositorioDados/
+  ALESP — pesquisa via API/HTML exige ASP.NET com VIEWSTATE (frágil).
+  Usamos `/dados-abertos/grupo/1` recurso #56: proposituras.zip
+  (~16 MB diário; XML ~128 MB com ~270k proposituras desde 1996).
+
+  Streaming-download (50 MB cap) + streaming-parse com defusedxml.
+  Filtros: 60 dias por DtEntradaSistema + keywords na Ementa + natureza
+  (PL, PEC, PLC, PDL, Mensagem, Veto, Substitutivo — sem Indicações/Requerimentos).
+
+  Smoke 2026-05-08: 4 proposituras 60d c/ keywords; destaque PL 183/2026
+  "Altera Lei 10.705/2000 sobre ITCMD" (natureza=1).
+
+  URL pública: https://www.al.sp.gov.br/propositura/?id={IdDocumento}.
+  Custo: ~16 MB/dia; parse <30s.

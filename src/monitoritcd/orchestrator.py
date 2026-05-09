@@ -51,6 +51,7 @@ import structlog
 from monitoritcd.collectors import (
     ALEPCollector,
     ALEPECollector,
+    ALESPCollector,
     ALMGCollector,
     CamaraDeputadosCollector,
     GenericHTMLCollector,
@@ -58,6 +59,7 @@ from monitoritcd.collectors import (
     LexMLCollector,
     LexMLPortalCollector,
     SAPLCollector,
+    SefazSPCollector,
     SenadoCollector,
 )
 from monitoritcd.core.models import (
@@ -97,6 +99,8 @@ _PARSERS_TO_COLLECTORS = {
     Parser.SAPL: SAPLCollector,
     Parser.CAMARA_DEPUTADOS: CamaraDeputadosCollector,
     Parser.SENADO: SenadoCollector,
+    Parser.SEFAZ_SP: SefazSPCollector,
+    Parser.ALESP: ALESPCollector,
 }
 
 

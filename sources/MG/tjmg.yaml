@@ -17,7 +17,7 @@ topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
 fragile: true
 geo_restricted: true
@@ -25,14 +25,16 @@ notas: |
   TJMG — MG mantém alíquota fixa de 5% sobre ITCMD.
   Disputas comuns: base de cálculo (valor de mercado vs valor venal).
 
-  URL antiga `/portal-tjmg/noticias/rss/` retornava 404 (validado 2026-04-27).
-  URL atual `/data/rss/noticiasTJMG.xml` é o feed RSS 2.0 oficial publicado em
-  `suportepje.tjmg.jus.br/portal-tjmg/rss/` (hub de feeds do tribunal).
-  Do BR (curl local): retorna RSS 2.0 com ~50 notícias recentes.
+  Feed RSS oficial `/data/rss/noticiasTJMG.xml` (RSS 2.0, ~50 notícias).
 
-  DESATIVADA em 2026-04-27 (smoke prod 25006927443):
-  - GH Actions runner US: HTTP 403 Forbidden (geo-block).
-  - Fallback proxy_br (GCP southamerica-east1): também 403 (TJMG bloqueia
-    ranges de IPs de cloud, não só geo).
-  - Único caminho viável: worker local Windows com `--only-geo-restricted`.
-  Manter ativo: false até worker local cobrir, ou TJMG relaxar bloqueio.
+  geo_restricted=true:
+  - GH Actions runner US: HTTP 403 (geo-block do tribunal).
+  - proxy_br (southamerica-east1): também 403 — bloqueia IPs cloud
+    (validado 2026-04-27, não só geo).
+  - Único caminho: worker local Windows com `--only-geo-restricted`
+    (scripts/install_local_monitor_task.ps1).
+
+  Reativada 2026-05-09: YAML ativo para o worker local coletar.
+  Em GH Actions falha isolada (try/except por fonte) sem derrubar
+  pipeline. Se worker local off, MG segue coberto por
+  almg-proposicoes/legislacao/sefaz-mg/doe-mg via proxy_br.

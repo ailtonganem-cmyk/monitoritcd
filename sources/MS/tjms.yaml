@@ -1,0 +1,25 @@
+id: tjms-noticias
+uf: MS
+nome: "TJMS — Tribunal de Justiça de Mato Grosso do Sul (notícias)"
+tipo: jurisprudencia
+parser: generic_rss
+url: "https://www.tjms.jus.br/rss"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - "regime de bens"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  TJMS — feed RSS oficial em `/rss` (validado 2026-05-09, retorna RSS 2.0
+  com ~72 KB em ISO-8859-1). Cobre notícias institucionais e jurisprudenciais
+  do tribunal. fragile=false — endpoint estável documentado.

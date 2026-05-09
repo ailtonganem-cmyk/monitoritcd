@@ -1,9 +1,9 @@
-id: tjce-jurisprudencia
+id: tjce-noticias
 uf: CE
-nome: "TJ-CE — Jurisprudência (stub)"
+nome: "TJCE — Tribunal de Justiça do Ceará (notícias)"
 tipo: jurisprudencia
-parser: generic_html
-url: "https://esaj.tjce.jus.br/cjsg/consultaCompleta.do"
+parser: generic_rss
+url: "https://www.tjce.jus.br/noticias/feed/"
 keywords_required:
   - ITCMD
   - ITCD
@@ -12,18 +12,17 @@ keywords_required:
   - sucessão
   - inventário
   - "regime de bens"
-selectors:
-  item: "div.fundocinza1"
-  titulo: "a.linkTitulo"
-  link: "a.linkTitulo@href"
 topics:
   - itcd
   - sucessoes
   - regime_bens
-ativo: false
+ativo: true
 trusted: true
 fragile: true
-geo_restricted: true
 notas: |
-  Item #38 do IDEAS.md (parcial) — TJ-CE.
-  Stub. TJCE usa eSAJ (mesmo da SP); selectors candidatos vêm do TJSP.
+  TJCE — feed RSS WordPress oficial em `/noticias/feed/` (validado
+  2026-05-09, retorna RSS 2.0 com ~44 KB).
+
+  Reativada 2026-05-09: substitui stub eSAJ (que exigia
+  consulta autenticada/captcha). Cobre notícias gerais do tribunal
+  filtradas por keywords. fragile=true: WordPress pode mudar layout.

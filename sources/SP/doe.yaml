@@ -1,9 +1,9 @@
 id: doe-sp
 uf: SP
-nome: "DOE-SP — Diário Oficial do Estado de SP"
+nome: "DOE-SP — Diário Oficial do Estado de SP (stub — redundante c/ SEFAZ-SP)"
 tipo: doe
 parser: generic_html
-url: "https://www.imprensaoficial.com.br/PortalIO/DO/BuscaDO2001Documento_11_4.aspx"
+url: "https://www.imprensaoficial.com.br/"
 keywords_required:
   - ITCMD
   - "causa mortis"
@@ -19,8 +19,24 @@ ativo: false
 trusted: true
 fragile: true
 notas: |
-  DOE-SP — Imprensa Oficial.
-  ⚠️ Acesso pode requerer formulário de busca POST. Considerar:
-  - API oficial se houver
-  - Filtro por data atual em URL
-  - Alternative: parsing de PDF do DOE diário
+  DOE-SP — Imprensa Oficial do Estado de SP.
+
+  Pesquisa 2026-05-09:
+  - `imprensaoficial.com.br` é ASP.NET com VIEWSTATE; busca exige POST com
+    formulário (data, caderno, palavra-chave) e tokens de sessão.
+  - Não há feed RSS público nem API REST documentada.
+  - Endpoint `/feed/` retorna página 404 customizada.
+  - O DOE-SP publica os atos da SEFAZ-SP, mas estes são consolidados em
+    `legislacao.fazenda.sp.gov.br` na mesma janela (1-2 dias).
+
+  Decisão arquitetural: **manter inativo** porque a fonte primária canônica
+  para atos ITCMD-SP é o portal de legislação SEFAZ-SP via API SharePoint
+  (`sefaz-sp` em `sources/SP/sefaz.yaml`), que oferece:
+  - JSON estruturado (vs ASP.NET POST).
+  - Ementa completa, DataAto, DataPublicacao.
+  - Atualização diária.
+
+  Para reativar no futuro:
+  1. Identificar se Imprensa Oficial expõe API pública (raros em ASP.NET legacy).
+  2. Considerar parsing do PDF do DOE diário (caro mas determinístico).
+  3. Avaliar se a duplicidade compensa o custo de manutenção.

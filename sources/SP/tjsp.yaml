@@ -2,8 +2,8 @@ id: tjsp-noticias
 uf: SP
 nome: "TJSP — Tribunal de Justiça de SP (notícias)"
 tipo: jurisprudencia
-parser: generic_rss
-url: "https://www.tjsp.jus.br/Rss/RssNoticias"
+parser: generic_html
+url: "https://www.tjsp.jus.br/Noticias"
 keywords_required:
   - ITCMD
   - ITCD
@@ -13,10 +13,26 @@ keywords_required:
   - inventário
   - espólio
   - holding
-ativo: false
+selectors:
+  item: "div.col-sm-9"
+  titulo: "a.noticia-description h1"
+  link: "a.noticia-description@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
 trusted: true
 fragile: true
 notas: |
   TJSP — câmaras de Direito Público julgam ITCMD em SP.
   ITCMD-SP pacificado em diversas teses (alíquota progressiva, etc.).
-  Verificar URL do feed antes de ativar.
+
+  Reativada em 2026-05-08:
+  - Feed RSS antigo `/Rss/RssNoticias` retorna 301 → /Noticias (HTML).
+  - Listagem HTML em `/Noticias` retorna 200 com 10 itens por página
+    no padrão `<div class="col-sm-9"><a class="noticia-description">
+    <time>DD/MM/YYYY</time><h1>...</h1></a></div>`.
+  - URL responde fora do BR (sem geo-block); fragile=true porque o
+    tribunal já mudou layout no passado — revisar selectors se vier
+    zero items por mais de 2 semanas.

@@ -24,4 +24,10 @@ fragile: true
 notas: |
   ALERJ — Assembleia Legislativa do RJ.
   RJ usa nomenclatura ITD. Alíquota progressiva 4-8%.
-  ⚠️ Selectors a validar; portal usa ASP.NET.
+
+  Investigação 2026-05-09: URL atual retorna HTTP 404. Portal antigo
+  Lotus Notes em alerjln1.alerj.rj.gov.br retorna 200 mas requer
+  parsing custom de formulários do Lotus Domino (caro, frágil).
+  Cobertura indireta via lexml-portal (federal, ativo) que indexa
+  legislação RJ por URN urn:lex:br;rj:estadual:...
+  Reativar quando ALERJ publicar API/dataset estruturado.

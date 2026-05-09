@@ -86,6 +86,8 @@ class Parser(StrEnum):
     SAPL = "sapl"
     CAMARA_DEPUTADOS = "camara_deputados"
     SENADO = "senado"
+    SEFAZ_SP = "sefaz_sp"
+    ALESP = "alesp"
     CUSTOM = "custom"
 
 
