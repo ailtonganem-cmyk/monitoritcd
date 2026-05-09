@@ -24,5 +24,7 @@ notas: |
   TJES — feed RSS WordPress oficial em `/feed/` (validado 2026-05-09 do BR,
   RSS 2.0 UTF-8). Cobre notícias institucionais e jurisprudenciais.
 
-  geo_restricted=true (deploy 2026-05-09): GH Actions runner US recebe
-  HTTP 403. Fallback automático via proxy_br southamerica-east1.
+  geo_restricted=true: GH Actions runner US recebe HTTP 403. Run 2
+  (2026-05-09) confirmou que proxy_br southamerica-east1 também recebe
+  403 (Cloudflare bloqueia ranges cloud — mesmo padrão TJMG/CNB-SP).
+  Único caminho viável: worker local Windows com `--only-geo-restricted`.

@@ -298,6 +298,47 @@ class TestProxyFallback:
                 with pytest.raises(httpx.HTTPStatusError):
                     await c.fetch()
 
+    @pytest.mark.asyncio
+    async def test_proxy_used_on_remote_protocol_error(self) -> None:
+        """RemoteProtocolError + geo_restricted + proxy → fallback.
+
+        Servidor envia headers HTTP malformados (ex: múltiplos
+        Transfer-Encoding) que h11 rejeita por RFC 7230. TJRJ exibiu
+        esse comportamento em GH Actions runner US (não local BR).
+        """
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.RemoteProtocolError("multiple Transfer-Encoding headers"),
+            )
+            respx.get(url__startswith="https://proxy.example.com/").mock(
+                return_value=httpx.Response(200, text="<via-proxy/>"),
+            )
+            collector = _StubCollector(
+                self._geo_src(),
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                text = await c.fetch()
+                assert text == "<via-proxy/>"
+
+    @pytest.mark.asyncio
+    async def test_remote_protocol_error_propaga_sem_geo(self) -> None:
+        """RemoteProtocolError sem geo_restricted: erro propaga (sem proxy)."""
+        non_geo = self._geo_src().model_copy(update={"geo_restricted": False})
+        async with respx.mock:
+            respx.get("https://www.lexml.gov.br/feed.xml").mock(
+                side_effect=httpx.RemoteProtocolError("malformed headers"),
+            )
+            collector = _StubCollector(
+                non_geo,
+                proxy_br_url="https://proxy.example.com/",
+                proxy_br_token="secret-token",  # noqa: S106
+            )
+            async with collector as c:
+                with pytest.raises(httpx.RemoteProtocolError):
+                    await c.fetch()
+
 
 @pytest.mark.unit
 class TestRateLimitedHandling:
