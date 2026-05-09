@@ -24,12 +24,13 @@ topics:
 ativo: true
 trusted: true
 fragile: false
+geo_restricted: true
 notas: |
-  CNB-SP — Colégio Notarial do Brasil seção SP. Cobre notícias e
-  publicações sobre atividade notarial: escrituras, testamentos,
-  inventários extrajudiciais, regime de bens, pactos antenupciais.
+  CNB-SP — Colégio Notarial do Brasil seção SP. Cobre escrituras,
+  testamentos, inventários extrajudiciais, regime de bens, pactos.
+  Embora seção SP, cobre Provimento 56/CNJ e correlatos (uf=_federal).
 
-  Feed RSS WordPress em `/feed/` (validado 2026-05-09, ~63 KB).
-  Embora seção estadual SP, ementas cobrem provimentos federais (CNJ)
-  e jurisprudência relevante de outros estados — por isso uf=_federal.
-  Fonte primária para inventários extrajudiciais (Provimento 56/CNJ).
+  Feed RSS WordPress `/feed/` (~63 KB do BR).
+  geo_restricted=true (deploy 2026-05-09): GH Actions runner US recebe
+  HTTP 403 (Cloudflare/origin bloqueia IPs cloud). Fallback automático
+  via proxy_br southamerica-east1 funciona.

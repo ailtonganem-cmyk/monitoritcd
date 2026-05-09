@@ -25,14 +25,17 @@ topics:
 ativo: true
 trusted: true
 fragile: true
+geo_restricted: true
 notas: |
-  TJRJ — RJ adota nomenclatura "ITD" (Imposto sobre Transmissão e Doação).
-  Alíquota progressiva (4-8%). Frequente disputa sobre base de cálculo.
+  TJRJ — RJ adota nomenclatura "ITD". Alíquota progressiva (4-8%).
+  Frequente disputa sobre base de cálculo.
 
-  Reativada 2026-05-09:
-  - Feed antigo `/web/guest/feeds/noticias` retorna 404.
-  - Listagem HTML em `/noticias` retorna 200 com 20 itens recentes
-    no padrão `<ul class="lista-noticias"><li><span class="data"><a>Título</a></span></li>`.
-  - URL responde do US sem geo-block (validado 2026-05-08).
-  - fragile=true: portal Liferay já mudou layout antes; revisar selectors
-    se vier zero items por mais de 2 semanas.
+  Listagem HTML em `/noticias` retorna 200 com 20 itens recentes
+  no padrão `<ul class="lista-noticias"><li><span class="data"><a>...</a>`.
+
+  geo_restricted=true (deploy 2026-05-09): em GH Actions runner US o
+  servidor envia headers HTTP duplicados (multiple Transfer-Encoding) que
+  httpx/h11 rejeitam com RemoteProtocolError. Localmente do BR funciona
+  normalmente. Fallback via proxy_br southamerica-east1 contorna o bug
+  (proxy normaliza headers).
+  fragile=true: Liferay já mudou layout antes; revisar selectors se 0 items.
