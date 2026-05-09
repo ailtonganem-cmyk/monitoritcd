@@ -294,7 +294,7 @@ class TestGenericHTML:
 
         from monitoritcd.core.source_loader import load_source  # noqa: PLC0415
 
-        repo_root = Path(__file__).resolve().parent.parent.parent
+        repo_root = Path(__file__).resolve().parent.parent.parent  # noqa: ASYNC240
         src = load_source(repo_root / "sources" / "SP" / "tjsp.yaml")
 
         tjsp_html = """<!DOCTYPE html>
@@ -729,7 +729,7 @@ SEFAZ_SP_RESPONSE = """{
         "DataAto": "2026-05-04T03:00:00Z",
         "DataPublicacao": "2026-05-05T03:00:00Z",
         "PesqLegisTitle": "RC 33561/2026",
-        "Ementa": "<div><p>ITCMD - Transmissao por doacao de bem imovel urbano - Base de calculo.</p></div>",
+        "Ementa": "<div><p>ITCMD - Doacao de imovel urbano - Base de calculo.</p></div>",
         "File": {
           "ServerRelativeUrl": "/Paginas/RC33561_2026.aspx",
           "Name": "RC33561_2026.aspx"
