@@ -23,3 +23,8 @@ fragile: true
 notas: |
   CLDF — Câmara Legislativa do Distrito Federal.
   DF tem alíquotas progressivas (4-6%).
+
+  Investigação 2026-05-09: domínio www.cl.df.gov.br não resolve
+  (DNS NXDOMAIN). Possivelmente o portal migrou de URL.
+  Cobertura via lexml-portal (federal) indexa legislação DF.
+  Reativar quando CLDF publicar portal estável.

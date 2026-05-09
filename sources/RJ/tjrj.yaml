@@ -2,8 +2,8 @@ id: tjrj-noticias
 uf: RJ
 nome: "TJRJ — Tribunal de Justiça do RJ (notícias)"
 tipo: jurisprudencia
-parser: generic_rss
-url: "https://www.tjrj.jus.br/web/guest/feeds/noticias"
+parser: generic_html
+url: "https://www.tjrj.jus.br/noticias"
 keywords_required:
   - ITD
   - ITCMD
@@ -14,9 +14,25 @@ keywords_required:
   - inventário
   - espólio
   - holding
-ativo: false
+selectors:
+  item: "ul.lista-noticias li"
+  titulo: "span.data a"
+  link: "span.data a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
 trusted: true
 fragile: true
 notas: |
   TJRJ — RJ adota nomenclatura "ITD" (Imposto sobre Transmissão e Doação).
   Alíquota progressiva (4-8%). Frequente disputa sobre base de cálculo.
+
+  Reativada 2026-05-09:
+  - Feed antigo `/web/guest/feeds/noticias` retorna 404.
+  - Listagem HTML em `/noticias` retorna 200 com 20 itens recentes
+    no padrão `<ul class="lista-noticias"><li><span class="data"><a>Título</a></span></li>`.
+  - URL responde do US sem geo-block (validado 2026-05-08).
+  - fragile=true: portal Liferay já mudou layout antes; revisar selectors
+    se vier zero items por mais de 2 semanas.

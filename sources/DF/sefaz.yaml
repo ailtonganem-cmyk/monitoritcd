@@ -20,3 +20,8 @@ trusted: true
 fragile: true
 notas: |
   SEFAZ-DF — Atos sobre ITCD-DF.
+
+  Investigação 2026-05-09: URL `/area.cfm?id_area=146` retorna 404.
+  Portal SEFAZ-DF migrou; URL canônica não identificada nesta varredura.
+  Cobertura via lexml-portal (federal) indexa atos DF.
+  Reativar quando URL atual da seção ITCD for confirmada.

@@ -20,5 +20,12 @@ trusted: true
 fragile: true
 notas: |
   DOERJ — Imprensa Oficial RJ.
-  ⚠️ Considera login pode ser necessário para busca avançada.
-  PDFs publicados diariamente.
+
+  Investigação 2026-05-09: URL responde HTTP 200 mas página é homepage
+  genérica (sem listagem). Busca avançada e PDFs exigem formulário POST.
+  Sem API pública nem dataset estruturado. Mantida inativa.
+
+  Cobertura indireta: LexML federal indexa atos publicados no DOERJ
+  por URN urn:lex:br;rj:estadual:..., e SEFAZ-RJ (quando ativada)
+  duplicaria os atos administrativos. Reativar se Imprensa RJ
+  publicar feed/API pública.

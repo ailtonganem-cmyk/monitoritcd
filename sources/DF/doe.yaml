@@ -20,3 +20,10 @@ trusted: true
 fragile: true
 notas: |
   DODF — Diário Oficial do DF.
+
+  Investigação 2026-05-09: portal `www.dodf.df.gov.br` retorna 202
+  com sistema de busca em `/dodf/materia/busca` mas requer formulário
+  POST (sem GET com query string) — busca retorna 400 sem token de
+  sessão. Sem feed/API pública identificada.
+  Cobertura via lexml-portal (federal) indexa atos publicados.
+  Reativar se DODF expor endpoint GET pública.

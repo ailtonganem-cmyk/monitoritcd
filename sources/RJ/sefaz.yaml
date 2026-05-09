@@ -22,4 +22,10 @@ trusted: true
 fragile: true
 notas: |
   SEFAZ-RJ — Atos sobre ITD (RJ usa essa nomenclatura).
-  Alíquotas progressivas: 4% (até R$ 70k), 4,5%, 5%, 6%, 7%, 8% (>R$ 700k).
+  Alíquotas progressivas: 4% (até R$70k), 4,5%, 5%, 6%, 7%, 8% (>R$700k).
+
+  Investigação 2026-05-09: URL responde HTTP 200 (16 KB) mas o portal
+  usa Oracle WebCenter (.jspx) com renderização JavaScript — HTML
+  estático não traz lista de atos. Sem API REST pública identificada.
+  Cobertura via lexml-portal (federal) + jota/conjur cobrem ITD-RJ.
+  Reativar quando portal expor JSON ou migrar para SharePoint.

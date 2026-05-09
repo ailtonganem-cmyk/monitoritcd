@@ -22,4 +22,10 @@ trusted: true
 fragile: true
 notas: |
   ALRS — Assembleia Legislativa do RS.
-  ⚠️ Selectors a validar.
+
+  Investigação 2026-05-09: URL atual `/legislativo/projetosdelei.aspx`
+  retorna HTTP 200 (320 KB) mas portal Drupal renderiza listagem
+  dinamicamente via JavaScript — HTML estático não traz proposições.
+  Sem API REST pública identificada.
+  Cobertura via lexml-portal (federal) indexa legislação RS por URN.
+  Reativar quando ALRS publicar API/dataset (modelo ALESP/ALMG).

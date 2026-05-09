@@ -21,3 +21,8 @@ fragile: true
 notas: |
   SEFAZ-RS — RICMS-RS Cap. ITCD.
   Alíquotas progressivas RS: variam 3-7% conforme valor.
+
+  Investigação 2026-05-09: domínio www.fazenda.rs.gov.br falhou
+  com Connection Reset (servidor instável ou bloqueando). Sem API
+  REST pública identificada. Cobertura via lexml-portal federal.
+  Reativar se SEFAZ-RS expor portal estável + dataset estruturado.
