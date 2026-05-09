@@ -31,6 +31,8 @@ notas: |
   Embora seção SP, cobre Provimento 56/CNJ e correlatos (uf=_federal).
 
   Feed RSS WordPress `/feed/` (~63 KB do BR).
-  geo_restricted=true (deploy 2026-05-09): GH Actions runner US recebe
-  HTTP 403 (Cloudflare/origin bloqueia IPs cloud). Fallback automático
-  via proxy_br southamerica-east1 funciona.
+  geo_restricted=true: GH Actions runner US recebe HTTP 403. Run 2
+  (2026-05-09) confirmou que proxy_br southamerica-east1 também recebe
+  403 (Cloudflare bloqueia ranges de IPs cloud, não só geo — mesmo
+  padrão do TJMG). Único caminho viável: worker local Windows com
+  `--only-geo-restricted` via Task Scheduler.

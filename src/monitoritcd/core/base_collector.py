@@ -169,7 +169,8 @@ class BaseCollector(ABC):
     async def fetch(self, url: str | None = None) -> str:
         """Fetch URL com validação anti-SSRF, rate limit e retry.
 
-        Para fontes `geo_restricted=True`, em ConnectTimeout/ConnectError ou
+        Para fontes `geo_restricted=True`, em ConnectTimeout/ConnectError,
+        RemoteProtocolError (servidor envia headers HTTP malformados) ou
         HTTP 403/451 (geo-block típico), faz fallback automático via Cloud
         Function proxy (PROXY_BR_URL).
         """
@@ -185,7 +186,11 @@ class BaseCollector(ABC):
 
         try:
             return await self._fetch_direct(target)
-        except (httpx.ConnectTimeout, httpx.ConnectError) as e:
+        except (httpx.ConnectTimeout, httpx.ConnectError, httpx.RemoteProtocolError) as e:
+            # RemoteProtocolError: servidor envia headers HTTP malformados
+            # (ex: múltiplos Transfer-Encoding) que h11 rejeita por RFC 7230.
+            # TJRJ exibe esse comportamento em GH Actions runner US (não local BR).
+            # proxy_br normaliza headers e contorna o problema.
             return await self._maybe_fallback_proxy(target, type(e).__name__, exc=e)
         except httpx.HTTPStatusError as e:
             if e.response.status_code in GEO_BLOCK_STATUS:
