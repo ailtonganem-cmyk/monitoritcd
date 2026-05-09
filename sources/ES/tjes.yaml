@@ -19,7 +19,10 @@ topics:
 ativo: true
 trusted: true
 fragile: false
+geo_restricted: true
 notas: |
-  TJES — feed RSS WordPress oficial em `/feed/` (validado 2026-05-09,
-  retorna RSS 2.0 padrão UTF-8). Cobre notícias institucionais e
-  jurisprudenciais do tribunal. fragile=false — feed WordPress estável.
+  TJES — feed RSS WordPress oficial em `/feed/` (validado 2026-05-09 do BR,
+  RSS 2.0 UTF-8). Cobre notícias institucionais e jurisprudenciais.
+
+  geo_restricted=true (deploy 2026-05-09): GH Actions runner US recebe
+  HTTP 403. Fallback automático via proxy_br southamerica-east1.

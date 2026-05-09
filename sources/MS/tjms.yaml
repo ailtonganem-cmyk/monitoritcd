@@ -19,7 +19,10 @@ topics:
 ativo: true
 trusted: true
 fragile: false
+geo_restricted: true
 notas: |
-  TJMS — feed RSS oficial em `/rss` (validado 2026-05-09, retorna RSS 2.0
-  com ~72 KB em ISO-8859-1). Cobre notícias institucionais e jurisprudenciais
-  do tribunal. fragile=false — endpoint estável documentado.
+  TJMS — feed RSS oficial em `/rss` (validado 2026-05-09 do BR, RSS 2.0
+  com ~72 KB em ISO-8859-1). Cobre notícias institucionais e jurisprudenciais.
+
+  geo_restricted=true (deploy 2026-05-09): GH Actions runner US recebe
+  ConnectTimeout (geo-block). Fallback automático via proxy_br southamerica-east1.
