@@ -685,3 +685,364 @@ class TestALMGCollector:
         d2 = parse_iso_date("2026-04-25T10:00:00+02:00")
         assert d2 is not None and d2.utcoffset() is not None
         assert d2.utcoffset().total_seconds() == 2 * 3600  # type: ignore[union-attr]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SefazSP — API SharePoint REST (legislacao.fazenda.sp.gov.br/_api/...)
+# ─────────────────────────────────────────────────────────────────────────────
+
+SEFAZ_SP_GUID = "f286d0d1-5624-47da-a856-a8571296eb7f"
+SEFAZ_SP_URL_BASE = (
+    f"https://legislacao.fazenda.sp.gov.br/_api/Web/Lists(guid'{SEFAZ_SP_GUID}')/Items"
+)
+
+
+def _sefaz_sp_source(**overrides: object) -> Source:
+    from monitoritcd.core.models import Source as _Src  # noqa: PLC0415
+
+    selectors = {
+        "list_guid": SEFAZ_SP_GUID,
+        "palavras_chave": "ITCMD|ITCD|causa mortis",
+        "dias": str(365 * 10),  # janela ampla para teste
+        "top": "100",
+    }
+    selectors.update(overrides.get("selectors", {}) or {})  # type: ignore[arg-type]
+    return _Src(
+        id="sefaz-sp",
+        uf="SP",
+        nome="SEFAZ-SP",
+        tipo=TipoFonte.SEFAZ,
+        parser=Parser.SEFAZ_SP,
+        url="https://legislacao.fazenda.sp.gov.br/_api/Web/Lists",
+        selectors=selectors,
+    )
+
+
+# Payload OData v3 verbose (formato `{"d":{"results":[...]}}`) com 2 atos ITCMD
+# e 1 não-ITCMD para validar filtro cliente-side.
+SEFAZ_SP_RESPONSE = """{
+  "d": {
+    "results": [
+      {
+        "ID": 1525700,
+        "Modified": "2026-05-08T15:00:31Z",
+        "DataAto": "2026-05-04T03:00:00Z",
+        "DataPublicacao": "2026-05-05T03:00:00Z",
+        "PesqLegisTitle": "RC 33561/2026",
+        "Ementa": "<div><p>ITCMD - Transmissao por doacao de bem imovel urbano - Base de calculo.</p></div>",
+        "File": {
+          "ServerRelativeUrl": "/Paginas/RC33561_2026.aspx",
+          "Name": "RC33561_2026.aspx"
+        }
+      },
+      {
+        "ID": 1525701,
+        "Modified": "2026-05-08T15:00:30Z",
+        "DataAto": "2026-05-06T03:00:00Z",
+        "DataPublicacao": "2026-05-07T03:00:00Z",
+        "PesqLegisTitle": "RC 33582/2026",
+        "Ementa": "<div><p>ICMS - Energia eletrica - Sistema de compensacao.</p></div>",
+        "File": {
+          "ServerRelativeUrl": "/Paginas/RC33582_2026.aspx",
+          "Name": "RC33582_2026.aspx"
+        }
+      },
+      {
+        "ID": 1525702,
+        "Modified": "2026-05-08T15:00:40Z",
+        "DataAto": "2026-05-04T03:00:00Z",
+        "DataPublicacao": "2026-05-05T03:00:00Z",
+        "PesqLegisTitle": "Comunicado DICAR 30 de 2026",
+        "Ementa": "Tabela Pratica para Calculo dos Juros de Mora ITCMD e IPVA.",
+        "File": {
+          "ServerRelativeUrl": "/Paginas/Comunicado-DICAR-30-de-2026.aspx",
+          "Name": "Comunicado-DICAR-30-de-2026.aspx"
+        }
+      }
+    ]
+  }
+}"""
+
+
+@pytest.mark.integration
+class TestSefazSPCollector:
+    @pytest.mark.asyncio
+    async def test_filters_by_keyword_clientside(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=SEFAZ_SP_RESPONSE),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        # ICMS é descartado; RC ITCMD + Comunicado DICAR (com ITCMD) ficam
+        assert len(items) == 2
+        titulos = sorted(it.titulo_raw for it in items)
+        assert titulos == ["Comunicado DICAR 30 de 2026", "RC 33561/2026"]
+        # URL é construída a partir de File.ServerRelativeUrl
+        for it in items:
+            assert it.url.startswith("https://legislacao.fazenda.sp.gov.br/Paginas/")
+        # Texto da ementa preserva conteúdo (sem tags HTML)
+        rc = next(it for it in items if it.titulo_raw == "RC 33561/2026")
+        assert rc.texto_raw is not None
+        assert "ITCMD" in rc.texto_raw
+        assert "<div>" not in rc.texto_raw  # tags removidas
+
+    @pytest.mark.asyncio
+    async def test_missing_list_guid_raises(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        src = _sefaz_sp_source().model_copy(
+            update={"selectors": {"palavras_chave": "ITCMD", "dias": "60"}},
+        )
+        async with SefazSPCollector(src) as c:
+            with pytest.raises(CollectorError, match="list_guid"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_invalid_top_raises(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        src = _sefaz_sp_source().model_copy(
+            update={
+                "selectors": {
+                    "list_guid": SEFAZ_SP_GUID,
+                    "palavras_chave": "ITCMD",
+                    "top": "9999",  # > MAX_TOP (500)
+                },
+            },
+        )
+        async with SefazSPCollector(src) as c:
+            with pytest.raises(CollectorError, match="top fora do intervalo"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_fetch_failure_returns_empty(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(500, text="error"),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        # Falha de fetch não derruba pipeline — retorna lista vazia
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_invalid_json_returns_empty(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text="not json at all"),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_skips_item_without_file_url(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # Item sem File.ServerRelativeUrl deve ser descartado (sem URL canônica)
+        payload = """{
+  "d": {
+    "results": [
+      {
+        "ID": 1,
+        "Modified": "2026-05-08T15:00:00Z",
+        "DataAto": "2026-05-04T03:00:00Z",
+        "DataPublicacao": "2026-05-05T03:00:00Z",
+        "PesqLegisTitle": "RC ITCMD sem URL",
+        "Ementa": "ITCMD",
+        "File": {}
+      }
+    ]
+  }
+}"""
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=payload),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALESP — proposituras.zip (dados abertos via streaming-parse)
+# ─────────────────────────────────────────────────────────────────────────────
+
+ALESP_URL = "https://www.al.sp.gov.br/repositorioDados/processo_legislativo/proposituras.zip"
+
+
+def _alesp_source(**overrides: object) -> Source:
+    from monitoritcd.core.models import Source as _Src  # noqa: PLC0415
+
+    selectors = {
+        "palavras_chave": "ITCMD|ITCD|causa mortis|doação|sucessão",
+        "dias": str(365 * 30),  # janela ampla para teste capturar 2018+
+        "max_items": "100",
+        "naturezas": "1,2,3",
+    }
+    selectors.update(overrides.get("selectors", {}) or {})  # type: ignore[arg-type]
+    return _Src(
+        id="alesp-pls",
+        uf="SP",
+        nome="ALESP",
+        tipo=TipoFonte.ASSEMBLEIA,
+        parser=Parser.ALESP,
+        url=ALESP_URL,
+        selectors=selectors,
+    )
+
+
+def _build_alesp_zip() -> bytes:
+    """Constrói um proposituras.zip mínimo com 4 itens cobrindo cada filtro."""
+    import io as _io  # noqa: PLC0415
+    import zipfile as _zip  # noqa: PLC0415
+
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<proposituras>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>Altera Lei 10705/2000 sobre ITCMD para majorar aliquotas progressivamente.</Ementa>
+    <DtEntradaSistema>2026-04-15T00:00:00-03:00</DtEntradaSistema>
+    <DtPublicacao>2026-04-15T00:00:00-03:00</DtPublicacao>
+    <IdDocumento>1000999001</IdDocumento>
+    <IdNatureza>1</IdNatureza>
+    <NroLegislativo>183</NroLegislativo>
+  </propositura>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>Indica ao governador a doacao de equipamentos para o municipio.</Ementa>
+    <DtEntradaSistema>2026-04-20T00:00:00-03:00</DtEntradaSistema>
+    <DtPublicacao>2026-04-20T00:00:00-03:00</DtPublicacao>
+    <IdDocumento>1000999002</IdDocumento>
+    <IdNatureza>9</IdNatureza>
+    <NroLegislativo>3437</NroLegislativo>
+  </propositura>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>Lei sobre transito - tema irrelevante.</Ementa>
+    <DtEntradaSistema>2026-04-22T00:00:00-03:00</DtEntradaSistema>
+    <DtPublicacao>2026-04-22T00:00:00-03:00</DtPublicacao>
+    <IdDocumento>1000999003</IdDocumento>
+    <IdNatureza>1</IdNatureza>
+    <NroLegislativo>200</NroLegislativo>
+  </propositura>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>PEC sucessão patrimonial e regime de bens.</Ementa>
+    <DtEntradaSistema>2026-04-25T00:00:00-03:00</DtEntradaSistema>
+    <DtPublicacao>2026-04-25T00:00:00-03:00</DtPublicacao>
+    <IdDocumento>1000999004</IdDocumento>
+    <IdNatureza>2</IdNatureza>
+    <NroLegislativo>15</NroLegislativo>
+  </propositura>
+</proposituras>
+"""
+    buf = _io.BytesIO()
+    with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+        zf.writestr("proposituras.xml", xml)
+    return buf.getvalue()
+
+
+@pytest.mark.integration
+class TestALESPCollector:
+    @pytest.mark.asyncio
+    async def test_collects_recent_with_keyword_and_natureza(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source()
+        zip_bytes = _build_alesp_zip()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(
+                    200,
+                    content=zip_bytes,
+                    headers={"content-type": "application/zip"},
+                ),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        # Esperado: 2 items
+        # - PL 183/2026 ITCMD (natureza=1, keyword OK)  ✅
+        # - PEC 15/2026 sucessão (natureza=2, keyword OK) ✅
+        # - Indicação 3437 doacao (natureza=9 não permitida) ❌
+        # - PL 200/2026 transito (sem keyword) ❌
+        assert len(items) == 2
+        nro_set = {it.titulo_raw for it in items}
+        assert "Projeto de Lei 183/2026" in nro_set
+        assert "Proposta de Emenda Constitucional 15/2026" in nro_set
+        # URL pública construída a partir de IdDocumento
+        for it in items:
+            assert it.url.startswith("https://www.al.sp.gov.br/propositura/?id=10009990")
+
+    @pytest.mark.asyncio
+    async def test_max_items_caps(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source(selectors={"max_items": "1", "naturezas": "1,2"})
+        zip_bytes = _build_alesp_zip()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=zip_bytes),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1
+
+    @pytest.mark.asyncio
+    async def test_invalid_dias_raises(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source(selectors={"dias": "abc"})
+        async with ALESPCollector(src) as c:
+            with pytest.raises(CollectorError, match="dias inválido"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_empty_keywords_raises(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source(selectors={"palavras_chave": "  |  "})
+        async with ALESPCollector(src) as c:
+            with pytest.raises(CollectorError, match="palavras_chave"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_oversized_zip_aborts(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+        from monitoritcd.core import limits as _lim  # noqa: PLC0415
+
+        # Constrói payload acima do hard cap — fingimos um ZIP de 51 MB
+        big = b"x" * (_lim.MAX_OPEN_DATA_BYTES + 1024)
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=big),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        # Falha de fetch é tratada como warning + lista vazia
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_invalid_zip_returns_empty(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=b"not a zip"),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        assert items == []

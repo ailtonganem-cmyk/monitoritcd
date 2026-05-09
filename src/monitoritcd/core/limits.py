@@ -98,6 +98,12 @@ MAX_HTML_BYTES: Final[int] = 5 * 1024 * 1024  # 5 MB
 MAX_PDF_BYTES: Final[int] = 20 * 1024 * 1024  # 20 MB
 MAX_REQUEST_BODY_BYTES: Final[int] = 1 * 1024 * 1024  # 1 MB
 MAX_TELEGRAM_MSG_BYTES: Final[int] = 4096  # limite hard do Telegram
+# Datasets governamentais (zip/xml de dados abertos) — ALESP proposituras.zip
+# tem ~16 MB hoje; teto de 50 MB cobre crescimento por anos.
+MAX_OPEN_DATA_BYTES: Final[int] = 50 * 1024 * 1024  # 50 MB
+# Streaming-parse de XML em datasets grandes — limita itens processados como
+# guard rail contra payload anômalo (proposituras.xml hoje tem ~270k items).
+MAX_OPEN_DATA_RECORDS: Final[int] = 500_000
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Durations (MAX_DURATION) — em segundos

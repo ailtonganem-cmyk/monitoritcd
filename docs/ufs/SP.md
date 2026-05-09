@@ -13,30 +13,33 @@
 - "Valor venal de referência" — base de cálculo definida pela SEFAZ-SP.
 
 ## Fontes mapeadas
-- `alesp.yaml` — projetos de lei. **Inativa** (ASP.NET com VIEWSTATE; precisa parser custom).
-- `sefaz.yaml` — atos normativos da SEFAZ. **Inativa** (SharePoint com renderização JS; lento, parsing HTML estático não traz conteúdo).
-- `doe.yaml` — Diário Oficial do Estado. **Inativa** (Imprensa Oficial usa POST/VIEWSTATE).
-- `tit-sp.yaml` — Tribunal de Impostos e Taxas. **Inativa** (URL antiga retorna timeout/redirect).
+- `alesp.yaml` — proposituras (PLs, PECs, etc.). **ATIVA desde 2026-05-09** — parser custom `alesp` consumindo `/repositorioDados/processo_legislativo/proposituras.zip` (dados abertos oficiais; streaming-parse com defusedxml).
+- `sefaz.yaml` — atos normativos da SEFAZ. **ATIVA desde 2026-05-09** — parser custom `sefaz_sp` via API SharePoint REST (`legislacao.fazenda.sp.gov.br/_api/Web/Lists`).
 - `tjsp.yaml` — Tribunal de Justiça (notícias). **ATIVA desde 2026-05-08** — `parser: generic_html` apontando para `/Noticias`.
+- `doe.yaml` — Diário Oficial do Estado. **Inativa por design** (redundante com SEFAZ-SP, que já cobre os atos publicados via API).
+- `tit-sp.yaml` — Tribunal de Impostos e Taxas. **Inativa** (decisões em ePAT sem API pública).
 
 ## Status atual
-Apenas `tjsp.yaml` está ativa. Cobertura legislativa de SP vem ainda do
-`lexml-portal` federal (ativo), que indexa atos estaduais via URN
-`urn:lex:br;sp:estadual:...`.
+3 das 5 fontes ativas: ALESP (proposituras), SEFAZ-SP (atos administrativos),
+TJSP (jurisprudência). Cobertura legislativa adicional via `lexml-portal`
+federal (ativo), que indexa atos estaduais por URN.
 
 **Histórico**:
-- 2026-04-25 (MVP): todas as 5 fontes criadas como stubs (`ativo: false`,
-  selectors não validados).
-- 2026-05-08: TJSP reativado com `parser: generic_html`, URL `/Noticias`,
-  selectors validados ao vivo (10 itens/página, layout `<div.col-sm-9><a.noticia-description><h1>`).
+- 2026-04-25 (MVP): todas as 5 fontes criadas como stubs (`ativo: false`).
+- 2026-05-08: TJSP reativado (`generic_html` em `/Noticias`).
+- 2026-05-09: SEFAZ-SP e ALESP ativadas via collectors custom:
+  - **SEFAZ-SP** descobre que SharePoint expõe API REST nativa em `_api/web/lists`,
+    retornando JSON estruturado sem precisar renderizar JavaScript.
+    Smoke test 2026-05-08: 7 itens ITCMD detectados nos últimos 100 modificados.
+  - **ALESP** usa o ZIP diário de dados abertos com ~270 mil proposituras,
+    streaming-parse para baixo overhead de memória.
+    Smoke test 2026-05-08: 4 PLs nos últimos 60 dias com keywords ITCMD/sucessão.
 
-**Para ativar as demais (alesp, sefaz, doe, tit)**:
-1. Resolver questões técnicas listadas (ASP.NET POST, SharePoint JS, etc.).
-2. Validar URL e parser via `--dry-run` ou cassette VCR.
-3. Confirmar coleta retorna ≥ 1 item ITCMD em sandbox.
-4. Trocar `ativo: false` → `true` no YAML (PR + CI verde).
-5. SP já está em `active_uf` no Firestore (confirmado 2026-05-08), então
-   YAML reativado entra em coleta na próxima execução do cron.
+**DOE-SP e TIT-SP permanecem inativas por escolha técnica**:
+- DOE-SP é redundante com SEFAZ-SP, sem API pública, e exigiria parsing
+  POST de ASP.NET (frágil).
+- TIT-SP não tem API pública de jurisprudência; decisões ficam em ePAT
+  protegido por login do contribuinte.
 
 ## Referências externas
 - ALESP: https://www.al.sp.gov.br/

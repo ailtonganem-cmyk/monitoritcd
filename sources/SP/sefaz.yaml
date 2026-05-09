@@ -1,25 +1,36 @@
 id: sefaz-sp
 uf: SP
-nome: "SEFAZ-SP — Atos normativos ITCMD"
+nome: "SEFAZ-SP — Atos normativos ITCMD via SharePoint API"
 tipo: sefaz
-parser: generic_html
-url: "https://portal.fazenda.sp.gov.br/servicos/itcmd/Paginas/Legislacao.aspx"
+parser: sefaz_sp
+url: "https://legislacao.fazenda.sp.gov.br/_api/Web/Lists"
+selectors:
+  list_guid: "f286d0d1-5624-47da-a856-a8571296eb7f"
+  palavras_chave: "ITCMD|ITCD|causa mortis|transmissão|doação"
+  dias: "60"
+  top: "100"
 keywords_required:
   - ITCMD
   - "causa mortis"
   - "doação"
   - "valor venal de referência"
   - "GIA-ITCMD"
-selectors:
-  item: "div.legislacao-list article, div.lista-atos > div"
-  titulo: "h3 a, .titulo-ato a"
-  link: "h3 a@href, .titulo-ato a@href"
 topics:
   - itcd
-ativo: false
+ativo: true
 trusted: true
-fragile: true
+fragile: false
 notas: |
-  SEFAZ-SP — Portal de legislação ITCMD.
-  Alíquota SP: 4% fixa (Lei 10.705/2000). Discussões sobre progressividade ativas.
-  ⚠️ Verificar selectors após mudanças de layout (frequente em SP).
+  SEFAZ-SP — Portal de legislação tributária (legislacao.fazenda.sp.gov.br).
+  Alíquota SP: 4% fixa (Lei 10.705/2000). Discussões ativas sobre progressividade.
+
+  Reativada em 2026-05-09 — usando API SharePoint REST oficial (`/_api/web/lists`):
+  - O portal renderiza HTML via JavaScript (parsing estático não traz conteúdo).
+  - SharePoint expõe API REST nativa em `/_api/Web/Lists(guid'...')/Items`.
+  - Lista canônica: "Páginas" (~27 mil itens; Portarias, Comunicados, RC, etc.).
+  - Estratégia: top=100 ordenados por Modified desc, filtro keywords cliente-side
+    (SharePoint não filtra campos Note/Calculated server-side).
+  - URL final do ato: `File.ServerRelativeUrl` (`/Paginas/Portaria-XXX-de-YYYY.aspx`).
+
+  Validação 2026-05-08: 7 itens ITCMD nos últimos 100 modificados em 1 dia
+  (Comunicados DICAR, Respostas a Consulta — RC, Portarias).

@@ -1,9 +1,9 @@
 id: tit-sp-decisoes
 uf: SP
-nome: "TIT-SP — Tribunal de Impostos e Taxas (stub)"
+nome: "TIT-SP — Tribunal de Impostos e Taxas (stub — sem API pública)"
 tipo: jurisprudencia
 parser: generic_html
-url: "https://www.fazenda.sp.gov.br/tit/"
+url: "https://portal.fazenda.sp.gov.br/servicos/tit/Paginas/Sobre.aspx"
 keywords_required:
   - ITCMD
   - ITD
@@ -19,8 +19,16 @@ ativo: false
 trusted: true
 fragile: true
 notas: |
-  Item #39 do IDEAS.md — TIT-SP (Tribunal de Impostos e Taxas de São Paulo).
-  Stub: o TIT é o órgão administrativo de julgamento de tributos estaduais SP.
-  Cobre disputas pré-judiciais de ITCMD. Volume baixo, sinal específico.
+  TIT-SP (Tribunal de Impostos e Taxas SP) — órgão administrativo de
+  julgamento de tributos estaduais; cobre disputas pré-judiciais ITCMD.
 
-  TITs estaduais existem em SP, RJ, MG, RS — outros estados podem ser stubs futuros.
+  Pesquisa 2026-05-09:
+  - URL antiga (`fazenda.sp.gov.br/tit/`) redireciona para Sobre.aspx.
+  - Portal SharePoint expõe `_api/web/lists` mas só tem conteúdo
+    administrativo (estoque, câmaras), NÃO decisões/acórdãos.
+  - Decisões reais ficam no ePAT — exige login do contribuinte.
+  - Sem API pública de jurisprudência TIT-SP.
+
+  Mantida `ativo: false`. Cobertura indireta:
+  - sefaz-sp (SharePoint API) traz Comunicados/RC com referência a TIT.
+  - jota-principal e conjur-feed (federais) cobrem decisões TIT relevantes.
