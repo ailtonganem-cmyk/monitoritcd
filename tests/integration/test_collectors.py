@@ -1184,11 +1184,11 @@ class TestALESPCollector:
 
     @pytest.mark.asyncio
     async def test_zip_without_proposituras_xml_returns_empty(self) -> None:
-        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
-
         # ZIP válido mas sem o arquivo proposituras.xml dentro
         import io as _io  # noqa: PLC0415
         import zipfile as _zip  # noqa: PLC0415
+
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
 
         buf = _io.BytesIO()
         with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
@@ -1208,10 +1208,10 @@ class TestALESPCollector:
 
     @pytest.mark.asyncio
     async def test_skips_propositura_without_ementa(self) -> None:
-        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
-
         import io as _io  # noqa: PLC0415
         import zipfile as _zip  # noqa: PLC0415
+
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
 
         xml = """<?xml version="1.0" encoding="UTF-8"?>
 <proposituras>
@@ -1240,10 +1240,10 @@ class TestALESPCollector:
 
     @pytest.mark.asyncio
     async def test_skips_propositura_with_invalid_date(self) -> None:
-        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
-
         import io as _io  # noqa: PLC0415
         import zipfile as _zip  # noqa: PLC0415
+
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
 
         # Data inválida → cai no `dt = None` → mantém (não filtra por data)
         xml = """<?xml version="1.0" encoding="UTF-8"?>
@@ -1274,10 +1274,10 @@ class TestALESPCollector:
 
     @pytest.mark.asyncio
     async def test_skips_propositura_missing_id_or_numero(self) -> None:
-        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
-
         import io as _io  # noqa: PLC0415
         import zipfile as _zip  # noqa: PLC0415
+
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
 
         # Sem IdDocumento → descarta
         xml = """<?xml version="1.0" encoding="UTF-8"?>
@@ -1306,10 +1306,10 @@ class TestALESPCollector:
 
     @pytest.mark.asyncio
     async def test_natureza_unknown_uses_fallback_titulo(self) -> None:
-        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
-
         import io as _io  # noqa: PLC0415
         import zipfile as _zip  # noqa: PLC0415
+
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
 
         # Natureza fora de NATUREZA_NOMES → fallback "Tipo X N/Y"
         xml = """<?xml version="1.0" encoding="UTF-8"?>
