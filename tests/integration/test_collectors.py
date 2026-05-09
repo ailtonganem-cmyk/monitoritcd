@@ -874,6 +874,141 @@ class TestSefazSPCollector:
                 items = await c.collect()
         assert items == []
 
+    @pytest.mark.asyncio
+    async def test_skips_item_without_titulo(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # Sem PesqLegisTitle nem Title → descarta
+        payload = """{
+  "d": {
+    "results": [
+      {
+        "ID": 1,
+        "Modified": "2026-05-08T15:00:00Z",
+        "DataAto": "2026-05-04T03:00:00Z",
+        "DataPublicacao": "2026-05-05T03:00:00Z",
+        "PesqLegisTitle": null,
+        "Ementa": "ITCMD",
+        "File": {"ServerRelativeUrl": "/Paginas/x.aspx"}
+      }
+    ]
+  }
+}"""
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=payload),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_skips_item_outside_window_with_old_modified(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # Ambos DataPublicacao e Modified antes do cutoff → descarta
+        # cutoff default = 60 dias atrás (do _sefaz_sp_source helper, dias=3650)
+        # então usa fonte com dias=1 para forçar exclusão de 2024-01-01
+        src = _sefaz_sp_source().model_copy(
+            update={
+                "selectors": {
+                    "list_guid": SEFAZ_SP_GUID,
+                    "palavras_chave": "ITCMD",
+                    "dias": "1",
+                    "top": "100",
+                },
+            },
+        )
+        payload = """{
+  "d": {
+    "results": [
+      {
+        "ID": 1,
+        "Modified": "2024-01-01T15:00:00Z",
+        "DataAto": "2024-01-01T03:00:00Z",
+        "DataPublicacao": "2024-01-01T03:00:00Z",
+        "PesqLegisTitle": "RC ITCMD antigo",
+        "Ementa": "ITCMD antigo",
+        "File": {"ServerRelativeUrl": "/Paginas/old.aspx"}
+      }
+    ]
+  }
+}"""
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=payload),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_unexpected_payload_results_not_list(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # `results` não é lista → log warning + retorno vazio
+        payload = '{"d": {"results": "not a list"}}'
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=payload),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_negative_top_raises(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # top negativo cai no limite inferior (top<=0 raises)
+        # Patch direto: com top="0" cfg.page_size é 0 → fallback DEFAULT_TOP=100;
+        # mas top negativo dispara o check.
+        src = _sefaz_sp_source().model_copy(
+            update={
+                "selectors": {
+                    "list_guid": SEFAZ_SP_GUID,
+                    "palavras_chave": "ITCMD",
+                    "top": "-5",
+                },
+            },
+        )
+        async with SefazSPCollector(src) as c:
+            with pytest.raises(CollectorError, match="top fora do intervalo"):
+                await c.collect()
+
+    @pytest.mark.asyncio
+    async def test_item_without_ementa_uses_titulo_only(self) -> None:
+        from monitoritcd.collectors.custom.sefaz_sp import SefazSPCollector  # noqa: PLC0415
+
+        # Item sem Ementa mas com titulo contendo keyword → mantém
+        payload = """{
+  "d": {
+    "results": [
+      {
+        "ID": 1,
+        "Modified": "2026-05-08T15:00:00Z",
+        "DataAto": null,
+        "DataPublicacao": null,
+        "PesqLegisTitle": "Decisao Normativa ITCMD 1/2026",
+        "Ementa": null,
+        "File": {"ServerRelativeUrl": "/Paginas/DN-1-2026.aspx"}
+      }
+    ]
+  }
+}"""
+        src = _sefaz_sp_source()
+        async with respx.mock:
+            respx.get(url__startswith=SEFAZ_SP_URL_BASE).mock(
+                return_value=httpx.Response(200, text=payload),
+            )
+            async with SefazSPCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1
+        assert items[0].texto_raw is None  # ementa nula → texto_raw None
+        assert items[0].data_publicacao is None  # sem DataAto/Pub → mantém
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ALESP — proposituras.zip (dados abertos via streaming-parse)
@@ -1046,3 +1181,169 @@ class TestALESPCollector:
             async with ALESPCollector(src) as c:
                 items = await c.collect()
         assert items == []
+
+    @pytest.mark.asyncio
+    async def test_zip_without_proposituras_xml_returns_empty(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        # ZIP válido mas sem o arquivo proposituras.xml dentro
+        import io as _io  # noqa: PLC0415
+        import zipfile as _zip  # noqa: PLC0415
+
+        buf = _io.BytesIO()
+        with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+            zf.writestr("outroarquivo.xml", "<root/>")
+        zip_bytes = buf.getvalue()
+
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=zip_bytes),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        # ZIP válido mas sem proposituras.xml → CollectorError convertido em []
+        # (warning logged em alesp.parse_failed)
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_skips_propositura_without_ementa(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        import io as _io  # noqa: PLC0415
+        import zipfile as _zip  # noqa: PLC0415
+
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<proposituras>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa></Ementa>
+    <DtEntradaSistema>2026-04-15T00:00:00-03:00</DtEntradaSistema>
+    <IdDocumento>1</IdDocumento>
+    <IdNatureza>1</IdNatureza>
+    <NroLegislativo>1</NroLegislativo>
+  </propositura>
+</proposituras>
+"""
+        buf = _io.BytesIO()
+        with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+            zf.writestr("proposituras.xml", xml)
+
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=buf.getvalue()),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_skips_propositura_with_invalid_date(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        import io as _io  # noqa: PLC0415
+        import zipfile as _zip  # noqa: PLC0415
+
+        # Data inválida → cai no `dt = None` → mantém (não filtra por data)
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<proposituras>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>ITCMD propositura sem data válida.</Ementa>
+    <DtEntradaSistema>data-invalida</DtEntradaSistema>
+    <IdDocumento>1</IdDocumento>
+    <IdNatureza>1</IdNatureza>
+    <NroLegislativo>1</NroLegislativo>
+  </propositura>
+</proposituras>
+"""
+        buf = _io.BytesIO()
+        with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+            zf.writestr("proposituras.xml", xml)
+
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=buf.getvalue()),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        # Data inválida → dt=None → não filtra; mantém
+        assert len(items) == 1
+
+    @pytest.mark.asyncio
+    async def test_skips_propositura_missing_id_or_numero(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        import io as _io  # noqa: PLC0415
+        import zipfile as _zip  # noqa: PLC0415
+
+        # Sem IdDocumento → descarta
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<proposituras>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>ITCMD sem ID.</Ementa>
+    <DtEntradaSistema>2026-04-15T00:00:00-03:00</DtEntradaSistema>
+    <IdNatureza>1</IdNatureza>
+    <NroLegislativo>1</NroLegislativo>
+  </propositura>
+</proposituras>
+"""
+        buf = _io.BytesIO()
+        with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+            zf.writestr("proposituras.xml", xml)
+
+        src = _alesp_source()
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=buf.getvalue()),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        assert items == []
+
+    @pytest.mark.asyncio
+    async def test_natureza_unknown_uses_fallback_titulo(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        import io as _io  # noqa: PLC0415
+        import zipfile as _zip  # noqa: PLC0415
+
+        # Natureza fora de NATUREZA_NOMES → fallback "Tipo X N/Y"
+        xml = """<?xml version="1.0" encoding="UTF-8"?>
+<proposituras>
+  <propositura>
+    <AnoLegislativo>2026</AnoLegislativo>
+    <Ementa>ITCMD com natureza desconhecida.</Ementa>
+    <DtEntradaSistema>2026-04-15T00:00:00-03:00</DtEntradaSistema>
+    <IdDocumento>9999</IdDocumento>
+    <IdNatureza>99</IdNatureza>
+    <NroLegislativo>50</NroLegislativo>
+  </propositura>
+</proposituras>
+"""
+        buf = _io.BytesIO()
+        with _zip.ZipFile(buf, "w", _zip.ZIP_DEFLATED) as zf:
+            zf.writestr("proposituras.xml", xml)
+
+        # Sem filtro de naturezas → aceita qualquer
+        src = _alesp_source(selectors={"naturezas": ""})
+        async with respx.mock:
+            respx.get(url__startswith="https://www.al.sp.gov.br/repositorioDados/").mock(
+                return_value=httpx.Response(200, content=buf.getvalue()),
+            )
+            async with ALESPCollector(src) as c:
+                items = await c.collect()
+        assert len(items) == 1
+        assert items[0].titulo_raw == "Tipo 99 50/2026"
+
+    @pytest.mark.asyncio
+    async def test_invalid_max_items_raises(self) -> None:
+        from monitoritcd.collectors.custom.alesp import ALESPCollector  # noqa: PLC0415
+
+        src = _alesp_source(selectors={"max_items": "abc"})
+        async with ALESPCollector(src) as c:
+            with pytest.raises(CollectorError, match="max_items inválido"):
+                await c.collect()

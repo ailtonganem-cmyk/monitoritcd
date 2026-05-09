@@ -169,7 +169,9 @@ class ALESPCollector(BaseCollector):
                 max_items=max_items,
                 allowed_naturezas=allowed_naturezas,
             )
-        except (zipfile.BadZipFile, OSError) as e:
+        except (zipfile.BadZipFile, OSError, CollectorError) as e:
+            # CollectorError aqui = ZIP válido mas sem proposituras.xml
+            # (estrutura inesperada do dataset, ex: nome do arquivo mudou).
             logger.warning(
                 "alesp.parse_failed",
                 source=self.source.id,
