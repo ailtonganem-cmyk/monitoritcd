@@ -1,0 +1,51 @@
+id: receita-federal-noticias
+uf: _federal
+nome: "Receita Federal — Notícias (ano corrente)"
+tipo: noticia
+parser: generic_html
+url: "https://www.gov.br/receitafederal/pt-br/assuntos/noticias/2026"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - "Imposto Seletivo"
+  - "EC 132"
+  - "LC 214"
+  - "Lei Complementar 214"
+  - "RTC"
+  - "Comitê Gestor"
+  - previdência
+  - VGBL
+  - PGBL
+selectors:
+  item: "h2.titulo"
+  titulo: "a"
+  link: "a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  Receita Federal — notícias do ano corrente (Plone CMS).
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block via US runner):
+  - Listagem HTML estática em `/assuntos/noticias/2026`.
+  - Estrutura: `<ul class="noticias listagem-noticias-com-foto"><li>
+    <h2 class="titulo"><a href="ABS_URL">TÍTULO</a></h2></li></ul>`.
+  - URLs absolutas no `href`. Paginação via `?b_start:int=30,60,...`.
+
+  Alto sinal para Reforma Tributária do Consumo (IBS/CBS/IS), normas
+  conjuntas com CONFAZ e impactos colaterais em ITCD (EC 132 art. 155).
+  Atenção: a URL contém o ano — atualizar para `/2027` em 2027-01-01.

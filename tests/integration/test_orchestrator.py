@@ -145,12 +145,14 @@ class TestFilterFunctions:
             url="https://x.gov.br/",
         )
         # Item NÃO tem keyword default mas TEM keyword extra dinâmica.
+        # "blockchain notarial" é termo intencionalmente fora de KEYWORDS_DEFAULT
+        # — fica candidato para inclusão pelo dono via /temas se virar relevante.
         items = [
             (
                 src,
                 RawItem(
                     source_id="s",
-                    titulo_raw="Notícia sobre trust internacional",
+                    titulo_raw="Notícia sobre blockchain notarial",
                     url="https://x.gov.br/3",
                     fetched_at=NOW,
                     content_hash="c" * 64,
@@ -160,7 +162,7 @@ class TestFilterFunctions:
         # Sem extras: não casa.
         assert len(filter_by_keywords(items)) == 0
         # Com extras: casa.
-        result = filter_by_keywords(items, extra_keywords=["trust internacional"])
+        result = filter_by_keywords(items, extra_keywords=["blockchain notarial"])
         assert len(result) == 1
 
     def test_filter_by_keywords(self) -> None:

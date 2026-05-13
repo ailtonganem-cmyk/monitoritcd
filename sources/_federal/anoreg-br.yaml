@@ -1,0 +1,45 @@
+id: anoreg-br-noticias
+uf: _federal
+nome: "ANOREG-BR — Associação dos Notários e Registradores (notícias)"
+tipo: doutrina
+parser: generic_html
+url: "https://www.anoreg.org.br/site/noticias/"
+keywords_required:
+  - escritura
+  - testamento
+  - inventário
+  - "doação"
+  - "regime de bens"
+  - "pacto antenupcial"
+  - sucessão
+  - extrajudicial
+  - cartório
+  - notarial
+  - registro
+  - ITCMD
+  - ITCD
+  - "Provimento 56"
+  - tabelionato
+  - "renúncia"
+selectors:
+  item: "spam.media-heading.link-noticias"
+  titulo: "a"
+  link: "a@href"
+topics:
+  - sucessoes
+  - regime_bens
+  - itcd
+ativo: true
+trusted: true
+fragile: true
+notas: |
+  ANOREG-BR — entidade nacional dos cartórios extrajudiciais; cobre todos
+  os ramos (notas, registro civil, RI). Alto sinal para Provimento 56/CNJ,
+  inventário extrajudicial, escrituras de doação/testamento, regime de bens.
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - Listagem HTML estática em `/site/noticias/`.
+  - Padrão (sic): `<spam class="media-heading link-noticias">
+    <a href="https://www.anoreg.org.br/site/SLUG/">TÍTULO</a></spam>`.
+  - Note: o HTML usa "spam" (typo do site) em vez de "span"; mantemos
+    o seletor literal — fragile=true caso corrijam.

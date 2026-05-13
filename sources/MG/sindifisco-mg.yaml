@@ -1,0 +1,52 @@
+id: sindifisco-mg
+uf: MG
+nome: "SINDIFISCO-MG — Sindicato dos Auditores Fiscais MG"
+tipo: doutrina
+parser: generic_html
+url: "https://sindifiscomg.org.br/"
+keywords_required:
+  - "auditor fiscal"
+  - "auditor-fiscal"
+  - AFRE
+  - "AFRE-MG"
+  - "gestor fazendário"
+  - "carreira fazendária"
+  - SEFAZ
+  - "SEFAZ-MG"
+  - ICMS
+  - "ICMS-MG"
+  - ITCD
+  - ITCMD
+  - "ITCD-MG"
+  - "Conselho de Contribuintes"
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - corregedoria
+  - sonegação
+selectors:
+  item: "div.carousel-item"
+  titulo: "h4.title-noticia"
+  link: "a@href"
+topics:
+  - itcd
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  SINDIFISCO-MG — Sindicato dos Auditores Fiscais de MG (domínio
+  `sindifiscomg.org.br`, descoberto em 2026-05-12 após tentativas com
+  variantes diferentes).
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - Home tem carousel com 6-10 notícias mais recentes em
+    `div.carousel-item > a > figure > figcaption > h4.title-noticia`.
+  - URLs absolutas no padrão `/conteudo/{ID}/{slug}`.
+
+  /categoria/noticias existe (HTTP 200) mas carrega listagem via JS — por
+  isso usamos a home, que renderiza 6-10 itens estáticos no SSR.
+
+  Cobertura: complementa AFFEMG (associação) com a voz sindical — denúncias
+  de sonegação, posicionamento sobre Reforma Tributária, Conselho de
+  Contribuintes MG, e tópicos paralelos relevantes à carreira fazendária
+  MG (crise corregedoria SEFAZ-MG abril/2026, PL ALMG, etc.).

@@ -1,0 +1,44 @@
+id: tjsp-corregedoria
+uf: SP
+nome: "TJSP — Corregedoria Geral da Justiça (Comunicados)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://www.tjsp.jus.br/Corregedoria/Comunicados"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - inventário
+  - "extrajudicial"
+  - escritura
+  - testamento
+  - "doação"
+  - sucessão
+  - tabelionato
+  - notarial
+  - cartório
+  - registro
+  - "Provimento 56"
+  - "Provimento 100"
+selectors:
+  item: "div.comunicado"
+  titulo: "h3 a"
+  link: "h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  Corregedoria-Geral da Justiça SP — Comunicados (atos administrativos
+  da CGJ sobre cartórios, tabelionatos, registro civil e extrajudicial).
+
+  Validado 2026-05-12 via curl direto (US runner, HTTP 200):
+  - HTML estático, paginação `?pagina=N` (1 a ~394).
+  - Padrão `<div class="comunicado"><h3><a href="/Corregedoria/Comunicados/
+    Comunicado?codigoComunicado=XXXX&pagina=1">TÍTULO</a></h3>`.
+  - Links relativos; base `https://www.tjsp.jus.br`.
+
+  Alto sinal para inventários extrajudiciais (Provimento 56/CNJ), escrituras
+  de doação, testamento público, regime de bens. Volume alto (~30/mês);
+  filtro de keywords corta o ruído administrativo.
