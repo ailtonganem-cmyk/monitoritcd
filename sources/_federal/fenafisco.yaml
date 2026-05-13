@@ -1,0 +1,50 @@
+id: fenafisco-noticias
+uf: _federal
+nome: "FENAFISCO — Federação Nacional do Fisco Estadual e Distrital"
+tipo: doutrina
+parser: generic_html
+url: "https://fenafisco.org.br/"
+keywords_required:
+  - "auditor fiscal"
+  - "auditor-fiscal"
+  - AFRE
+  - "gestor fazendário"
+  - "carreira fazendária"
+  - SEFAZ
+  - ICMS
+  - ITCMD
+  - ITCD
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - "Imposto Seletivo"
+  - "LC 214"
+  - "PEC 45"
+  - "Comitê Gestor"
+  - "administração tributária"
+selectors:
+  item: "article.listing-item"
+  titulo: "h2.title a"
+  link: "h2.title a@href"
+topics:
+  - itcd
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  FENAFISCO — Federação Nacional do Fisco Estadual e Distrital.
+  Entidade nacional dos auditores fiscais dos 27 entes — cobre todos os
+  estados onde a SEFAZ tributa ICMS/ITCD, com foco em Reforma Tributária
+  e administração tributária.
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - Listagem HTML estática na raiz `/`.
+  - Estrutura: `<article class="listing-item ..."><div class="item-inner">
+    <h2 class="title"><a class="post-title post-url" href="ABS_URL">
+    TÍTULO</a></h2></div></article>`.
+  - URLs absolutas no padrão `/DD/MM/YYYY/slug/`.
+
+  Alto sinal para Reforma Tributária do Consumo (impacto sobre auditores),
+  fraude fiscal (Operação Ícaro/SP), PECs em tramitação, e ações políticas
+  da federação. Complementa AFFEMG (que é MG-específico) com cobertura
+  nacional.

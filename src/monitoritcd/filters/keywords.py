@@ -64,6 +64,75 @@ KEYWORDS_ITCD: Final[tuple[str, ...]] = (
     "GIA-ITCMD",
     "GIA ITCMD",
     "DIME-D",
+    "GNRE",
+    "DARE-ITCMD",
+    # Planejamento patrimonial moderno
+    "trust",
+    "offshore",
+    "doação simulada",
+    "doação dissimulada",
+    "elisão fiscal",
+    "evasão fiscal",
+    # Discussões de alíquota / debate em curso (SP/RJ progressividade, EC 132)
+    "ITCMD progressivo",
+    "Resolução SF 9",
+    "Resolução nº 9 do Senado",
+    "reforma tributária",
+    "EC 132",
+    # Súmulas STF sobre ITCD (Súmulas 112/113/114/115/331/590)
+    "Súmula 112",
+    "Súmula 113",
+    "Súmula 114",
+    "Súmula 115",
+    "Súmula 331",
+    "Súmula 590",
+    # Previdência privada como instrumento sucessório (RE 1.363.013, Tema 1.214)
+    "VGBL",
+    "PGBL",
+    "previdência privada",
+    "Tema 1214",
+    "Tema 1.214",
+    # Reforma Tributária — tributos novos (EC 132/2023, LC 214/2025)
+    "IBS",
+    "CBS",
+    "Imposto sobre Bens e Serviços",
+    "Contribuição sobre Bens e Serviços",
+    "Imposto Seletivo",
+    "LC 214",
+    "LC 214/2025",
+    "Lei Complementar 214",
+    "PEC 45",
+    "PEC 110",
+    "PEC 45/2019",
+    "Comitê Gestor do IBS",
+    "Reforma Tributária do Consumo",
+    "RTC",
+    # Súmulas e Temas STF/STJ específicos a ITCD (além dos já listados)
+    "Súmula 656",
+    "Súmula 235",
+    "Tema 825",
+    "Tema 1093",
+    "RE 562.045",
+    "RE 851.108",
+    "ADI 7949",
+    "repercussão geral",
+    "recurso especial repetitivo",
+    # Carreiras e estrutura fazendária — alta densidade em MG (AFFEMG, SEFAZ-MG)
+    "auditor fiscal",
+    "auditor-fiscal",
+    "AFRE",
+    "AFRE-MG",
+    "gestor fazendário",
+    "carreira fazendária",
+    "SEFAZ-MG",
+    "SEF/MG",
+    "SEF-MG",
+    "ICMS-MG",
+    "ITCD-MG",
+    "Conselho de Contribuintes",
+    "TARE",
+    "Termo de Acordo de Regime Especial",
+    "Tribunal Administrativo Tributário",
 )
 
 
@@ -124,6 +193,46 @@ KEYWORDS_SUCESSOES: Final[tuple[str, ...]] = (
     "ação de inventário",
     "alvará judicial",
     "doação inoficiosa",
+    # Vocação hereditária / ordem de chamada (CC 1.829)
+    "vocação hereditária",
+    "ordem de vocação",
+    "ordem de vocação hereditária",
+    # Fideicomisso (CC 1.951-1.960) — sub-instituição testamentária
+    "fideicomisso",
+    "fiduciário",
+    "fideicomissário",
+    "substituição fideicomissária",
+    # Processo de inventário — atos típicos
+    "inventariante",
+    "primeiras declarações",
+    "últimas declarações",
+    "herdeiro pretermitido",
+    "habilitação de crédito",
+    "credor do espólio",
+    # Renúncia: distinção fiscal entre abdicativa (sem ITCD adicional) e translativa (com)
+    "renúncia abdicativa",
+    "renúncia translativa",
+    # Adiantamento de legítima (CC 544) — doação a herdeiro necessário
+    "adiantamento de legítima",
+    "doação em adiantamento",
+    # Eventos de fato sucessórios
+    "comoriência",
+    "premoriência",
+    "morte presumida",
+    "declaração de ausência",
+    # Súmulas STF relevantes a sucessões
+    "Súmula 35",
+    "Súmula 109",
+    "Súmula 380",
+    "Súmula 447",
+    # Recursos e teses STJ específicos
+    "Tema 1003",
+    "Tema 809",
+    "REsp repetitivo",
+    # Sucessões internacionais e digital — temas emergentes (LIDB, Art. 10)
+    "sucessão internacional",
+    "herança digital",
+    "patrimônio digital",
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -170,6 +279,37 @@ KEYWORDS_REGIME_BENS: Final[tuple[str, ...]] = (
     "dissolução da sociedade conjugal",
     "casamento idoso",
     "casamento septuagenário",
+    # Comunicabilidade — cerne dos litígios sobre regime de bens
+    "comunicabilidade",
+    "incomunicabilidade",
+    "cláusula de incomunicabilidade",
+    "cláusula de inalienabilidade",
+    "cláusula de impenhorabilidade",
+    "sub-rogação real",
+    # Estruturas com reserva de direitos reais (planejamento sucessório)
+    "reserva de usufruto",
+    "doação com reserva de usufruto",
+    "doação com encargo",
+    # União/casamento homoafetivo (ADI 4.277, ADPF 132, RE 646.721, RE 878.694)
+    "união homoafetiva",
+    "casamento homoafetivo",
+    "RE 646.721",
+    "RE 878.694",
+    "ADI 4277",
+    "ADPF 132",
+    # Súmulas STJ específicas a regime de bens
+    "Súmula 446",
+    "Súmula 332",
+    "Súmula 197",
+    # Pluriparentalidade e socioafetividade — efeitos sucessórios e patrimoniais
+    "multiparentalidade",
+    "pluriparentalidade",
+    "filiação socioafetiva",
+    "parentalidade socioafetiva",
+    # Regimes mistos / convivência
+    "famílias simultâneas",
+    "concubinato",
+    "namoro qualificado",
 )
 
 

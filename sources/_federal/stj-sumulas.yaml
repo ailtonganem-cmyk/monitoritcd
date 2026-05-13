@@ -1,0 +1,46 @@
+id: stj-sumulas
+uf: _federal
+nome: "STJ — Súmulas (pesquisa SCON)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://scon.stj.jus.br/SCON/sumstj/toc.jsp"
+keywords_required:
+  - sucessão
+  - inventário
+  - "causa mortis"
+  - "doação"
+  - ITCMD
+  - ITCD
+  - "regime de bens"
+  - "união estável"
+  - companheiro
+  - testamento
+  - herdeiros
+  - "súmula"
+  - alíquota
+  - meação
+  - legítima
+selectors:
+  item: "div.listaSumulas div.documento, table.dados tr"
+  titulo: "div.numerSumula, td.numero, b"
+  link: "a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  STJ — Súmulas oficiais via SCON (sistema de consulta antigo, JSP).
+
+  Criada 2026-05-12 sem validação local (US runner recebe socket close).
+  `geo_restricted: true` força fallback via Cloud Function proxy_br.
+
+  Selectors heurísticos baseados em estruturas comuns do SCON (`div.listaSumulas`
+  e `table.dados`). fragile=true; revisar primeiro run e ajustar.
+
+  Cobertura: Súmulas STJ específicas a sucessões/regime (446, 332, 197, etc.),
+  base de cálculo ITCD inter-estadual, decisões consolidadas em recursos
+  especiais repetitivos.

@@ -1,0 +1,49 @@
+id: cnj-provimentos
+uf: _federal
+nome: "CNJ — Provimentos (busca direta)"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://www.cnj.jus.br/?s=Provimento"
+keywords_required:
+  - provimento
+  - "Provimento 56"
+  - "Provimento 100"
+  - "Provimento 88"
+  - "Provimento 149"
+  - cartório
+  - tabelionato
+  - notarial
+  - registro
+  - extrajudicial
+  - inventário
+  - escritura
+  - testamento
+  - sucessão
+  - "doação"
+  - corregedoria
+selectors:
+  item: "article.post"
+  titulo: "h2.entry-title a"
+  link: "h2.entry-title a@href"
+topics:
+  - sucessoes
+  - itcd
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  CNJ — busca direta por "Provimento" no site oficial (WordPress).
+  Captura todos os posts/notícias do CNJ que mencionam Provimentos.
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - WordPress search com selector estável `article.post > h2.entry-title > a`.
+  - URLs absolutas.
+
+  Complementa cnj-noticias.yaml (que pega TODAS as notícias filtradas por
+  keywords): esta fonte foca especificamente em provimentos da Corregedoria
+  Nacional (Provimento 56/CNJ é o marco de inventário extrajudicial; 100,
+  88, 149 cobrem temas correlatos — cartórios, registro civil, testamentos
+  digitais, etc.).
+
+  Note: `atos.cnj.jus.br` (sistema oficial de atos) exige JS rendering;
+  esta abordagem por search é mais simples e suficiente.

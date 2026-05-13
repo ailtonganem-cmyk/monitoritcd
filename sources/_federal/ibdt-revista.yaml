@@ -1,0 +1,45 @@
+id: ibdt-revista
+uf: _federal
+nome: "IBDT — Revista Direito Tributário Atual (RDTA)"
+tipo: doutrina
+parser: generic_html
+url: "https://revista.ibdt.org.br/index.php/RDTA/issue/archive"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - ITD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - "planejamento sucessório"
+  - "planejamento tributário"
+  - "holding familiar"
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - "Imposto Seletivo"
+  - "tributação patrimônio"
+selectors:
+  item: "li.published, div.issue, ul.issues_archive li"
+  titulo: "a.title, h2 a, h3 a"
+  link: "a.title@href, h2 a@href, h3 a@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: true
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  IBDT — Instituto Brasileiro de Direito Tributário. Revista oficial RDTA.
+
+  Criada 2026-05-12 sem validação local (US runner recebe socket close).
+  Plataforma OJS (Open Journal Systems) com lista paginada de edições.
+
+  `geo_restricted: true` força fallback via proxy_br.
+  Selectors heurísticos baseados em OJS padrão (`ul.issues_archive li`).
+  fragile=true; revisar primeiro run e ajustar.
+
+  Cobertura: doutrina tributária acadêmica de alto sinal — pareceres sobre
+  ITCD, Reforma Tributária, planejamento patrimonial. Volume baixo (~6
+  edições/ano), mas cada edição traz vários artigos de relevância direta.

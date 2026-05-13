@@ -1,0 +1,44 @@
+id: fazenda-reforma-tributaria
+uf: _federal
+nome: "Ministério da Fazenda — Reforma Tributária"
+tipo: noticia
+parser: generic_html
+url: "https://www.gov.br/fazenda/pt-br/acesso-a-informacao/acoes-e-programas/reforma-tributaria"
+keywords_required:
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - "Imposto Seletivo"
+  - "LC 214"
+  - "Lei Complementar 214"
+  - "EC 132"
+  - "Comitê Gestor"
+  - "PEC 45"
+  - "PEC 110"
+  - ITCMD
+  - ITCD
+  - "Súmula"
+  - tributação
+  - "alíquota"
+selectors:
+  item: "h2.titulo, article.tileItem, ul.noticias li"
+  titulo: "a"
+  link: "a@href"
+topics:
+  - itcd
+ativo: true
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  Ministério da Fazenda — página oficial de Reforma Tributária (Plone CMS).
+
+  Criada 2026-05-12 sem validação local (US runner recebe HTTP 403).
+  `geo_restricted: true` força fallback via proxy_br southamerica-east1.
+
+  Plone CMS padrão (mesmo da Receita Federal): `h2.titulo > a` ou
+  `article.tileItem`. Selectors mistos para robustez.
+
+  Cobertura: comunicados oficiais sobre Reforma Tributária do Consumo,
+  Comitê Gestor do IBS, regulamentações de IBS/CBS/IS, e seus impactos
+  colaterais em ITCD (EC 132 alterou art. 155 da CF).

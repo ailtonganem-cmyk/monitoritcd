@@ -1,0 +1,49 @@
+id: stj-temas-repetitivos
+uf: _federal
+nome: "STJ — Temas de Recursos Repetitivos"
+tipo: jurisprudencia
+parser: generic_html
+url: "https://processo.stj.jus.br/repetitivos/temas_repetitivos/"
+keywords_required:
+  - sucessão
+  - inventário
+  - "causa mortis"
+  - "doação"
+  - ITCMD
+  - ITCD
+  - "regime de bens"
+  - "união estável"
+  - companheiro
+  - testamento
+  - herdeiros
+  - meação
+  - legítima
+  - "Tema"
+  - repetitivo
+  - "REsp"
+selectors:
+  item: "table.dados tr, div.tema, ul.temas li, article"
+  titulo: "td.numero, td a, h3 a, h4 a, a"
+  link: "a@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: true
+geo_restricted: true
+notas: |
+  STJ — Temas de Recursos Repetitivos (JSP em processo.stj.jus.br).
+
+  Criada 2026-05-12. Curl HEAD retorna 200 mas GET reseta conexão SSL
+  (Cloudflare geo-block). `geo_restricted: true` força fallback via
+  proxy_br southamerica-east1.
+
+  Selectors heurísticos para JSP padrão (`table.dados`, `div.tema`).
+  fragile=true; revisar primeiro run com proxy e ajustar.
+
+  Cobertura crítica: teses vinculantes do STJ em RR (Tema 1093 ITCD
+  renúncia, Tema 1.214 VGBL, Tema 825, Tema 1003, Tema 809, etc.).
+  Notícias do STJ via stj.yaml já capturam menções, mas esta fonte
+  pega a publicação primária do tema.

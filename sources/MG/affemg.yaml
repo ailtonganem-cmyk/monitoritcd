@@ -1,0 +1,45 @@
+id: affemg-blog
+uf: MG
+nome: "AFFEMG — Auditores Fiscais da Fazenda MG (blog)"
+tipo: doutrina
+parser: generic_html
+url: "https://www.affemg.com.br/blog"
+keywords_required:
+  - "auditor fiscal"
+  - "auditor-fiscal"
+  - AFRE
+  - "AFRE-MG"
+  - "gestor fazendário"
+  - "carreira fazendária"
+  - SEFAZ
+  - "SEFAZ-MG"
+  - "SEF-MG"
+  - "SEF/MG"
+  - ICMS
+  - ITCD
+  - ITCMD
+  - "reforma tributária"
+  - IBS
+  - CBS
+  - sucessão
+  - "doação"
+selectors:
+  item: "a.blog-post-card"
+  titulo: "h5, h6"
+  link: "@href"
+topics:
+  - itcd
+  - sucessoes
+ativo: true
+trusted: true
+fragile: false
+notas: |
+  AFFEMG — Associação dos Funcionários Fiscais do Estado de Minas Gerais.
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - Listagem HTML estática em `/blog`.
+  - Itens: `<a class="blog-post-card w-inline-block" href="/blog/SLUG">
+    <h5/h6>TÍTULO</h5></a>`. URLs são relativas, prefixar com domínio.
+  - Cobertura: alta no que toca carreira fazendária, ICMS-MG, ITCD-MG,
+    Reforma Tributária (IBS/CBS/EC 132) e pareceres técnicos de auditores
+    fiscais. Volume moderado (~30/mês).

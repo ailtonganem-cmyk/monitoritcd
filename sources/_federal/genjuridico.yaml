@@ -1,0 +1,50 @@
+id: genjuridico-blog
+uf: _federal
+nome: "GEN Jurídico — Blog editorial (GrupoGen)"
+tipo: doutrina
+parser: generic_html
+url: "https://blog.grupogen.com.br/juridico/"
+keywords_required:
+  - ITCMD
+  - ITCD
+  - ITD
+  - "causa mortis"
+  - "doação"
+  - sucessão
+  - inventário
+  - espólio
+  - holding
+  - "planejamento sucessório"
+  - testamento
+  - herança
+  - "regime de bens"
+  - "pacto antenupcial"
+  - "união estável"
+  - "reforma tributária"
+  - IBS
+  - CBS
+selectors:
+  item: "article a[href*='/areas-de-interesse/']"
+  titulo: "h4, h5, p.chakra-text"
+  link: "@href"
+topics:
+  - itcd
+  - sucessoes
+  - regime_bens
+ativo: true
+trusted: true
+fragile: true
+notas: |
+  GEN Jurídico — blog editorial do GrupoGen (Editora Forense + Atlas).
+  Doutrina jurídica de autores consagrados (Anderson Schreiber, etc.).
+
+  Validada 2026-05-12 via curl direto (HTTP 200, sem geo-block):
+  - URLs de post: `/juridico/areas-de-interesse/{categoria}/{slug}/`.
+  - Frontend usa Chakra UI + Emotion (CSS-in-JS) — classes `css-*` mudam
+    a cada build, então selectors usam `article a[href*="/areas-de-interesse/"]`
+    + heading interno (`h4/h5`) que são mais estáveis.
+  - fragile=true: a estrutura React pode mudar; revisar após primeiro run.
+
+  Cobertura: doutrina civilista/tributária de alta qualidade — direito de
+  família, sucessões, regime de bens, planejamento patrimonial. Mais
+  acadêmico que Conjur/Migalhas.
