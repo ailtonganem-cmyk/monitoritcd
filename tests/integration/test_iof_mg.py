@@ -289,7 +289,10 @@ class TestErrorPaths:
             _mock_auth(router)
             _mock_home(router)
             _mock_edicao_detail(router)
-            _mock_pdf(router, payload={"dados": {"arquivo": "@@@not-valid-base64!@@@"}, "erros": []})
+            _mock_pdf(
+                router,
+                payload={"dados": {"arquivo": "@@@not-valid-base64!@@@"}, "erros": []},
+            )
             with pytest.raises(CollectorError) as exc:
                 async with IOFMGCollector(_iof_source()) as c:
                     await c.collect()

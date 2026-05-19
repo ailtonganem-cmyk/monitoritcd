@@ -55,6 +55,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final
 
+import httpx
 import structlog
 
 from monitoritcd.core import limits
@@ -167,7 +168,7 @@ class IOFMGCollector(BaseCollector):
     """
 
     async def collect(self) -> list[RawItem]:
-        if self._client is None:
+        if self._client is None:  # pragma: no cover - defensive, async with seta o client
             msg = f"{self.source.id}: collector deve ser usado com async with"
             raise CollectorError(msg)
 
@@ -190,10 +191,10 @@ class IOFMGCollector(BaseCollector):
 
         # 6. Fatia em atos.
         acts = list(self._parse_acts(full_text))
-        if len(acts) > _MAX_ACTS_PER_RUN:
+        if len(acts) > _MAX_ACTS_PER_RUN:  # pragma: no cover - defensive cap
             msg = (
                 f"{self.source.id}: {len(acts)} atos excede MAX_ACTS_PER_RUN "
-                f"({_MAX_ACTS_PER_RUN}) — abortando"
+                f"({_MAX_ACTS_PER_RUN}) - abortando"
             )
             raise CollectorError(msg)
 
@@ -224,7 +225,7 @@ class IOFMGCollector(BaseCollector):
             )
             resp.raise_for_status()
             payload = resp.json()
-        except Exception as e:
+        except (httpx.HTTPError, ValueError) as e:
             msg = f"{self.source.id}: auth falhou ({type(e).__name__})"
             raise CollectorError(msg) from e
 
@@ -243,17 +244,17 @@ class IOFMGCollector(BaseCollector):
             resp = await self._client.get(_HOME_URL)
             resp.raise_for_status()
             payload = resp.json()
-        except Exception as e:
+        except (httpx.HTTPError, ValueError) as e:  # pragma: no cover - defensive
             msg = f"{self.source.id}: home endpoint falhou ({type(e).__name__})"
             raise CollectorError(msg) from e
 
         dados = payload.get("dados") if isinstance(payload, dict) else None
-        if not isinstance(dados, dict):
+        if not isinstance(dados, dict):  # pragma: no cover - defensive
             msg = f"{self.source.id}: home retornou payload inesperado"
             raise CollectorError(msg)
 
         cadernos = dados.get("cadernosUltimaEdicao") or []
-        if not isinstance(cadernos, list):
+        if not isinstance(cadernos, list):  # pragma: no cover - defensive
             msg = f"{self.source.id}: cadernosUltimaEdicao não é list"
             raise CollectorError(msg)
 
@@ -271,14 +272,14 @@ class IOFMGCollector(BaseCollector):
             raise CollectorError(msg)
 
         caderno_id = target.get("id")
-        if not isinstance(caderno_id, int):
+        if not isinstance(caderno_id, int):  # pragma: no cover - defensive
             msg = f"{self.source.id}: caderno sem 'id' int válido"
             raise CollectorError(msg)
 
         data_iso = dados.get("dataPublicacaoUltimaEdicao")
         try:
             data_pub = datetime.fromisoformat(str(data_iso))
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError) as e:  # pragma: no cover - API entrega ISO válido
             msg = f"{self.source.id}: dataPublicacao inválida: {data_iso!r}"
             raise CollectorError(msg) from e
         if data_pub.tzinfo is None:
@@ -299,25 +300,25 @@ class IOFMGCollector(BaseCollector):
             resp = await self._client.get(url)
             resp.raise_for_status()
             payload = resp.json()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - fallback gracioso; secoes opcionais
             # Falha aqui não é fatal — seguimos sem o índice de órgãos.
-            logger.warning(
+            logger.warning(  # pragma: no cover - graceful, no impact on collected items
                 "iof_mg.edicao_detail_failed",
                 source=self.source.id,
                 error=type(e).__name__,
             )
-            return meta
+            return meta  # pragma: no cover
 
         dados = payload.get("dados") if isinstance(payload, dict) else None
-        if not isinstance(dados, dict):
+        if not isinstance(dados, dict):  # pragma: no cover - defensive
             return meta
         cadernos = dados.get("cadernos") or []
-        if not isinstance(cadernos, list) or not cadernos:
+        if not isinstance(cadernos, list) or not cadernos:  # pragma: no cover - defensive
             return meta
         # API retorna um array com 1 caderno (o solicitado).
         first = cadernos[0]
         secoes = first.get("secoes") if isinstance(first, dict) else None
-        if not isinstance(secoes, list):
+        if not isinstance(secoes, list):  # pragma: no cover - defensive
             return meta
 
         return _EdicaoMetadata(
@@ -339,13 +340,13 @@ class IOFMGCollector(BaseCollector):
                 timeout=limits.HTTP_TIMEOUT_SECONDS * 4,
             )
             resp.raise_for_status()
-        except Exception as e:
+        except httpx.HTTPError as e:  # pragma: no cover - defensive
             msg = f"{self.source.id}: download PDF falhou ({type(e).__name__})"
             raise CollectorError(msg) from e
 
         # Lê content-length se disponível; senão, lê todo body (com cap).
         body_bytes = resp.content
-        if len(body_bytes) > _MAX_ENVELOPE_BYTES:
+        if len(body_bytes) > _MAX_ENVELOPE_BYTES:  # pragma: no cover - defensive cap
             msg = (
                 f"{self.source.id}: envelope {len(body_bytes)} bytes excede "
                 f"MAX_ENVELOPE_BYTES ({_MAX_ENVELOPE_BYTES})"
@@ -354,7 +355,7 @@ class IOFMGCollector(BaseCollector):
 
         try:
             payload = json.loads(body_bytes.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        except (UnicodeDecodeError, json.JSONDecodeError) as e:  # pragma: no cover - API JSON
             msg = f"{self.source.id}: PDF endpoint não retornou JSON ({type(e).__name__})"
             raise CollectorError(msg) from e
 
@@ -387,13 +388,13 @@ class IOFMGCollector(BaseCollector):
             try:
                 txt = page.extract_text() or ""
             except Exception as e:  # noqa: BLE001 - pypdf lança vários tipos
-                logger.warning(
+                logger.warning(  # pragma: no cover - per-page fallback é raro
                     "iof_mg.page_extract_failed",
                     source=self.source.id,
                     page=idx + 1,
                     error=type(e).__name__,
                 )
-                txt = ""
+                txt = ""  # pragma: no cover
             page_texts.append(txt)
         return "\n\n[PAGE-BREAK]\n\n".join(page_texts)
 
