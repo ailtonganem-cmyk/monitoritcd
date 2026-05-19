@@ -1,24 +1,34 @@
 id: doe-mg
 uf: MG
-nome: "Jornal Minas Gerais — Diário Oficial de MG"
+nome: "IOF/MG — Diário do Executivo (filtro SEFAZ-MG)"
 tipo: doe
-parser: generic_html
+parser: iof_mg
 url: "https://www.jornalminasgerais.mg.gov.br/"
-keywords_required:
-  - ITCD
-  - ITCMD
-  - "causa mortis"
-  - "doação"
+keywords_bypass: true
+org_mentions:
+  - "Secretaria de Estado de Fazenda"
+  - "SEFAZ"
+  - "SEF/MG"
+  - "SEF-MG"
+  - "Secretaria de Fazenda"
 selectors:
-  item: "div.lista-publicacoes article"
-  titulo: "h3 a"
-  link: "h3 a@href"
+  caderno: "Diário do Executivo"
 topics:
   - itcd
 ativo: true
 trusted: true
-fragile: true
 geo_restricted: true
 notas: |
-  Jornal Minas Gerais — DOE-MG.
-  ⚠️ Layout pode ter mudado em 2024-2026; verificar selectors.
+  Diário Oficial Eletrônico de MG (Jornal Minas Gerais).
+  Reescrita 2026-05-19: substitui generic_html anterior (que era SPA-blind
+  contra o site Angular). Agora consome API REST .NET diretamente.
+
+  Pipeline: POST /api/v1/Autenticacao/Autenticar (JWT anônimo) →
+  GET /Jornal/ObterUltimaEdicaoECalendarioParaHome (id do dia) →
+  GET /Jornal/ObterEdicaoPorId/{id} (seções por órgão) →
+  GET /Caderno/ObterArquivoCadernoPorId?id={id} com Bearer (PKCS#7 envelope)
+  → base64 decode → busca %PDF-/%%EOF → pypdf → regex de atos.
+
+  Filtra atos que mencionem SEFAZ-MG (qualquer variação em org_mentions),
+  independente de relacionar a ITCD/sucessões/regime_bens (keywords_bypass=true).
+  Volume típico: ~30-50 atos/dia que mencionam SEFAZ no Executivo.

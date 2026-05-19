@@ -88,6 +88,7 @@ class Parser(StrEnum):
     SENADO = "senado"
     SEFAZ_SP = "sefaz_sp"
     ALESP = "alesp"
+    IOF_MG = "iof_mg"
     CUSTOM = "custom"
 
 
