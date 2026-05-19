@@ -20,7 +20,7 @@ from datetime import datetime  # noqa: TC003 — pydantic precisa em runtime
 from enum import StrEnum
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from monitoritcd.core import limits
 
@@ -180,13 +180,40 @@ class Source(StrictModel):
     ativo: bool = True
     fragile: bool = False
     trusted: bool = False
+    # True quando o servidor da fonte rejeita conexões de IPs fora do BR.
+    # Fontes com `geo_restricted=True` são puladas em GitHub Actions runners (US)
+    # e devem ser coletadas via worker local em Windows Task Scheduler.
+    # Ver `scripts/install_local_monitor_task.ps1`.
     geo_restricted: bool = False
-    """True quando o servidor da fonte rejeita conexões de IPs fora do BR.
 
-    Fontes com `geo_restricted=True` são puladas em GitHub Actions runners (US)
-    e devem ser coletadas via worker local em Windows Task Scheduler.
-    Ver `scripts/install_local_monitor_task.ps1`.
-    """
+    # Quando True, o orquestrador pula o Filtro 1 (matches_keywords) para esta
+    # fonte. Pareado OBRIGATORIAMENTE com `org_mentions`: aceita items cujo texto
+    # contém qualquer string em org_mentions, mesmo sem keyword temática.
+    # Caso de uso: monitorar TUDO emitido por ou dirigido a um órgão (ex: SEFAZ-MG
+    # no IOF/MG), independente de relacionar a ITCD/sucessões/regime_bens.
+    # Combinar `keywords_bypass=True` sem `org_mentions` é rejeitado pelo
+    # validador `_bypass_requires_org_mentions`: defesa em camadas, sem trapdoor.
+    keywords_bypass: bool = False
+
+    # Variações do nome de um órgão a buscar no texto coletado (normalização
+    # NFKC + lower aplicada na comparação, padrão `filters/keywords._normalize`).
+    # Exemplo SEFAZ-MG no IOF/MG: ["Secretaria de Estado de Fazenda", "SEFAZ",
+    # "SEF/MG", "SEF-MG"]. Item entra se contém qualquer uma das strings.
+    # None/lista vazia = sem filtro de órgão. Limite de 10 entradas: nomes de
+    # órgãos têm variações finitas; lista inchada é red flag de design.
+    org_mentions: (
+        list[
+            Annotated[
+                str,
+                Field(
+                    min_length=limits.MIN_ORG_MENTION_LENGTH,
+                    max_length=limits.MAX_ORG_MENTION_LENGTH,
+                ),
+            ]
+        ]
+        | None
+    ) = Field(default=None, max_length=limits.MAX_ORG_MENTIONS)
+
     notas: str | None = Field(default=None, max_length=1000)
     topics: list[TopicId] = Field(default_factory=lambda: [Topic.ITCD.value], max_length=10)
 
@@ -197,6 +224,23 @@ class Source(StrictModel):
             msg = f"selectors excede MAX_METADATA_FIELDS ({limits.MAX_METADATA_FIELDS})"
             raise ValueError(msg)
         return v
+
+    @model_validator(mode="after")
+    def _bypass_requires_org_mentions(self) -> Source:
+        """Princípio Canônico 1 + 2: defesa em camadas, sem trapdoor implícito.
+
+        keywords_bypass=True remove o Filtro 1 (keywords). Para evitar que isso
+        vire 'aceite tudo dessa fonte', exigimos que a fonte declare explicitamente
+        QUE órgão está monitorando via org_mentions. Falha = erro de configuração
+        do YAML, não de runtime — pega na carga do arquivo.
+        """
+        if self.keywords_bypass and not self.org_mentions:
+            msg = (
+                f"Source {self.id!r}: keywords_bypass=True exige org_mentions com "
+                "pelo menos 1 entrada (filtro positivo de menção a órgão)"
+            )
+            raise ValueError(msg)
+        return self
 
 
 # ─────────────────────────────────────────────────────────────────────────────

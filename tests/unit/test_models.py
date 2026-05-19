@@ -119,6 +119,103 @@ class TestSource:
         with pytest.raises(ValidationError):
             src.id = "modified"  # type: ignore[misc]
 
+    def test_defaults_keywords_bypass_and_org_mentions(self) -> None:
+        src = _make_source()
+        assert src.keywords_bypass is False
+        assert src.org_mentions is None
+
+    def test_org_mentions_accepts_valid_list(self) -> None:
+        src = Source(
+            id="iof-mg",
+            uf="MG",
+            nome="IOF/MG",
+            tipo=TipoFonte.DOE,
+            parser=Parser.GENERIC_HTML,
+            url="https://www.jornalminasgerais.mg.gov.br/",
+            org_mentions=["SEFAZ", "Secretaria de Estado de Fazenda", "SEF/MG"],
+        )
+        assert src.org_mentions == ["SEFAZ", "Secretaria de Estado de Fazenda", "SEF/MG"]
+
+    def test_org_mentions_max_items_enforced(self) -> None:
+        with pytest.raises(ValidationError):
+            Source(
+                id="x",
+                uf="MG",
+                nome="x",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                org_mentions=[f"orgao{i}" for i in range(limits.MAX_ORG_MENTIONS + 1)],
+            )
+
+    def test_org_mention_max_length_enforced(self) -> None:
+        with pytest.raises(ValidationError):
+            Source(
+                id="x",
+                uf="MG",
+                nome="x",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                org_mentions=["x" * (limits.MAX_ORG_MENTION_LENGTH + 1)],
+            )
+
+    def test_org_mention_min_length_enforced(self) -> None:
+        with pytest.raises(ValidationError):
+            Source(
+                id="x",
+                uf="MG",
+                nome="x",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                org_mentions=["x"],  # 1 char, abaixo do mínimo
+            )
+
+    def test_keywords_bypass_requires_org_mentions(self) -> None:
+        """keywords_bypass=True sem org_mentions é rejeitado: evita fonte 'aceite tudo'."""
+        with pytest.raises(ValidationError) as exc:
+            Source(
+                id="x",
+                uf="MG",
+                nome="x",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                keywords_bypass=True,
+            )
+        assert "org_mentions" in str(exc.value)
+
+    def test_keywords_bypass_with_empty_org_mentions_rejected(self) -> None:
+        """bypass=True + org_mentions=[] também rejeitado: lista vazia ≠ filtro válido."""
+        with pytest.raises(ValidationError) as exc:
+            Source(
+                id="x",
+                uf="MG",
+                nome="x",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                keywords_bypass=True,
+                org_mentions=[],
+            )
+        assert "org_mentions" in str(exc.value)
+
+    def test_keywords_bypass_with_org_mentions_accepted(self) -> None:
+        src = Source(
+            id="iof-mg-sefaz",
+            uf="MG",
+            nome="IOF/MG — SEFAZ",
+            tipo=TipoFonte.DOE,
+            parser=Parser.GENERIC_HTML,
+            url="https://www.jornalminasgerais.mg.gov.br/",
+            keywords_bypass=True,
+            org_mentions=["SEFAZ", "Secretaria de Estado de Fazenda"],
+        )
+        assert src.keywords_bypass is True
+        assert src.org_mentions is not None
+        assert "SEFAZ" in src.org_mentions
+
 
 @pytest.mark.unit
 class TestRawItem:

@@ -86,6 +86,14 @@ MAX_TOPIC_ID_LENGTH: Final[int] = 32
 MAX_NOTIFICATION_CHANNELS: Final[int] = 5
 MAX_ACTIVE_UFS: Final[int] = 27
 MAX_METADATA_FIELDS: Final[int] = 30
+# Source.org_mentions — listas de variações do nome de um órgão a procurar
+# no texto coletado (ex: ["SEFAZ", "Secretaria de Estado de Fazenda", "SEF/MG"]).
+# Limite alinhado com MAX_ORGAO_EMISSOR_LENGTH (200): se cabe como nome do órgão,
+# cabe como termo de busca. MAX_ORG_MENTIONS=10 cobre as variações reais
+# (sigla, nome longo, abreviações com hífen/barra) sem incentivar listas inchadas.
+MIN_ORG_MENTION_LENGTH: Final[int] = 2  # 2 chars permite siglas curtas (UF, OS, AC)
+MAX_ORG_MENTION_LENGTH: Final[int] = 200
+MAX_ORG_MENTIONS: Final[int] = 10
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Object depth (MAX_DEPTH)

@@ -162,10 +162,23 @@ def filter_by_keywords(
     *,
     extra_keywords: list[str] | None = None,
 ) -> list[tuple[Source, RawItem, list[str]]]:
-    """Aplica filtro 1 (keywords). Retorna items aprovados + keywords encontradas.
+    """Aplica filtro 1 (keywords + opcionalmente menção a órgão).
+
+    Regras (decididas pela combinação de `source.keywords_bypass` e `source.org_mentions`):
+
+    | bypass | org_mentions | passa quando…                                |
+    |--------|--------------|----------------------------------------------|
+    | False  | None/vazio   | keyword temática casa (comportamento legado) |
+    | False  | preenchido   | keyword OU menção a órgão casa (amplia)      |
+    | True   | preenchido   | menção a órgão casa (keywords não exigidas)  |
+    | True   | None/vazio   | rejeitado no validador do Source             |
+
+    Em todos os casos, retorna a lista de termos casados (keywords + menções)
+    para alimentar o `_density_score` do prescore — menções de órgão contam pra
+    densidade, então um ato que repete "SEFAZ" várias vezes ganha peso.
 
     Quando `extra_keywords` é fornecido, expande o default global com keywords
-    dinâmicas adicionadas via `/temas` (pesistidas em `config/extra_keywords`).
+    dinâmicas adicionadas via `/temas` (persistidas em `config/extra_keywords`).
     Fontes com `keywords_required` próprio mantêm comportamento isolado.
     """
     default_kws = (
@@ -175,9 +188,22 @@ def filter_by_keywords(
     for source, item in items:
         text = (item.titulo_raw or "") + " " + (item.texto_raw or "")
         kws = source.keywords_required or default_kws
-        matched, found = matches_keywords(text, kws)
-        if matched:
-            out.append((source, item, found))
+
+        kw_matched, kw_found = matches_keywords(text, kws)
+        if source.org_mentions:
+            org_matched, org_found = matches_keywords(text, list(source.org_mentions))
+        else:
+            org_matched, org_found = False, []
+
+        # bypass + org_mentions (garantido pelo validador): só órgão importa.
+        # Sem bypass: keyword OU órgão (org_mentions amplia captura).
+        passes = org_matched if source.keywords_bypass else kw_matched or org_matched
+
+        if passes:
+            # Une mantendo ordem e sem duplicatas (kw_found primeiro).
+            seen = set(kw_found)
+            combined = list(kw_found) + [o for o in org_found if o not in seen]
+            out.append((source, item, combined))
     return out
 
 
