@@ -77,6 +77,7 @@ from monitoritcd.filters.llm_classifier import build_system_prompt, classify_wit
 from monitoritcd.filters.prescore import passes_cutoff, prescore
 from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
+from monitoritcd.notifiers.severity import effective_severity
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
 from monitoritcd.storage.audit_log import AuditChainError, AuditLog
 
@@ -308,8 +309,19 @@ async def classify_and_store(
             report.errors.append(f"classify_batch: {e}")
             continue
 
-        for (source, item), llm_result in zip(batch, llm_results, strict=True):
-            # Descarta se LLM marcou como descartado
+        for (source, item), llm_result_raw in zip(batch, llm_results, strict=True):
+            # Aplica override de severity por configuração da fonte.
+            # Caso atual: fontes com keywords_bypass=True (ex: doe-mg coletando
+            # via menção a SEFAZ) rebaixam NORMAL→BAIXA, evitando push diário
+            # de atos administrativos rotineiros. Ver notifiers/severity.py.
+            eff_tier = effective_severity(source, llm_result_raw)
+            llm_result = (
+                llm_result_raw.model_copy(update={"severity_tier": eff_tier})
+                if eff_tier != llm_result_raw.severity_tier
+                else llm_result_raw
+            )
+
+            # Descarta se LLM marcou como descartado (após override).
             if llm_result.severity_tier == SeverityTier.DESCARTADO:
                 continue
 

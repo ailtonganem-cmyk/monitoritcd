@@ -9,13 +9,20 @@ Decide canais e urgência baseado em `SeverityTier`:
 | NORMAL 🟡   | Email+Telegram  | Normal           | Diário      |
 | BAIXA 🟢    | Email           | —                | Semanal     |
 | DESCARTADO  | (nenhum)        | —                | —           |
+
+Também expõe `effective_severity(source, llm_result)` para aplicar overrides
+baseados na configuração da fonte (ex: rebaixar NORMAL→BAIXA em fontes com
+`keywords_bypass=True` para não poluir o Telegram com atos administrativos).
 """
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from monitoritcd.core.models import SeverityTier
+
+if TYPE_CHECKING:
+    from monitoritcd.core.models import LLMResult, Source
 
 Channel = Literal["email", "telegram", "discord", "ntfy"]
 DigestPeriod = Literal["immediate", "daily", "weekly", "none"]
@@ -68,3 +75,43 @@ def label_for_tier(tier: SeverityTier) -> str:
         SeverityTier.BAIXA: "Baixa",
         SeverityTier.DESCARTADO: "Descartado",
     }[tier]
+
+
+def effective_severity(source: Source, llm_result: LLMResult) -> SeverityTier:
+    """Calcula tier efetiva aplicando overrides por configuração da fonte.
+
+    Regra atual (única override):
+        Fontes com `keywords_bypass=True` entram itens via menção a órgão
+        (org_mentions). O LLM classifica esses itens olhando para o conteúdo,
+        mas atos administrativos rotineiros (nomeações, designações) podem
+        receber NORMAL por estarem em fonte oficial. Para não poluir o canal
+        diário do Telegram com esse tipo de ato, rebaixamos NORMAL→BAIXA
+        nessas fontes.
+
+        ALTA e CRITICO permanecem — se o LLM marcou esse tier, é algo
+        substantivo (mudança de alíquota, decreto regulamentar) e merece
+        push imediato/destaque mesmo vindo de fonte com bypass.
+
+        DESCARTADO/BAIXA permanecem — já não estão no canal diário.
+
+    Resumo da tabela:
+
+    | source.keywords_bypass | llm_tier  | effective_tier |
+    |------------------------|-----------|----------------|
+    | False (qualquer fonte) | qualquer  | llm_tier       |
+    | True                   | CRITICO   | CRITICO        |
+    | True                   | ALTA      | ALTA           |
+    | True                   | NORMAL    | **BAIXA**      |
+    | True                   | BAIXA     | BAIXA          |
+    | True                   | DESCARTADO| DESCARTADO     |
+
+    Args:
+        source: configuração da fonte que originou o item.
+        llm_result: resultado da classificação LLM (imutável).
+
+    Returns:
+        SeverityTier ajustado. Pode ser igual a `llm_result.severity_tier`.
+    """
+    if source.keywords_bypass and llm_result.severity_tier == SeverityTier.NORMAL:
+        return SeverityTier.BAIXA
+    return llm_result.severity_tier
