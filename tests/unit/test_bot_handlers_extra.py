@@ -25,6 +25,7 @@ from monitoritcd.bot.handlers_extra import (
     handle_lembrar,
     handle_quota,
     handle_reprocessar,
+    handle_sefazmg,
     handle_silenciar,
     handle_tags,
 )
@@ -306,6 +307,97 @@ class TestComentarLembrarCancelar:
 
 
 @pytest.mark.unit
+class TestSefazMG:
+    """`/sefazmg [Nd]` — lista atos de fontes com `keywords_bypass=True`."""
+
+    async def _ctx_with_bypass_doc(
+        self,
+        *,
+        with_bypass: bool = True,
+        published_at: datetime | None = None,
+    ) -> BotContext:
+        """Cria storage com 1 doc, fonte com ou sem keywords_bypass."""
+        storage = InMemoryStorage(owner_id="o")
+        src = Source(
+            id="doe-mg" if with_bypass else "src-normal",
+            uf="MG",
+            nome="IOF/MG" if with_bypass else "Source Normal",
+            tipo=TipoFonte.DOE,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+            keywords_bypass=with_bypass,
+            org_mentions=["SEFAZ"] if with_bypass else None,
+        )
+        raw = RawItem(
+            source_id=src.id,
+            titulo_raw="PORTARIA SUFI Nº 99",
+            url="https://x.gov.br/ato/99",
+            fetched_at=published_at or NOW,
+            data_publicacao=published_at or NOW,
+            content_hash="a" * 64,
+        )
+        llm = LLMResult(
+            classified_at=NOW,
+            llm_model="x",
+            llm_prompt_version="v1",
+            tipo=TipoAto.PORTARIA,
+            relevancia=7,
+            severity_tier=SeverityTier.BAIXA,
+            resumo="r",
+        )
+        doc = Documento(
+            owner_id="o",
+            doc_id="doc-99",
+            source=src,
+            original=raw,
+            llm=llm,
+            status=StatusDocumento.CLASSIFIED,
+        )
+        await storage.save_documento(doc)
+        return BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+
+    @pytest.mark.asyncio
+    async def test_sem_args_usa_default_7d(self) -> None:
+        ctx = await self._ctx_with_bypass_doc()
+        r = await handle_sefazmg(ctx, _cmd("sefazmg"))
+        assert not r.is_error
+        assert "doe-mg" in r.text or "SEFAZ" in r.text.upper() or "fontes" in r.text
+
+    @pytest.mark.asyncio
+    async def test_arg_duration_valida(self) -> None:
+        ctx = await self._ctx_with_bypass_doc()
+        r = await handle_sefazmg(ctx, _cmd("sefazmg", "2w"))
+        assert not r.is_error
+        assert "2w" in r.text or "doe-mg" in r.text
+
+    @pytest.mark.asyncio
+    async def test_arg_invalida_retorna_erro(self) -> None:
+        ctx = await self._ctx_with_bypass_doc()
+        r = await handle_sefazmg(ctx, _cmd("sefazmg", "abc"))
+        assert r.is_error
+        assert "Formato inválido" in r.text or "invalido" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_fonte_sem_bypass_nao_aparece(self) -> None:
+        """Doc de fonte normal (keywords_bypass=False) NÃO entra na listagem."""
+        ctx = await self._ctx_with_bypass_doc(with_bypass=False)
+        r = await handle_sefazmg(ctx, _cmd("sefazmg"))
+        # Comando não retorna esse doc; deve dizer "Nenhum".
+        assert "Nenhum" in r.text or "0 ato" in r.text
+
+    @pytest.mark.asyncio
+    async def test_doc_fora_da_janela_nao_aparece(self) -> None:
+        """Doc publicado há 30 dias não aparece em /sefazmg 7d."""
+        from datetime import timedelta  # noqa: PLC0415
+
+        old_date = datetime.now(UTC) - timedelta(days=30)
+        ctx = await self._ctx_with_bypass_doc(published_at=old_date)
+        r = await handle_sefazmg(ctx, _cmd("sefazmg", "7d"))
+        # Janela é 7d; doc tem 30d → não aparece.
+        assert "Nenhum" in r.text or "0 ato" in r.text
+
+
+@pytest.mark.unit
 class TestExtraRegistration:
     def test_dispatch_includes_new_commands(self) -> None:
         """Verifica que HANDLERS incorpora os novos handlers."""
@@ -329,5 +421,6 @@ class TestExtraRegistration:
             "comentar",
             "lembrar",
             "cancelar",
+            "sefazmg",
         ):
             assert cmd_name in HANDLERS, f"comando {cmd_name} não registrado"

@@ -535,6 +535,87 @@ async def handle_cancelar(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResul
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# /sefazmg — lista atos de fontes com keywords_bypass (ex: SEFAZ-MG no IOF/MG)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SEFAZMG_DEFAULT_DURATION: Final[str] = "7d"
+_SEFAZMG_MAX_ITEMS: Final[int] = 30
+
+
+async def handle_sefazmg(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """`/sefazmg [Nd|Nw|Nm]` — lista atos de fontes com `keywords_bypass=True`.
+
+    Caso de uso: SEFAZ-MG no IOF/MG (PR #42), onde a fonte coleta atos por
+    menção ao órgão (não por keyword temática). Esse comando lista os atos
+    capturados nessa via, agrupando por fonte. Genérico — funciona para
+    qualquer fonte futura com `keywords_bypass=True` (PGE-MG, AGE-MG etc).
+
+    Default: últimos 7 dias. Aceita `1d`, `2w`, `1m`, `1y` (regex DURATION).
+    """
+    # Lazy imports para evitar ciclo / consumo de memória em handlers não usados
+    from monitoritcd.security.markdown_escape import escape_markdown_v2, safe_link  # noqa: PLC0415
+
+    duration = cmd.args[0] if cmd.args else _SEFAZMG_DEFAULT_DURATION
+    if not DURATION_REGEX.match(duration):
+        return HandlerResult(
+            text=(
+                "❌ Formato inválido. Use: `/sefazmg [Nd|Nw|Nm|Ny]` "
+                "(ex: `/sefazmg 7d`, `/sefazmg 2w`)"
+            ),
+            is_error=True,
+        )
+
+    delta = _parse_duration_to_timedelta(duration)
+    since = datetime.now(UTC) - delta
+    docs = await ctx.storage.list_documentos(since=since, limit=500)
+
+    # Filtra fontes com bypass (genérico — funciona para qualquer org_mentions).
+    bypass_docs = [d for d in docs if d.source.keywords_bypass]
+
+    if not bypass_docs:
+        return HandlerResult(text=f"📊 Nenhum ato de fontes 'bypass' nos últimos `{duration}`.")
+
+    # Ordena por data de publicação (mais recente primeiro), fallback fetched_at.
+    bypass_docs.sort(
+        key=lambda d: d.original.data_publicacao or d.original.fetched_at,
+        reverse=True,
+    )
+
+    truncated = bypass_docs[:_SEFAZMG_MAX_ITEMS]
+    suffix = (
+        f" *(+{len(bypass_docs) - _SEFAZMG_MAX_ITEMS} omitidos)*"
+        if len(bypass_docs) > _SEFAZMG_MAX_ITEMS
+        else ""
+    )
+
+    header = (
+        f"🏛️ *Atos de fontes bypass — últimos `{escape_markdown_v2(duration)}`*\n"
+        f"Total: {len(bypass_docs)} ato\\(s\\){suffix}\n"
+    )
+
+    lines: list[str] = [header]
+    for d in truncated:
+        titulo = escape_markdown_v2(d.original.titulo_raw[:200])
+        link_label = titulo[:120]
+        link = safe_link(link_label, d.original.url)
+        source_id = escape_markdown_v2(d.source.id)
+        tier_emoji = (
+            "🔴"
+            if d.llm and d.llm.severity_tier.value == "critico"
+            else (
+                "🟠"
+                if d.llm and d.llm.severity_tier.value == "alta"
+                else ("🟡" if d.llm and d.llm.severity_tier.value == "normal" else "🟢")
+            )
+        )
+        data = d.original.data_publicacao or d.original.fetched_at
+        data_str = escape_markdown_v2(data.strftime("%d/%m/%Y"))
+        lines.append(f"{tier_emoji} `{source_id}` \\| {data_str} \\| {link}")
+
+    return HandlerResult(text="\n".join(lines), pre_escaped=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Dispatch — exporta dict para merge em HANDLERS
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -562,4 +643,5 @@ EXTRA_HANDLERS: Final[dict[str, ExtraHandler]] = {
     "comentar": handle_comentar,
     "lembrar": handle_lembrar,
     "cancelar": handle_cancelar,
+    "sefazmg": handle_sefazmg,
 }
