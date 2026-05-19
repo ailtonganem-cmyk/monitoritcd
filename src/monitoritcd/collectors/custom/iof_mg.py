@@ -216,7 +216,9 @@ class IOFMGCollector(BaseCollector):
 
     async def _authenticate(self) -> str:
         """POST anônimo retorna JWT efêmero. Falha = aborta (sem retry)."""
-        assert self._client is not None
+        if self._client is None:  # pragma: no cover - defensive, garantido por async with
+            msg = f"{self.source.id}: collector deve ser usado com async with"
+            raise CollectorError(msg)
         try:
             resp = await self._client.post(
                 _AUTH_URL,
@@ -239,7 +241,9 @@ class IOFMGCollector(BaseCollector):
 
     async def _discover_edicao(self, caderno_alvo: str) -> _EdicaoMetadata:
         """Lista cadernos do dia, escolhe o alvo (ex: 'Diário do Executivo')."""
-        assert self._client is not None
+        if self._client is None:  # pragma: no cover - defensive, garantido por async with
+            msg = f"{self.source.id}: collector deve ser usado com async with"
+            raise CollectorError(msg)
         try:
             resp = await self._client.get(_HOME_URL)
             resp.raise_for_status()
@@ -294,7 +298,9 @@ class IOFMGCollector(BaseCollector):
 
     async def _fetch_edicao_detail(self, meta: _EdicaoMetadata) -> _EdicaoMetadata:
         """Enriquece com secoes[] (cabeçalhos de órgão + paginaInicial)."""
-        assert self._client is not None
+        if self._client is None:  # pragma: no cover - defensive, garantido por async with
+            msg = f"{self.source.id}: collector deve ser usado com async with"
+            raise CollectorError(msg)
         url = _EDICAO_URL_TPL.format(id=meta.caderno_id)
         try:
             resp = await self._client.get(url)
@@ -330,7 +336,9 @@ class IOFMGCollector(BaseCollector):
 
     async def _download_and_unwrap_pdf(self, caderno_id: int, jwt: str) -> bytes:
         """Baixa envelope, valida tamanho, decodifica base64, extrai PDF interno."""
-        assert self._client is not None
+        if self._client is None:  # pragma: no cover - defensive, garantido por async with
+            msg = f"{self.source.id}: collector deve ser usado com async with"
+            raise CollectorError(msg)
         url = _PDF_URL_TPL.format(id=caderno_id)
         try:
             resp = await self._client.get(
