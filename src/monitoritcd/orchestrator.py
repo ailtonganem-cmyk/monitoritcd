@@ -56,6 +56,7 @@ from monitoritcd.collectors import (
     CamaraDeputadosCollector,
     GenericHTMLCollector,
     GenericRSSCollector,
+    IOFMGCollector,
     LexMLCollector,
     LexMLPortalCollector,
     SAPLCollector,
@@ -101,6 +102,7 @@ _PARSERS_TO_COLLECTORS = {
     Parser.SENADO: SenadoCollector,
     Parser.SEFAZ_SP: SefazSPCollector,
     Parser.ALESP: ALESPCollector,
+    Parser.IOF_MG: IOFMGCollector,
 }
 
 
