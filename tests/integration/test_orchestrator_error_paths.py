@@ -579,3 +579,53 @@ class TestRunPipelineAuditError:
         )
         # Pipeline completou apesar do audit falhar
         assert report.finished_at is not None
+
+
+@pytest.mark.integration
+class TestRunPipelineSaveRunReportError:
+    @pytest.mark.asyncio
+    async def test_storage_sem_save_run_report_nao_quebra_run(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        # InMemoryStorage não implementa save_run_report -> AttributeError
+        # silencioso (debug), run completa sem entrar em report.errors.
+        from monitoritcd.orchestrator import run_pipeline  # noqa: PLC0415
+
+        sources_dir = tmp_path  # type: ignore[assignment]
+        storage = InMemoryStorage(OWNER)
+
+        report = await run_pipeline(
+            sources_dir=sources_dir,  # type: ignore[arg-type]
+            settings=_settings(),
+            storage=storage,
+            llm_provider=FakeLLMProvider(),
+            notify=False,
+        )
+        assert report.finished_at is not None
+        assert not any("save_run_report" in e for e in report.errors)
+
+    @pytest.mark.asyncio
+    async def test_save_run_report_falha_nao_quebra_run(
+        self,
+        tmp_path: pytest.TempPathFactory,
+    ) -> None:
+        # Backend implementa save_run_report mas a gravação falha (ex.:
+        # Firestore indisponível) -> log + report.errors, run completa.
+        from monitoritcd.orchestrator import run_pipeline  # noqa: PLC0415
+
+        sources_dir = tmp_path  # type: ignore[assignment]
+        storage = InMemoryStorage(OWNER)
+        mock_save_run_report = AsyncMock(side_effect=RuntimeError("firestore indisponivel"))
+
+        with patch.object(storage, "save_run_report", mock_save_run_report, create=True):
+            report = await run_pipeline(
+                sources_dir=sources_dir,  # type: ignore[arg-type]
+                settings=_settings(),
+                storage=storage,
+                llm_provider=FakeLLMProvider(),
+                notify=False,
+            )
+        # Pipeline completou apesar do save_run_report falhar
+        assert report.finished_at is not None
+        assert any("save_run_report" in e for e in report.errors)

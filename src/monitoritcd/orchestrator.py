@@ -29,7 +29,7 @@ Pipeline single-run (uma execução de cron):
     [Notifier: digest + push imediato para CRITICO]
          │
          ▼
-    [Audit log + Healthcheck ping]
+    [Audit log + Healthcheck ping + persiste RunReport em monitor_runs]
 
 Princípios canônicos aplicados:
 - Falha em uma fonte NÃO derruba pipeline (try/except por fonte).
@@ -784,6 +784,18 @@ async def run_pipeline(  # noqa: PLR0915
     await ping_healthcheck(settings, success=True)
 
     report.finished_at = datetime.now(UTC)
+
+    # 10. Persiste RunReport em monitor_runs (best-effort — falha aqui não
+    # derruba o run, que já terminou).
+    try:
+        await storage.save_run_report(report)
+    except AttributeError:
+        # Storage backend sem save_run_report (ex.: InMemoryStorage em testes).
+        bound.debug("run.save_run_report_unavailable")
+    except Exception as e:  # noqa: BLE001 — write ao Firestore falha por vários motivos; best-effort
+        bound.exception("run.save_run_report_failed", error=str(e))
+        report.errors.append(f"save_run_report: {e}")
+
     bound.info(
         "run.complete",
         duration_s=report.duration_seconds,

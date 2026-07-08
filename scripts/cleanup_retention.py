@@ -63,7 +63,7 @@ def cleanup(*, dry_run: bool) -> int:
     # Documentos descartados
     print(f"Purgando documentos descartados < {cutoff_descartado.isoformat()}...")
     query = (
-        client.collection("documentos")
+        client.collection("monitor_documentos")
         .where("llm.severity_tier", "==", "descartado")
         .where("original.fetched_at", "<", _dt_to_stored(cutoff_descartado))
         .limit(500)
@@ -78,7 +78,7 @@ def cleanup(*, dry_run: bool) -> int:
     # Audit log antigo
     print(f"Purgando audit_log < {cutoff_audit.isoformat()}...")
     query2 = (
-        client.collection("audit_log")
+        client.collection("monitor_audit_log")
         .where("timestamp", "<", _dt_to_stored(cutoff_audit))
         .limit(500)
     )
@@ -89,10 +89,10 @@ def cleanup(*, dry_run: bool) -> int:
         else:
             snap.reference.delete()
 
-    # Execuções antigas (se collection existir)
+    # Execuções antigas (monitor_runs — RunReport persistido por run_pipeline)
     print(f"Purgando execucoes < {cutoff_exec.isoformat()}...")
     query3 = (
-        client.collection("execucoes")
+        client.collection("monitor_runs")
         .where("started_at", "<", _dt_to_stored(cutoff_exec))
         .limit(500)
     )

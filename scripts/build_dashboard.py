@@ -103,7 +103,7 @@ def load_metrics() -> dict[str, Any]:
         owner_id = __import__("os").environ.get("OWNER_ID", "")
 
         query = (
-            client.collection("documentos")
+            client.collection("monitor_documentos")
             .where("owner_id", "==", owner_id)
             .order_by("original.fetched_at", direction="DESCENDING")
             .limit(500)

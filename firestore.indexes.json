@@ -1,7 +1,7 @@
 {
   "indexes": [
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -10,7 +10,7 @@
       ]
     },
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -19,7 +19,7 @@
       ]
     },
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -27,7 +27,7 @@
       ]
     },
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -35,7 +35,7 @@
       ]
     },
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -44,7 +44,7 @@
       ]
     },
     {
-      "collectionGroup": "documentos",
+      "collectionGroup": "monitor_documentos",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },
@@ -54,7 +54,7 @@
       ]
     },
     {
-      "collectionGroup": "audit_log",
+      "collectionGroup": "monitor_audit_log",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "owner_id", "order": "ASCENDING" },

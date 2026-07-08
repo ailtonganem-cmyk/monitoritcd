@@ -30,7 +30,13 @@ from pathlib import Path
 from typing import Any
 
 # Coleções a exportar (todas que pertencem ao owner)
-COLLECTIONS_TO_BACKUP = ["documentos", "config", "watches", "audit_log"]
+COLLECTIONS_TO_BACKUP = [
+    "monitor_documentos",
+    "monitor_config",
+    "monitor_watches",
+    "monitor_audit_log",
+    "monitor_runs",
+]
 
 
 def export_firestore(owner_id: str) -> dict[str, Any]:

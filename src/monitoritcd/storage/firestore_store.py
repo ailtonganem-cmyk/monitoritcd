@@ -31,14 +31,16 @@ if TYPE_CHECKING:
     from google.cloud.firestore import AsyncClient
 
     from monitoritcd.core.models import LLMResult
+    from monitoritcd.orchestrator import RunReport
 
 logger = structlog.get_logger(__name__)
 
-# Coleções
-COLLECTION_DOCUMENTOS = "documentos"
-COLLECTION_ACTIVE_STATES = "config"
-COLLECTION_WATCHES = "watches"
-COLLECTION_AUDIT = "audit_log"
+# Coleções (prefixo `monitor_` — Firestore compartilhado com outro projeto)
+COLLECTION_DOCUMENTOS = "monitor_documentos"
+COLLECTION_ACTIVE_STATES = "monitor_config"
+COLLECTION_WATCHES = "monitor_watches"
+COLLECTION_AUDIT = "monitor_audit_log"
+COLLECTION_RUNS = "monitor_runs"
 
 
 def _dt_to_stored(value: datetime) -> str:
@@ -497,3 +499,30 @@ class FirestoreStorage:
             canonical = json.dumps(data, sort_keys=True, default=str)
             return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
         return GENESIS_HASH
+
+    # ─── Run reports ──────────────────────────────────────────────────────
+
+    async def save_run_report(self, report: RunReport) -> None:
+        """Persiste o `RunReport` de uma execução do orquestrador em `monitor_runs`.
+
+        `started_at`/`finished_at` são gravados como ISO string via
+        `_dt_to_stored` — a MESMA convenção de `save_documento` (pydantic-JSON)
+        e da query de retenção em `scripts/cleanup_retention.py`
+        (`.where("started_at", "<", _dt_to_stored(cutoff))`). Manter o formato
+        idêntico dos dois lados é o que faz o filtro de purga casar (Firestore
+        não compara string com Timestamp, silenciosamente) e alinha todas as
+        coleções `monitor_*` no mesmo formato de data. `finished_at` pode ser
+        None (run interrompido antes de concluir) — nesse caso não passa pelo
+        helper, que não trata None.
+        """
+        from dataclasses import asdict  # noqa: PLC0415
+
+        data = asdict(report)
+        data["duration_seconds"] = report.duration_seconds
+        data["owner_id"] = self._owner_id
+        data["started_at"] = _dt_to_stored(report.started_at)
+        data["finished_at"] = (
+            _dt_to_stored(report.finished_at) if report.finished_at is not None else None
+        )
+        ref = self._client.collection(COLLECTION_RUNS).document(report.run_id)
+        await ref.set(data)

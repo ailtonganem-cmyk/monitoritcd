@@ -38,11 +38,11 @@ from typing import Any, Final
 
 ALLOWED_COLLECTIONS: Final[frozenset[str]] = frozenset(
     {
-        "documento",
-        "watches",
-        "audit_log",
-        "config",
-        "execucoes",
+        "monitor_documentos",
+        "monitor_watches",
+        "monitor_audit_log",
+        "monitor_config",
+        "monitor_runs",
     }
 )
 DOC_ID_REGEX: Final[re.Pattern[str]] = re.compile(r"^[a-zA-Z0-9_:.\-]{1,128}$")

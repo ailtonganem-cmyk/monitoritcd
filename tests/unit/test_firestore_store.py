@@ -28,6 +28,7 @@ import pytest
 
 from monitoritcd.storage.firestore_store import (
     COLLECTION_DOCUMENTOS,
+    COLLECTION_RUNS,
     FirestoreStorage,
     _dt_to_stored,
 )
@@ -80,6 +81,42 @@ class FakeClient:
 
 def _where_calls(calls: list[tuple[Any, ...]], field: str) -> list[tuple[Any, Any]]:
     return [(c[2], c[3]) for c in calls if c[0] == "where" and c[1] == field]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fake do client Firestore para `.collection(...).document(...).set(...)`
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class FakeDocRef:
+    """Registra o payload de `.set(...)` para inspeção pelo teste."""
+
+    def __init__(self, collection_name: str, doc_id: str, sink: list[tuple[str, str, Any]]) -> None:
+        self._collection_name = collection_name
+        self._doc_id = doc_id
+        self._sink = sink
+
+    async def set(self, data: dict[str, Any]) -> None:
+        self._sink.append((self._collection_name, self._doc_id, data))
+
+
+class FakeWriteCollection:
+    def __init__(self, name: str, sink: list[tuple[str, str, Any]]) -> None:
+        self._name = name
+        self._sink = sink
+
+    def document(self, doc_id: str) -> FakeDocRef:
+        return FakeDocRef(self._name, doc_id, self._sink)
+
+
+class FakeWriteClient:
+    """Substitui `AsyncClient` só para capturar `.collection(...).document(...).set(...)`."""
+
+    def __init__(self) -> None:
+        self.writes: list[tuple[str, str, Any]] = []
+
+    def collection(self, name: str) -> FakeWriteCollection:
+        return FakeWriteCollection(name, self.writes)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -193,3 +230,57 @@ class TestSearchDocumentosPorIndiceQueryUsaString:
         matches = _where_calls(client.calls, "original.fetched_at")
         assert matches == [(">=", "2026-04-26T00:00:00.000000Z")]
         assert isinstance(matches[0][1], str)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# `save_run_report` — persiste RunReport em monitor_runs
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+class TestSaveRunReport:
+    async def test_grava_em_monitor_runs_com_run_id_como_doc_id(self) -> None:
+        from monitoritcd.orchestrator import RunReport  # noqa: PLC0415
+
+        client = FakeWriteClient()
+        storage = FirestoreStorage(client=client, owner_id=OWNER)  # type: ignore[arg-type]
+        report = RunReport(
+            run_id="run-abc123",
+            started_at=datetime(2026, 4, 26, 12, 0, 0, tzinfo=UTC),
+            finished_at=datetime(2026, 4, 26, 12, 5, 0, tzinfo=UTC),
+            sources_consulted=3,
+            items_stored=7,
+        )
+
+        await storage.save_run_report(report)
+
+        assert len(client.writes) == 1
+        collection_name, doc_id, data = client.writes[0]
+        assert collection_name == COLLECTION_RUNS
+        assert doc_id == "run-abc123"
+        assert data["run_id"] == "run-abc123"
+        assert data["sources_consulted"] == 3
+        assert data["items_stored"] == 7
+        assert data["duration_seconds"] == 300.0
+        assert data["owner_id"] == OWNER
+        # started_at/finished_at seguem a convenção `_dt_to_stored` (ISO string
+        # com 6 dígitos de microssegundos) — igual a `save_documento` e à query
+        # de retenção em `cleanup_retention.py`, garantindo que o filtro casa.
+        assert data["started_at"] == "2026-04-26T12:00:00.000000Z"
+        assert data["finished_at"] == "2026-04-26T12:05:00.000000Z"
+
+    async def test_owner_id_gravado_e_o_da_instancia_nao_do_report(self) -> None:
+        from monitoritcd.orchestrator import RunReport  # noqa: PLC0415
+
+        client = FakeWriteClient()
+        storage = FirestoreStorage(client=client, owner_id="dono-especifico")  # type: ignore[arg-type]
+        report = RunReport(run_id="run-xyz", started_at=datetime(2026, 4, 26, tzinfo=UTC))
+
+        await storage.save_run_report(report)
+
+        _collection_name, _doc_id, data = client.writes[0]
+        assert data["owner_id"] == "dono-especifico"
+        # finished_at=None (run não concluído) é preservado como None — não
+        # passa pelo `_dt_to_stored`, que não trata None.
+        assert data["finished_at"] is None
+        assert data["started_at"] == "2026-04-26T00:00:00.000000Z"
