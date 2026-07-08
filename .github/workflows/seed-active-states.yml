@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       ufs:
-        description: "UFs a ativar (espaço-separadas, ex: SP RJ MG RS DF)"
+        description: "UFs a ativar (espaço-separadas, ex: MG)"
         type: string
-        default: "SP RJ MG RS DF"
+        default: "MG"
       federal_active:
         description: "Coletar fontes federais"
         type: boolean

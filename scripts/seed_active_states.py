@@ -6,7 +6,7 @@ bot Telegram funcional. Depois de rodado, mudanças individuais devem ir
 pelo bot (`/estados ativar UF`).
 
 Uso:
-    python scripts/seed_active_states.py --ufs SP RJ MG RS DF
+    python scripts/seed_active_states.py --ufs MG
     python scripts/seed_active_states.py --ufs SP --federal-active false
 
 Exige `GOOGLE_APPLICATION_CREDENTIALS` apontando para service account JSON
@@ -71,8 +71,8 @@ def cli() -> int:
     parser.add_argument(
         "--ufs",
         nargs="+",
-        default=["SP", "RJ", "MG", "RS", "DF"],
-        help="Lista de UFs a ativar (default: MVP enxuto)",
+        default=["MG"],
+        help="Lista de UFs a ativar (default: MG + federais — decisão do dono 2026-07-08)",
     )
     parser.add_argument(
         "--federal-active",

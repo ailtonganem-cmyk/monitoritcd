@@ -114,6 +114,10 @@ Ver [RUNBOOKS.md](RUNBOOKS.md) — passo-a-passo de:
 ## Cobertura de fontes
 
 > Fonte da verdade detalhada: [docs/sources_status.md](docs/sources_status.md).
+>
+> **Escopo ativo (2026-07-08, decisão do dono)**: monitoramento roda apenas para
+> **MG + fontes federais** (`active_uf: ["MG"]` no Firestore). Os coletores das
+> demais UFs abaixo permanecem no repositório, prontos, porém desativados.
 
 ### Federais ativas (8 fontes)
 
