@@ -9,6 +9,7 @@ testes integration com Firebase emulator (Fase 9 do PLAN.md).
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 import structlog
@@ -27,8 +28,6 @@ from monitoritcd.storage.audit_log import OwnershipError
 from monitoritcd.storage.in_memory import GENESIS_HASH
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from google.cloud.firestore import AsyncClient
 
     from monitoritcd.core.models import LLMResult
@@ -40,6 +39,41 @@ COLLECTION_DOCUMENTOS = "documentos"
 COLLECTION_ACTIVE_STATES = "config"
 COLLECTION_WATCHES = "watches"
 COLLECTION_AUDIT = "audit_log"
+
+
+def _dt_to_stored(value: datetime) -> str:
+    """Converte `datetime` para o MESMO formato string gravado no Firestore.
+
+    `save_documento` (e todo `model_dump(mode="json")` do pydantic) serializa
+    `datetime` como ISO 8601 UTC com sufixo "Z" — SEM fração de segundo quando
+    `microsecond == 0`, e com 6 dígitos quando != 0 (comportamento nativo do
+    pydantic-core, não custom). Comparar um `datetime` Python direto contra
+    esse campo (que é STRING no Firestore) nunca casa — tipos diferentes não
+    são comparáveis no Firestore, e o filtro `where(..., ">=", datetime)`
+    retorna sempre vazio, silenciosamente.
+
+    Esta função sempre emite 6 dígitos de microssegundos (nunca omite a
+    fração), mesmo quando `value.microsecond == 0`. Isso é proposital: um
+    filtro `since` construído a partir de uma data "seca" (`YYYY-MM-DD` →
+    meia-noite, microsecond=0) deve continuar comparando como o LIMITE
+    INFERIOR daquele segundo. Se omitíssemos a fração nesse caso, o filtro
+    produziria a string "...T00:00:00Z" (termina em "Z", 0x5A), que é
+    lexicograficamente MAIOR que "...T00:00:00.304171Z" (termina em ".",
+    0x2E) — excluindo incorretamente documentos gravados no mesmo segundo com
+    microssegundos > 0. Sempre emitir ".000000Z" evita essa armadilha: o
+    filtro fica <= qualquer serialização possível (com ou sem fração) daquele
+    mesmo segundo, então nunca exclui um documento que deveria entrar.
+
+    Risco residual (documentado, não corrigido aqui): se o PRÓPRIO `since`
+    tiver microssegundos > 0 e um documento gravado tiver microsecond == 0 no
+    mesmo segundo (evento raríssimo — datetime.now() cair exatamente em
+    micro=0), a comparação pode incluir esse documento mesmo que seu instante
+    real seja anterior a `since`. É um falso positivo (inclui demais), nunca
+    um falso negativo (nunca omite silenciosamente) — a classe de erro que
+    este fix corrige é a oposta (exclusão total e silenciosa).
+    """
+    value = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z"
 
 
 class FirestoreStorage:
@@ -114,7 +148,7 @@ class FirestoreStorage:
         if uf is not None:
             query = query.where("source.uf", "==", uf)
         if since is not None:
-            query = query.where("original.fetched_at", ">=", since)
+            query = query.where("original.fetched_at", ">=", _dt_to_stored(since))
         query = (
             query.order_by("original.fetched_at", direction="DESCENDING")
             .offset(offset)
@@ -193,7 +227,7 @@ class FirestoreStorage:
         if uf is not None:
             query = query.where("source.uf", "==", uf)
         if since is not None:
-            query = query.where("original.fetched_at", ">=", since)
+            query = query.where("original.fetched_at", ">=", _dt_to_stored(since))
         query = query.order_by("original.fetched_at", direction="DESCENDING")
 
         docs: list[Documento] = []

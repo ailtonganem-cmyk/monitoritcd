@@ -22,6 +22,28 @@ AUDIT_RETENTION_DAYS = 365
 EXECUCOES_RETENTION_DAYS = 180
 
 
+def _dt_to_stored(value: datetime) -> str:
+    """Converte `datetime` para o formato string gravado no Firestore.
+
+    Duplicado de `monitoritcd.storage.firestore_store._dt_to_stored`
+    propositalmente — este script roda standalone (sem importar o pacote
+    `monitoritcd`), seguindo o padrão dos demais scripts em `scripts/`.
+    Manter em sincronia se o formato de serialização do pydantic mudar.
+
+    Os campos comparados aqui (`original.fetched_at`, `timestamp`,
+    `started_at`) são gravados via `model_dump(mode="json")` do pydantic,
+    que serializa `datetime` como ISO 8601 UTC com sufixo "Z" — sem fração
+    quando `microsecond == 0`. Comparar um `datetime` Python direto contra
+    esse campo STRING nunca casa no Firestore (tipos diferentes não
+    comparam) — o filtro retorna sempre vazio, silenciosamente, e o cleanup
+    nunca purga nada. Sempre emitir 6 dígitos de microssegundos (mesmo
+    quando 0) garante que o cutoff funcione como limite inferior correto do
+    segundo, evitando a armadilha lexicográfica "Z" (0x5A) > "." (0x2E).
+    """
+    value = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+    return value.strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z"
+
+
 def cleanup(*, dry_run: bool) -> int:
     """Executa cleanup. Retorna count purgado."""
     try:
@@ -43,7 +65,7 @@ def cleanup(*, dry_run: bool) -> int:
     query = (
         client.collection("documentos")
         .where("llm.severity_tier", "==", "descartado")
-        .where("original.fetched_at", "<", cutoff_descartado)
+        .where("original.fetched_at", "<", _dt_to_stored(cutoff_descartado))
         .limit(500)
     )
     for snap in query.stream():
@@ -55,7 +77,11 @@ def cleanup(*, dry_run: bool) -> int:
 
     # Audit log antigo
     print(f"Purgando audit_log < {cutoff_audit.isoformat()}...")
-    query2 = client.collection("audit_log").where("timestamp", "<", cutoff_audit).limit(500)
+    query2 = (
+        client.collection("audit_log")
+        .where("timestamp", "<", _dt_to_stored(cutoff_audit))
+        .limit(500)
+    )
     for snap in query2.stream():
         purged += 1
         if dry_run:
@@ -65,7 +91,11 @@ def cleanup(*, dry_run: bool) -> int:
 
     # Execuções antigas (se collection existir)
     print(f"Purgando execucoes < {cutoff_exec.isoformat()}...")
-    query3 = client.collection("execucoes").where("started_at", "<", cutoff_exec).limit(500)
+    query3 = (
+        client.collection("execucoes")
+        .where("started_at", "<", _dt_to_stored(cutoff_exec))
+        .limit(500)
+    )
     for snap in query3.stream():
         purged += 1
         if dry_run:
