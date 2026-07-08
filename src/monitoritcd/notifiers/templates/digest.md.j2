@@ -27,6 +27,10 @@ Sem novidades relevantes neste período.
 
 {{ item.resumo }}
 
+{% if item.pontos_chave %}- **Pontos-chave**: {{ item.pontos_chave }}{% endif %}
+{% if item.contexto %}- **Contexto (gerado por IA)**: {{ item.contexto }}{% endif %}
+{% if item.assuntos_relacionados %}- **Assuntos**: {{ item.assuntos_relacionados }}{% endif %}
+
 ---
 {% endfor %}
 {% endif %}

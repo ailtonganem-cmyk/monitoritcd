@@ -298,6 +298,31 @@ class TestLLMResult:
                 resumo="x" * (limits.MAX_SUMMARY_LENGTH + 1),
             )
 
+    def test_contexto_respects_max_length(self) -> None:
+        with pytest.raises(ValidationError):
+            LLMResult(
+                classified_at=NOW,
+                llm_model="x",
+                llm_prompt_version="v1",
+                tipo=TipoAto.OUTRO,
+                relevancia=5,
+                severity_tier=SeverityTier.NORMAL,
+                resumo="x",
+                contexto="a" * (limits.MAX_CONTEXTO_LENGTH + 1),
+            )
+
+    def test_contexto_default_vazio(self) -> None:
+        result = LLMResult(
+            classified_at=NOW,
+            llm_model="x",
+            llm_prompt_version="v1",
+            tipo=TipoAto.OUTRO,
+            relevancia=5,
+            severity_tier=SeverityTier.NORMAL,
+            resumo="x",
+        )
+        assert result.contexto == ""
+
     def test_tags_max_items(self) -> None:
         with pytest.raises(ValidationError):
             LLMResult(
@@ -333,7 +358,7 @@ class TestDocumento:
         )
         assert doc.owner_id == "owner-alpha"
         assert doc.notificacao.enviada is False
-        assert doc.schema_version == 1
+        assert doc.schema_version == 2
 
 
 @pytest.mark.unit

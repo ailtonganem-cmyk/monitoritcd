@@ -104,6 +104,21 @@ class TestSplitForTelegram:
         for chunk in chunks:
             assert len(chunk.encode("utf-8")) <= 20
 
+    def test_oversized_line_after_header_hard_split(self) -> None:
+        text = "cabecalho\n" + ("a" * 7000) + "\nrodape"
+        chunks = split_for_telegram(text, max_bytes=4096)
+        assert len(chunks) >= 3
+        for chunk in chunks:
+            assert len(chunk.encode("utf-8")) <= 4096
+
+    def test_hard_split_nao_termina_com_escape_solto(self) -> None:
+        escaped = escape_markdown_v2("a." * 3000)
+        chunks = split_for_telegram(escaped, max_bytes=4096)
+        assert len(chunks) >= 2
+        for chunk in chunks[:-1]:
+            assert len(chunk.encode("utf-8")) <= 4096
+            assert not chunk.endswith("\\")
+
     def test_unicode_safe(self) -> None:
         # Caractere Unicode multi-byte (emoji + acentuado)
         text = "café 🇧🇷\n" * 100

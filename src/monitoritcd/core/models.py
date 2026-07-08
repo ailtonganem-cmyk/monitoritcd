@@ -132,6 +132,10 @@ UFCode = Annotated[str, Field(pattern=limits.UF_REGEX)]
 URLString = Annotated[str, Field(min_length=1, max_length=limits.MAX_URL_LENGTH)]
 Title = Annotated[str, Field(min_length=1, max_length=limits.MAX_TITLE_LENGTH)]
 Summary = Annotated[str, Field(min_length=1, max_length=limits.MAX_SUMMARY_LENGTH)]
+FullSummary = Annotated[str, Field(max_length=limits.MAX_FULL_SUMMARY_LENGTH)]
+KeyPoint = Annotated[str, Field(min_length=1, max_length=limits.MAX_KEY_POINT_LENGTH)]
+SearchText = Annotated[str, Field(max_length=limits.MAX_SEARCH_TEXT_LENGTH)]
+SearchTerm = Annotated[str, Field(min_length=1, max_length=limits.MAX_SEARCH_TERM_LENGTH)]
 Tag = Annotated[str, Field(min_length=1, max_length=limits.MAX_TAG_LENGTH)]
 Relevancia = Annotated[int, Field(ge=limits.RELEVANCIA_MIN, le=limits.RELEVANCIA_MAX)]
 
@@ -282,6 +286,25 @@ class LLMResult(StrictModel):
     relevancia: Relevancia
     severity_tier: SeverityTier
     resumo: Summary
+    resumo_completo: FullSummary = ""
+    pontos_chave: Annotated[
+        list[KeyPoint], Field(default_factory=list, max_length=limits.MAX_KEY_POINTS)
+    ]
+    motivo_relevancia: Annotated[
+        str,
+        Field(default="", max_length=limits.MAX_RELEVANCE_REASON_LENGTH),
+    ]
+    contexto: Annotated[str, Field(default="", max_length=limits.MAX_CONTEXTO_LENGTH)]
+    """Contextualização jurídica gerada por IA (Seção 5 do CLAUDE.md).
+
+    Único campo em que o LLM pode usar conhecimento jurídico geral além do
+    texto coletado — explica a norma/decisão citada, o que ela muda e o
+    significado prático. Sempre apresentado ao dono como gerado por IA.
+    """
+    assuntos_relacionados: Annotated[
+        list[Tag],
+        Field(default_factory=list, max_length=limits.MAX_RELATED_SUBJECTS),
+    ]
     metadados_extraidos: dict[
         Annotated[str, Field(max_length=64)],
         Annotated[str, Field(max_length=500)],
@@ -296,6 +319,33 @@ class LLMResult(StrictModel):
             msg = f"metadados_extraidos excede MAX_METADATA_FIELDS ({limits.MAX_METADATA_FIELDS})"
             raise ValueError(msg)
         return v
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Índice de busca derivado — armazenado junto ao documento Firestore
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+class DocumentSearchIndex(StrictModel):
+    """Corpus pesquisável derivado de `original` + `llm`.
+
+    É materializado no Firestore para tornar o documento útil como base de
+    pesquisa futura. Não substitui `original` e pode ser refeito a qualquer
+    momento a partir dos campos canônicos.
+    """
+
+    index_version: int = Field(ge=1, default=2)
+    generated_at: datetime
+    text: SearchText = ""
+    terms: Annotated[
+        list[SearchTerm],
+        Field(default_factory=list, max_length=limits.MAX_SEARCH_TERMS),
+    ]
+    topics: list[TopicId] = Field(default_factory=list, max_length=10)
+    prompt_version: Annotated[
+        str,
+        Field(default="", max_length=limits.MAX_LLM_PROMPT_VERSION_LENGTH),
+    ]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -326,7 +376,7 @@ class Documento(OwnerScoped):
     Schema versionado para migrações futuras.
     """
 
-    schema_version: int = Field(ge=1, default=1)
+    schema_version: int = Field(ge=1, default=2)
     doc_id: DocId
     source: Source
     original: RawItem
@@ -334,6 +384,7 @@ class Documento(OwnerScoped):
     notificacao: NotificacaoStatus = Field(default_factory=NotificacaoStatus)
     status: StatusDocumento = StatusDocumento.PENDING
     cluster_id: str | None = Field(default=None, max_length=128)
+    search_index: DocumentSearchIndex | None = None
     user_tags: Annotated[
         list[Tag],
         Field(default_factory=list, max_length=limits.MAX_TAGS_PER_DOC),
@@ -522,10 +573,13 @@ __all__ = [
     "ActiveStatesConfig",
     "AuditLogEntry",
     "BotCommand",
+    "DocumentSearchIndex",
     "Documento",
     "ExtraKeyword",
     "ExtraKeywordsConfig",
     "ExtraTopicsConfig",
+    "FullSummary",
+    "KeyPoint",
     "LLMResult",
     "NotificacaoStatus",
     "OwnerScoped",

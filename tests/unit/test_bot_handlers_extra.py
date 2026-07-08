@@ -31,6 +31,7 @@ from monitoritcd.bot.handlers_extra import (
 )
 from monitoritcd.core.config import Settings
 from monitoritcd.core.models import (
+    ActiveStatesConfig,
     Documento,
     LLMResult,
     Parser,
@@ -118,6 +119,22 @@ class TestSilenciar:
         assert "Nenhum" in r.text
 
     @pytest.mark.asyncio
+    async def test_listar_com_silenciamentos(self) -> None:
+        """Cobre o ramo de listagem com itens presentes em silenced_until."""
+        ctx = await _ctx_with_doc()
+        await ctx.storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id="o",
+                active_uf=["SP"],
+                silenced_until={"SP": NOW},
+                updated_at=NOW,
+                updated_by="test",
+            )
+        )
+        r = await handle_silenciar(ctx, _cmd("silenciar", "listar"))
+        assert "SP" in r.text
+
+    @pytest.mark.asyncio
     async def test_uf_format(self) -> None:
         # V5 (Pentest): persistência requer ActiveStatesConfig pré-existente
         from datetime import UTC, datetime  # noqa: PLC0415
@@ -154,6 +171,75 @@ class TestSilenciar:
         r = await handle_silenciar(ctx, _cmd("silenciar"))
         assert r.is_error
 
+    @pytest.mark.asyncio
+    async def test_chave_invalida(self) -> None:
+        """chave=valor com chave fora de {UF, tipo, tag}."""
+        ctx = await _ctx_with_doc()
+        r = await handle_silenciar(ctx, _cmd("silenciar", "outra=x", "7d"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_config_inicial_nao_criada(self) -> None:
+        """chave=valor válido mas sem ActiveStatesConfig ainda persistida."""
+        ctx = await _ctx_with_doc()
+        r = await handle_silenciar(ctx, _cmd("silenciar", "tipo=noticia", "1d"))
+        assert r.is_error
+        assert "inicial" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_argumentos_invalidos_fallback(self) -> None:
+        """Sub sem '=' e diferente de listar/remover cai no fallback genérico."""
+        ctx = await _ctx_with_doc()
+        r = await handle_silenciar(ctx, _cmd("silenciar", "qualquercoisa"))
+        assert r.is_error
+        assert "inválidos" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_remover_sem_args_suficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_silenciar(ctx, _cmd("silenciar", "remover"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_remover_chave_nao_ativa(self) -> None:
+        """active existe mas chave não está em silenced_until."""
+        ctx = await _ctx_with_doc()
+        await ctx.storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id="o",
+                active_uf=["SP"],
+                updated_at=NOW,
+                updated_by="test",
+            )
+        )
+        r = await handle_silenciar(ctx, _cmd("silenciar", "remover", "SP"))
+        assert "não estava ativo" in r.text
+
+    @pytest.mark.asyncio
+    async def test_remover_sem_config(self) -> None:
+        """active is None -> mesma mensagem de 'não estava ativo'."""
+        ctx = await _ctx_with_doc()
+        r = await handle_silenciar(ctx, _cmd("silenciar", "remover", "SP"))
+        assert "não estava ativo" in r.text
+
+    @pytest.mark.asyncio
+    async def test_remover_com_sucesso(self) -> None:
+        ctx = await _ctx_with_doc()
+        await ctx.storage.save_active_states(
+            ActiveStatesConfig(
+                owner_id="o",
+                active_uf=["SP"],
+                silenced_until={"SP": NOW},
+                updated_at=NOW,
+                updated_by="test",
+            )
+        )
+        r = await handle_silenciar(ctx, _cmd("silenciar", "remover", "SP"))
+        assert "removido" in r.text
+        active = await ctx.storage.get_active_states()
+        assert active is not None
+        assert "SP" not in active.silenced_until
+
 
 @pytest.mark.unit
 class TestDesmarcar:
@@ -162,6 +248,40 @@ class TestDesmarcar:
         ctx = await _ctx_with_doc()
         r = await handle_desmarcar(ctx, _cmd("desmarcar", "nonexistent", "tag1"))
         assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_desmarcar(ctx, _cmd("desmarcar", "test-doc"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_doc_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_desmarcar(ctx, _cmd("desmarcar", "a", "tag1"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_tag_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_desmarcar(ctx, _cmd("desmarcar", "test-doc", "tag inválida!"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_tag_nao_estava_no_doc(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_desmarcar(ctx, _cmd("desmarcar", "test-doc", "naoexiste"))
+        assert "não estava" in r.text
+
+    @pytest.mark.asyncio
+    async def test_remove_tag_existente(self) -> None:
+        ctx = await _ctx_with_doc()
+        await ctx.storage.add_user_tag("test-doc", "minhatag")
+        r = await handle_desmarcar(ctx, _cmd("desmarcar", "test-doc", "minhatag"))
+        assert "removida" in r.text
+        doc = await ctx.storage.get_documento("test-doc")
+        assert doc is not None
+        assert "minhatag" not in doc.user_tags
 
 
 @pytest.mark.unit
@@ -177,6 +297,31 @@ class TestTags:
         ctx = await _ctx_with_doc()
         r = await handle_tags(ctx, _cmd("tags", "renomear", "old", "new"))
         assert "Confirma" in r.text
+
+    @pytest.mark.asyncio
+    async def test_listar_com_tags(self) -> None:
+        ctx = await _ctx_with_doc()
+        await ctx.storage.add_user_tag("test-doc", "urgente")
+        r = await handle_tags(ctx, _cmd("tags", "listar"))
+        assert "urgente" in r.text
+
+    @pytest.mark.asyncio
+    async def test_renomear_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_tags(ctx, _cmd("tags", "renomear", "old"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_renomear_tag_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_tags(ctx, _cmd("tags", "renomear", "old!", "new"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_subcomando_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_tags(ctx, _cmd("tags", "outro"))
+        assert r.is_error
 
 
 @pytest.mark.unit
@@ -194,6 +339,65 @@ class TestFavoritos:
         r = await handle_favoritos(ctx, _cmd("favoritos"))
         assert "test-doc" in r.text
 
+    @pytest.mark.asyncio
+    async def test_favoritar_sem_args(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_favoritar(ctx, _cmd("favoritar"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_favoritar_doc_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_favoritar(ctx, _cmd("favoritar", "a"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_favoritar_doc_inexistente(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_favoritar(ctx, _cmd("favoritar", "nao-existe"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_favoritos_vazio(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_favoritos(ctx, _cmd("favoritos"))
+        assert "Nenhum favorito" in r.text
+
+    @pytest.mark.asyncio
+    async def test_favoritos_mais_de_20(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        for i in range(22):
+            doc_id = f"doc-{i}"
+            raw = RawItem(
+                source_id="src",
+                titulo_raw=f"Teste {i}",
+                url=f"https://x.gov.br/{i}",
+                fetched_at=NOW,
+                data_publicacao=NOW,
+                content_hash=f"{i:064d}",
+            )
+            src = Source(
+                id="src",
+                uf="SP",
+                nome="x",
+                tipo=TipoFonte.ASSEMBLEIA,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+            )
+            doc = Documento(
+                owner_id="o",
+                doc_id=doc_id,
+                source=src,
+                original=raw,
+                llm=None,
+                status=StatusDocumento.PENDING,
+                user_tags=["favorito"],
+            )
+            await storage.save_documento(doc)
+        r = await handle_favoritos(ctx, _cmd("favoritos"))
+        assert "mais" in r.text
+
 
 @pytest.mark.unit
 class TestArquivo:
@@ -202,6 +406,81 @@ class TestArquivo:
         ctx = await _ctx_with_doc()
         r = await handle_arquivo(ctx, _cmd("arquivo", "UF=SP"))
         assert "1 docs" in r.text or "Teste" in r.text
+
+    @pytest.mark.asyncio
+    async def test_sem_args(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_sem_igual(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", "SP"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_mes_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", "mes=abc"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_mes_valido_com_match(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", f"mes={NOW.year:04d}-{NOW.month:02d}"))
+        assert "Teste" in r.text
+
+    @pytest.mark.asyncio
+    async def test_uf_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", "UF=XX"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_chave_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", "ano=2026"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_sem_resultados(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_arquivo(ctx, _cmd("arquivo", "UF=RJ"))
+        assert "Nenhum documento" in r.text
+
+    @pytest.mark.asyncio
+    async def test_mais_de_20_resultados(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        for i in range(22):
+            raw = RawItem(
+                source_id="src",
+                titulo_raw=f"Teste {i}",
+                url=f"https://x.gov.br/{i}",
+                fetched_at=NOW,
+                data_publicacao=NOW,
+                content_hash=f"{i:064d}",
+            )
+            src = Source(
+                id="src",
+                uf="SP",
+                nome="x",
+                tipo=TipoFonte.ASSEMBLEIA,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+            )
+            doc = Documento(
+                owner_id="o",
+                doc_id=f"doc-{i}",
+                source=src,
+                original=raw,
+                llm=None,
+                status=StatusDocumento.PENDING,
+            )
+            await storage.save_documento(doc)
+        r = await handle_arquivo(ctx, _cmd("arquivo", "UF=SP"))
+        assert "mais" in r.text
 
 
 @pytest.mark.unit
@@ -213,10 +492,47 @@ class TestFontes:
         assert "src" in r.text or "Fontes" in r.text
 
     @pytest.mark.asyncio
+    async def test_listar_sem_docs(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        r = await handle_fontes(ctx, _cmd("fontes", "listar"))
+        assert "Nenhum documento" in r.text
+
+    @pytest.mark.asyncio
     async def test_status(self) -> None:
         ctx = await _ctx_with_doc()
         r = await handle_fontes(ctx, _cmd("fontes", "status"))
         assert "Status" in r.text
+
+    @pytest.mark.asyncio
+    async def test_ativar_sem_source_id(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_fontes(ctx, _cmd("fontes", "ativar"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_ativar_source_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_fontes(ctx, _cmd("fontes", "ativar", "!!"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_ativar_com_sucesso(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_fontes(ctx, _cmd("fontes", "ativar", "sefaz-sp"))
+        assert "sefaz-sp" in r.text
+
+    @pytest.mark.asyncio
+    async def test_desativar_com_sucesso(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_fontes(ctx, _cmd("fontes", "desativar", "sefaz-sp"))
+        assert "sefaz-sp" in r.text
+
+    @pytest.mark.asyncio
+    async def test_subcomando_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_fontes(ctx, _cmd("fontes", "outro"))
+        assert r.is_error
 
 
 @pytest.mark.unit
@@ -231,6 +547,12 @@ class TestReprocessar:
     async def test_data_invalida(self) -> None:
         ctx = await _ctx_with_doc()
         r = await handle_reprocessar(ctx, _cmd("reprocessar", "abc"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_sem_args(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_reprocessar(ctx, _cmd("reprocessar"))
         assert r.is_error
 
 
@@ -269,6 +591,18 @@ class TestExport:
         r = await handle_export(ctx, _cmd("export", "xml", "2026-01-01"))
         assert r.is_error
 
+    @pytest.mark.asyncio
+    async def test_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_export(ctx, _cmd("export", "csv"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_data_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_export(ctx, _cmd("export", "csv", "abc"))
+        assert r.is_error
+
 
 @pytest.mark.unit
 class TestDiffHistorico:
@@ -279,10 +613,150 @@ class TestDiffHistorico:
         assert r.is_error
 
     @pytest.mark.asyncio
+    async def test_diff_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_diff(ctx, _cmd("diff", "test-doc"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_diff_doc_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_diff(ctx, _cmd("diff", "a", "b"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_diff_com_sucesso_e_llm(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        src = Source(
+            id="src",
+            uf="SP",
+            nome="x",
+            tipo=TipoFonte.ASSEMBLEIA,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+        )
+        for doc_id, hash_prefix in (("doc-a", "a"), ("doc-b", "b")):
+            raw = RawItem(
+                source_id="src",
+                titulo_raw=f"Titulo {doc_id}",
+                url="https://x.gov.br/",
+                fetched_at=NOW,
+                data_publicacao=NOW,
+                content_hash=hash_prefix * 64,
+            )
+            llm = LLMResult(
+                classified_at=NOW,
+                llm_model="x",
+                llm_prompt_version="v1",
+                tipo=TipoAto.PROJETO_LEI,
+                relevancia=8,
+                severity_tier=SeverityTier.ALTA,
+                resumo="r",
+            )
+            doc = Documento(
+                owner_id="o",
+                doc_id=doc_id,
+                source=src,
+                original=raw,
+                llm=llm,
+                status=StatusDocumento.CLASSIFIED,
+            )
+            await storage.save_documento(doc)
+        r = await handle_diff(ctx, _cmd("diff", "doc-a", "doc-b"))
+        assert "Relevância" in r.text
+        assert "Tier" in r.text
+
+    @pytest.mark.asyncio
+    async def test_diff_um_doc_sem_llm(self) -> None:
+        """Quando só um dos docs tem `llm`, a seção de relevância/tier é omitida."""
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        src = Source(
+            id="src",
+            uf="SP",
+            nome="x",
+            tipo=TipoFonte.ASSEMBLEIA,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+        )
+        raw_a = RawItem(
+            source_id="src",
+            titulo_raw="Titulo A",
+            url="https://x.gov.br/",
+            fetched_at=NOW,
+            data_publicacao=NOW,
+            content_hash="a" * 64,
+        )
+        raw_b = RawItem(
+            source_id="src",
+            titulo_raw="Titulo B",
+            url="https://x.gov.br/",
+            fetched_at=NOW,
+            data_publicacao=NOW,
+            content_hash="b" * 64,
+        )
+        llm = LLMResult(
+            classified_at=NOW,
+            llm_model="x",
+            llm_prompt_version="v1",
+            tipo=TipoAto.PROJETO_LEI,
+            relevancia=8,
+            severity_tier=SeverityTier.ALTA,
+            resumo="r",
+        )
+        doc_a = Documento(
+            owner_id="o",
+            doc_id="doc-a",
+            source=src,
+            original=raw_a,
+            llm=llm,
+            status=StatusDocumento.CLASSIFIED,
+        )
+        doc_b = Documento(
+            owner_id="o",
+            doc_id="doc-b",
+            source=src,
+            original=raw_b,
+            llm=None,
+            status=StatusDocumento.PENDING,
+        )
+        await storage.save_documento(doc_a)
+        await storage.save_documento(doc_b)
+        r = await handle_diff(ctx, _cmd("diff", "doc-a", "doc-b"))
+        assert "Relevância" not in r.text
+        assert "Tier" not in r.text
+
+    @pytest.mark.asyncio
     async def test_historico_doc_valido(self) -> None:
         ctx = await _ctx_with_doc()
         r = await handle_historico(ctx, _cmd("historico", "test-doc"))
         assert "Coletado" in r.text
+
+    @pytest.mark.asyncio
+    async def test_historico_sem_args(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_historico(ctx, _cmd("historico"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_historico_doc_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_historico(ctx, _cmd("historico", "a"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_historico_doc_inexistente(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_historico(ctx, _cmd("historico", "nao-existe"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_historico_sem_llm(self) -> None:
+        ctx = await _ctx_with_doc(with_llm=False)
+        r = await handle_historico(ctx, _cmd("historico", "test-doc"))
+        assert "Coletado" in r.text
+        assert "Classificado" not in r.text
 
 
 @pytest.mark.unit
@@ -294,10 +768,40 @@ class TestComentarLembrarCancelar:
         assert "Comentário salvo" in r.text
 
     @pytest.mark.asyncio
+    async def test_comentar_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_comentar(ctx, _cmd("comentar", "test-doc"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_comentar_doc_id_invalido(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_comentar(ctx, _cmd("comentar", "a", "texto"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_comentar_doc_inexistente(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_comentar(ctx, _cmd("comentar", "nao-existe", "texto"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
     async def test_lembrar_data_valida(self) -> None:
         ctx = await _ctx_with_doc()
         r = await handle_lembrar(ctx, _cmd("lembrar", "revisar", "2026-12-31"))
         assert "Lembrete" in r.text
+
+    @pytest.mark.asyncio
+    async def test_lembrar_args_insuficientes(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_lembrar(ctx, _cmd("lembrar", "revisar"))
+        assert r.is_error
+
+    @pytest.mark.asyncio
+    async def test_lembrar_data_invalida(self) -> None:
+        ctx = await _ctx_with_doc()
+        r = await handle_lembrar(ctx, _cmd("lembrar", "revisar", "amanha"))
+        assert r.is_error
 
     @pytest.mark.asyncio
     async def test_cancelar(self) -> None:

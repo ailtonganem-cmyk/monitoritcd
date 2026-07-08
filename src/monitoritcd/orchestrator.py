@@ -121,7 +121,9 @@ class RunReport:
     items_after_prescore: int = 0
     items_new: int = 0  # passaram dedup
     items_classified: int = 0
+    items_discarded: int = 0
     items_stored: int = 0
+    items_reindexed: int = 0
     items_notified_email: int = 0
     items_notified_telegram: int = 0
     failed_sources: list[str] = field(default_factory=list)
@@ -323,6 +325,7 @@ async def classify_and_store(
 
             # Descarta se LLM marcou como descartado (após override).
             if llm_result.severity_tier == SeverityTier.DESCARTADO:
+                report.items_discarded += 1
                 continue
 
             doc_id = f"{source.id}:{item.content_hash[:16]}"
@@ -379,6 +382,14 @@ async def reprocess_documents(
         report.finished_at = datetime.now(UTC)
         return report
 
+    import contextlib  # noqa: PLC0415
+
+    extra_topics_cfg = None
+    with contextlib.suppress(AttributeError, NotImplementedError):
+        extra_topics_cfg = await storage.get_extra_topics()
+    system_prompt = build_system_prompt(extra_topics_cfg)
+    allowed_topic_ids = extra_topics_cfg.all_topic_ids() if extra_topics_cfg is not None else None
+
     for batch_idx, batch_start in enumerate(range(0, len(docs), _lim.MAX_BATCH_LLM)):
         batch = docs[batch_start : batch_start + _lim.MAX_BATCH_LLM]
         # Throttle entre batches em reprocessamento (mesmo motivo de classify_and_store).
@@ -389,6 +400,8 @@ async def reprocess_documents(
                 [d.original for d in batch],
                 llm_provider,
                 llm_model=llm_provider.name,
+                system_prompt=system_prompt,
+                allowed_topic_ids=allowed_topic_ids,
             )
         except (ValueError, TimeoutError) as e:
             bound.exception("reprocess.classify_failed", error=str(e))
@@ -398,12 +411,81 @@ async def reprocess_documents(
         for doc, new_llm in zip(batch, llm_results, strict=True):
             try:
                 await storage.update_llm(doc.doc_id, new_llm)
+                if new_llm.severity_tier == SeverityTier.DESCARTADO:
+                    await storage.update_status(doc.doc_id, StatusDocumento.ARCHIVED)
+                    report.items_discarded += 1
+                elif doc.status in {StatusDocumento.PENDING, StatusDocumento.ARCHIVED}:
+                    await storage.update_status(doc.doc_id, StatusDocumento.CLASSIFIED)
                 report.items_classified += 1
             except (ValueError, RuntimeError) as e:
                 bound.warning("reprocess.update_failed", doc_id=doc.doc_id, error=str(e))
 
     report.finished_at = datetime.now(UTC)
     bound.info("reprocess.complete", classified=report.items_classified)
+    return report
+
+
+async def reindex_search_indexes(
+    *,
+    storage: StorageProtocol,
+    since: datetime | None = None,
+    uf: str | None = None,
+    limit: int = 500,
+    missing_only: bool = True,
+) -> RunReport:
+    """Regera `Documento.search_index` para documentos existentes.
+
+    Serve como migração leve do schema v1 para v2 e como reparo quando o
+    contrato de busca muda. Não altera `original`, `llm`, notificações ou status.
+    """
+    from monitoritcd.search import SEARCH_INDEX_VERSION  # noqa: PLC0415
+
+    run_id = str(uuid.uuid4())
+    report = RunReport(run_id=run_id, started_at=datetime.now(UTC))
+    bound = logger.bind(run_id=run_id)
+    bound.info(
+        "reindex_search.start",
+        since=str(since) if since else None,
+        uf=uf,
+        batch_size=limit,
+        missing_only=missing_only,
+    )
+
+    batch_size = max(1, limit)
+    offset = 0
+    while True:
+        docs = await storage.list_documentos(since=since, uf=uf, limit=batch_size, offset=offset)
+        if not docs:
+            break
+        report.items_collected += len(docs)
+        offset += len(docs)
+
+        for doc in docs:
+            current_index_version = doc.search_index.index_version if doc.search_index else 0
+            if (
+                missing_only
+                and doc.search_index is not None
+                and doc.search_index.text
+                and current_index_version >= SEARCH_INDEX_VERSION
+            ):
+                continue
+            try:
+                await storage.update_search_index(doc.doc_id)
+                report.items_reindexed += 1
+            except (ValueError, RuntimeError) as e:
+                bound.warning("reindex_search.update_failed", doc_id=doc.doc_id, error=str(e))
+                report.errors.append(f"reindex_search {doc.doc_id}: {e}")
+
+        if len(docs) < batch_size:
+            break
+
+    report.finished_at = datetime.now(UTC)
+    bound.info(
+        "reindex_search.complete",
+        scanned=report.items_collected,
+        reindexed=report.items_reindexed,
+        duration_s=report.duration_seconds,
+    )
     return report
 
 

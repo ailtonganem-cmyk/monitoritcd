@@ -33,6 +33,10 @@ def _doc(
     *,
     titulo: str = "PL 1234/2026 — ITCMD progressivo (SP)",
     resumo: str = "Resumo factual.",
+    resumo_completo: str = "",
+    pontos_chave: list[str] | None = None,
+    assuntos_relacionados: list[str] | None = None,
+    contexto: str = "",
     tier: SeverityTier = SeverityTier.ALTA,
     uf: str = "SP",
 ) -> Documento:
@@ -60,6 +64,10 @@ def _doc(
         relevancia=8,
         severity_tier=tier,
         resumo=resumo,
+        resumo_completo=resumo_completo,
+        pontos_chave=pontos_chave or [],
+        assuntos_relacionados=assuntos_relacionados or [],
+        contexto=contexto,
     )
     return Documento(
         owner_id="owner",
@@ -146,6 +154,41 @@ class TestTelegramRender:
         # Underscore escapado em MarkdownV2
         assert "ederal" in text  # cobre "Federal" ou "_federal"
 
+    def test_usa_resumo_completo_e_escapa_campos_novos(self) -> None:
+        text = render_telegram(
+            [
+                _doc(
+                    resumo="Resumo curto não deve aparecer.",
+                    resumo_completo="Resumo completo com ITCMD progressivo.",
+                    pontos_chave=["Base *especial*"],
+                    assuntos_relacionados=["Doação (SP)"],
+                )
+            ],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Resumo completo com ITCMD progressivo" in text
+        assert "Resumo curto não deve aparecer" not in text
+        assert r"Base \*especial\*" in text
+        assert r"Doação \(SP\)" in text
+
+    def test_contexto_renderiza_rotulado_como_ia_e_escapado(self) -> None:
+        text = render_telegram(
+            [_doc(contexto="Súmula 377/STF (aquestos) trata do tema.")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Contexto \\(IA\\)" in text
+        assert r"Súmula 377/STF \(aquestos\) trata do tema" in text
+
+    def test_contexto_ausente_nao_renderiza_bloco(self) -> None:
+        text = render_telegram(
+            [_doc(contexto="")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Contexto \\(IA\\)" not in text
+
 
 @pytest.mark.templates
 class TestTelegramSplit:
@@ -154,6 +197,17 @@ class TestTelegramSplit:
         long_resumo = "a " * 800  # ~1600 chars, dentro do limite
         docs = [_doc(resumo=long_resumo) for _ in range(5)]
         text = render_telegram(docs, digest_label="Diário", data_geracao=FIXED_NOW)
+        chunks = split_for_telegram(text, max_bytes=4096)
+        for chunk in chunks:
+            assert len(chunk.encode("utf-8")) <= 4096
+
+    def test_resumo_completo_longo_split_seguro(self) -> None:
+        long_resumo = "a" * 6000
+        text = render_telegram(
+            [_doc(resumo_completo=long_resumo)],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
         chunks = split_for_telegram(text, max_bytes=4096)
         for chunk in chunks:
             assert len(chunk.encode("utf-8")) <= 4096

@@ -103,6 +103,8 @@ class TestSaveDocumento:
         retrieved = await s.get_documento("doc1")
         assert retrieved is not None
         assert retrieved.doc_id == "doc1"
+        assert retrieved.search_index is not None
+        assert "doc1" in retrieved.search_index.text
 
     @pytest.mark.asyncio
     async def test_owner_mismatch_rejected(self) -> None:
@@ -174,6 +176,20 @@ class TestListDocumentos:
         assert len(result) == 2
 
     @pytest.mark.asyncio
+    async def test_offset(self) -> None:
+        s = InMemoryStorage(OWNER)
+        for i in range(5):
+            await s.save_documento(
+                _doc(
+                    doc_id=f"d{i}",
+                    content_hash=("b" + str(i)) * 32,
+                    fetched_at=NOW + timedelta(minutes=i),
+                )
+            )
+        result = await s.list_documentos(limit=2, offset=2)
+        assert [d.doc_id for d in result] == ["d2", "d1"]
+
+    @pytest.mark.asyncio
     async def test_sorted_descending_by_fetched_at(self) -> None:
         s = InMemoryStorage(OWNER)
         old = _doc(doc_id="old", fetched_at=NOW - timedelta(days=2), content_hash="0" * 64)
@@ -182,6 +198,37 @@ class TestListDocumentos:
         await s.save_documento(new)
         result = await s.list_documentos()
         assert result[0].doc_id == "new"
+
+
+@pytest.mark.unit
+class TestSearchDocumentos:
+    @pytest.mark.asyncio
+    async def test_exclui_arquivados_por_padrao(self) -> None:
+        s = InMemoryStorage(OWNER)
+        await s.save_documento(
+            _doc(doc_id="ativo", status=StatusDocumento.CLASSIFIED, content_hash="1" * 64)
+        )
+        await s.save_documento(
+            _doc(doc_id="arquivado", status=StatusDocumento.ARCHIVED, content_hash="2" * 64)
+        )
+
+        result = await s.search_documentos(terms=[], limit=10)
+
+        assert [d.doc_id for d in result] == ["ativo"]
+
+    @pytest.mark.asyncio
+    async def test_include_archived_explicito(self) -> None:
+        s = InMemoryStorage(OWNER)
+        await s.save_documento(
+            _doc(doc_id="ativo", status=StatusDocumento.CLASSIFIED, content_hash="1" * 64)
+        )
+        await s.save_documento(
+            _doc(doc_id="arquivado", status=StatusDocumento.ARCHIVED, content_hash="2" * 64)
+        )
+
+        result = await s.search_documentos(terms=[], limit=10, include_archived=True)
+
+        assert {d.doc_id for d in result} == {"ativo", "arquivado"}
 
 
 @pytest.mark.unit
@@ -195,6 +242,8 @@ class TestUpdates:
         assert retrieved is not None
         assert retrieved.llm is not None
         assert retrieved.llm.relevancia == 7
+        assert retrieved.search_index is not None
+        assert "noticia" in retrieved.search_index.text
 
     @pytest.mark.asyncio
     async def test_update_unknown_doc_raises(self) -> None:
@@ -232,6 +281,24 @@ class TestUpdates:
         s = InMemoryStorage(OWNER)
         with pytest.raises(DocumentNotFoundError):
             await s.update_status("missing", StatusDocumento.NOTIFIED)
+
+    @pytest.mark.asyncio
+    async def test_update_search_index(self) -> None:
+        s = InMemoryStorage(OWNER)
+        doc = _doc()
+        await s.save_documento(doc)
+        stored = s._documentos["doc1"]
+        s._documentos["doc1"] = stored.model_copy(
+            update={
+                "search_index": stored.search_index.model_copy(update={"text": "corpus manual"})
+            }
+        )
+        await s.update_search_index("doc1")
+        retrieved = await s.get_documento("doc1")
+        assert retrieved is not None
+        assert retrieved.search_index is not None
+        assert retrieved.search_index.text != "corpus manual"
+        assert "doc1" in retrieved.search_index.text
 
 
 @pytest.mark.unit
@@ -375,6 +442,8 @@ class TestUserTags:
         doc = await s.get_documento("doc1")
         assert doc is not None
         assert "minha-tag" in doc.user_tags
+        assert doc.search_index is not None
+        assert "minha-tag" in doc.search_index.text
 
     @pytest.mark.asyncio
     async def test_add_tag_idempotente(self) -> None:
@@ -387,6 +456,18 @@ class TestUserTags:
         doc = await s.get_documento("doc1")
         assert doc is not None
         assert doc.user_tags.count("x") == 1
+
+    @pytest.mark.asyncio
+    async def test_remove_tag_atualiza_search_index(self) -> None:
+        s = InMemoryStorage(OWNER)
+        await s.save_documento(_doc())
+        await s.add_user_tag("doc1", "remover-tag")
+        await s.remove_user_tag("doc1", "remover-tag")
+        doc = await s.get_documento("doc1")
+        assert doc is not None
+        assert "remover-tag" not in doc.user_tags
+        assert doc.search_index is not None
+        assert "remover-tag" not in doc.search_index.text
 
 
 @pytest.mark.unit

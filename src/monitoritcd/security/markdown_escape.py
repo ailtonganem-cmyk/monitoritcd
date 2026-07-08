@@ -84,21 +84,55 @@ def split_for_telegram(text: str, max_bytes: int = 4096) -> list[str]:
     if len(text.encode("utf-8")) <= max_bytes:
         return [text]
 
+    def trailing_backslashes(value: str) -> int:
+        count = 0
+        for char in reversed(value):
+            if char != "\\":
+                break
+            count += 1
+        return count
+
+    def split_oversized_line(line: str) -> list[str]:
+        """Divide linha longa por bytes sem cortar escape MarkdownV2."""
+        parts: list[str] = []
+        remaining = line
+        while len(remaining.encode("utf-8")) > max_bytes:
+            used = 0
+            split_at = 0
+            for idx, char in enumerate(remaining):
+                char_bytes = len(char.encode("utf-8"))
+                if used + char_bytes > max_bytes:
+                    break
+                used += char_bytes
+                split_at = idx + 1
+            while split_at > 1 and trailing_backslashes(remaining[:split_at]) % 2 == 1:
+                split_at -= 1
+            if split_at <= 0:
+                split_at = 1
+            parts.append(remaining[:split_at])
+            remaining = remaining[split_at:]
+        if remaining:
+            parts.append(remaining)
+        return parts or [""]
+
     chunks: list[str] = []
     current = ""
     for line in text.split("\n"):
-        candidate = current + line + "\n" if current else line + "\n"
+        line_with_newline = line + "\n"
+        if len(line_with_newline.encode("utf-8")) > max_bytes:
+            if current:
+                chunks.append(current.rstrip("\n"))
+                current = ""
+            parts = split_oversized_line(line)
+            chunks.extend(parts[:-1])
+            current = parts[-1] + "\n"
+            continue
+
+        candidate = current + line_with_newline if current else line_with_newline
         if len(candidate.encode("utf-8")) > max_bytes:
             if current:
                 chunks.append(current.rstrip("\n"))
-                current = line + "\n"
-            else:
-                # linha sozinha excede o limite — faz hard split por bytes
-                encoded = line.encode("utf-8")
-                while len(encoded) > max_bytes:
-                    chunks.append(encoded[:max_bytes].decode("utf-8", errors="ignore"))
-                    encoded = encoded[max_bytes:]
-                current = encoded.decode("utf-8", errors="ignore") + "\n"
+            current = line_with_newline
         else:
             current = candidate
 

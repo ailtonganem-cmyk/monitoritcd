@@ -129,10 +129,14 @@ def _render_item_context(doc: Documento) -> dict[str, str]:
     """Constrói o contexto Jinja2 para um único item (sem modificar `original`)."""
     tier_value = doc.llm.severity_tier.value if doc.llm else "normal"
     tipo_value = doc.llm.tipo.value if doc.llm else "outro"
+    resumo_curto = doc.llm.resumo if doc.llm else ""
+    resumo_completo = doc.llm.resumo_completo if doc.llm and doc.llm.resumo_completo else ""
     return {
+        "doc_id": doc.doc_id,
         "titulo": doc.original.titulo_raw,
         "url": doc.original.url,
-        "resumo": doc.llm.resumo if doc.llm else "",
+        "resumo": resumo_completo or resumo_curto,
+        "resumo_curto": resumo_curto,
         "uf": doc.source.uf,
         "tipo_label": TIPO_LABELS.get(tipo_value, tipo_value),
         "tier_emoji": emoji_for_tier(doc.llm.severity_tier) if doc.llm else "⚪",
@@ -143,6 +147,11 @@ def _render_item_context(doc: Documento) -> dict[str, str]:
         else "",
         "fonte_nome": doc.source.nome,
         "relevancia": str(doc.llm.relevancia) if doc.llm else "—",
+        "pontos_chave": " · ".join(doc.llm.pontos_chave) if doc.llm else "",
+        "motivo_relevancia": doc.llm.motivo_relevancia if doc.llm else "",
+        "contexto": doc.llm.contexto if doc.llm and doc.llm.contexto else "",
+        "assuntos_relacionados": ", ".join(doc.llm.assuntos_relacionados) if doc.llm else "",
+        "topics": ", ".join(doc.llm.topics) if doc.llm else "",
     }
 
 
@@ -290,6 +299,9 @@ def build_csv_attachment(docs: Sequence[Documento]) -> bytes:
             "titulo",
             "url",
             "resumo",
+            "resumo_completo",
+            "pontos_chave",
+            "assuntos_relacionados",
         ]
     )
     for d in docs:
@@ -297,6 +309,9 @@ def build_csv_attachment(docs: Sequence[Documento]) -> bytes:
         tipo = d.llm.tipo.value if d.llm else ""
         relevancia = str(d.llm.relevancia) if d.llm else ""
         resumo = d.llm.resumo if d.llm else ""
+        resumo_completo = d.llm.resumo_completo if d.llm else ""
+        pontos_chave = " | ".join(d.llm.pontos_chave) if d.llm else ""
+        assuntos_relacionados = " | ".join(d.llm.assuntos_relacionados) if d.llm else ""
         data_pub = d.original.data_publicacao.isoformat() if d.original.data_publicacao else ""
         writer.writerow(
             [
@@ -310,6 +325,9 @@ def build_csv_attachment(docs: Sequence[Documento]) -> bytes:
                 d.original.titulo_raw,
                 d.original.url,
                 resumo,
+                resumo_completo,
+                pontos_chave,
+                assuntos_relacionados,
             ]
         )
     return output.getvalue().encode("utf-8")
@@ -331,8 +349,14 @@ def build_json_attachment(docs: Sequence[Documento]) -> bytes:
             "severity_tier": d.llm.severity_tier.value if d.llm else None,
             "relevancia": d.llm.relevancia if d.llm else None,
             "resumo": d.llm.resumo if d.llm else None,
+            "resumo_completo": d.llm.resumo_completo if d.llm else None,
+            "pontos_chave": d.llm.pontos_chave if d.llm else [],
+            "motivo_relevancia": d.llm.motivo_relevancia if d.llm else None,
+            "assuntos_relacionados": d.llm.assuntos_relacionados if d.llm else [],
             "tags": d.llm.tags if d.llm else [],
+            "topics": d.llm.topics if d.llm else [],
             "metadados_extraidos": d.llm.metadados_extraidos if d.llm else {},
+            "search_terms": d.search_index.terms if d.search_index else [],
         }
         for d in docs
     ]

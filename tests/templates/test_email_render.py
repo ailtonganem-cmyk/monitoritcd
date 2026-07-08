@@ -32,6 +32,10 @@ def _doc(
     tipo: TipoAto = TipoAto.PROJETO_LEI,
     uf: str = "SP",
     resumo: str = "Projeto institui alíquota progressiva de ITCMD em SP.",
+    resumo_completo: str = "",
+    pontos_chave: list[str] | None = None,
+    assuntos_relacionados: list[str] | None = None,
+    contexto: str = "",
 ) -> Documento:
     raw = RawItem(
         source_id="src",
@@ -57,6 +61,10 @@ def _doc(
         relevancia=8,
         severity_tier=tier,
         resumo=resumo,
+        resumo_completo=resumo_completo,
+        pontos_chave=pontos_chave or [],
+        assuntos_relacionados=assuntos_relacionados or [],
+        contexto=contexto,
     )
     return Documento(
         owner_id="owner",
@@ -124,6 +132,55 @@ class TestEmailRender:
         )
         assert "<img" not in body
         assert "onerror" not in body or "&" in body  # escapado
+
+    def test_usa_resumo_completo_e_campos_novos_escapados(self) -> None:
+        _, body = render_email(
+            [
+                _doc(
+                    resumo="Resumo curto não deve aparecer.",
+                    resumo_completo="Resumo completo <b>sem HTML ativo</b>.",
+                    pontos_chave=["Ponto <script>alert(1)</script>"],
+                    assuntos_relacionados=["Doação <img src=x>"],
+                )
+            ],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Resumo completo" in body
+        assert "Resumo curto não deve aparecer" not in body
+        assert "<script>" not in body
+        assert "&lt;script&gt;" in body
+        assert "<img" not in body
+
+    def test_contexto_renderiza_rotulado_como_ia(self) -> None:
+        _, body = render_email(
+            [
+                _doc(
+                    contexto="A Súmula 377/STF trata da comunicabilidade dos aquestos.",
+                )
+            ],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Contexto (gerado por IA)" in body
+        assert "Súmula 377/STF" in body
+
+    def test_contexto_ausente_nao_renderiza_bloco(self) -> None:
+        _, body = render_email(
+            [_doc(contexto="")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "Contexto (gerado por IA)" not in body
+
+    def test_contexto_com_xss_e_escapado(self) -> None:
+        _, body = render_email(
+            [_doc(contexto="<script>alert('xss')</script>")],
+            digest_label="Diário",
+            data_geracao=FIXED_NOW,
+        )
+        assert "<script>" not in body
+        assert "&lt;script&gt;" in body
 
     def test_url_does_not_break_template(self) -> None:
         # URL com chars especiais não deve quebrar HTML

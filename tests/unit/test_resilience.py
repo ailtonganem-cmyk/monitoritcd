@@ -216,3 +216,75 @@ def test_keyword_matcher_empty_keyword_in_fallback(monkeypatch: pytest.MonkeyPat
     matched, found = m.find_in("ITCD novo")
     assert matched
     assert "" not in found
+
+
+class _FakeAutomaton:
+    """Simula `ahocorasick.Automaton` sem depender do pacote opcional instalado."""
+
+    def __init__(self) -> None:
+        self._words: dict[str, tuple[int, str]] = {}
+
+    def add_word(self, word: str, value: tuple[int, str]) -> None:
+        self._words[word] = value
+
+    def make_automaton(self) -> None:
+        pass
+
+    def iter(self, haystack: str):
+        for word, value in self._words.items():
+            start = 0
+            while True:
+                idx = haystack.find(word, start)
+                if idx == -1:
+                    break
+                yield idx + len(word) - 1, value
+                start = idx + 1
+
+
+class _FakeAhocorasickModule:
+    Automaton = _FakeAutomaton
+
+
+@pytest.mark.unit
+def test_keyword_matcher_aho_corasick_path(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simula `pyahocorasick` instalado — cobre `_build_automaton` + fast path de `find_in`."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", True)
+    monkeypatch.setattr(kw_module, "ahocorasick", _FakeAhocorasickModule(), raising=False)
+
+    m = kw_module.KeywordMatcher(["ITCD", "", "alíquota"])
+    assert m.using_aho_corasick
+    matched, found = m.find_in("Lei sobre ITCD e alíquota nova")
+    assert matched
+    assert set(found) == {"itcd", "alíquota"}
+
+    matched_no, found_no = m.find_in("nada relevante aqui")
+    assert not matched_no
+    assert found_no == []
+
+
+@pytest.mark.unit
+def test_keyword_matcher_build_automaton_guard(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Chamada direta a `_build_automaton()` com AC indisponível retorna None (guard interno)."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    m = kw_module.KeywordMatcher(["ITCD"])
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", False)
+    assert m._build_automaton() is None
+
+
+@pytest.mark.unit
+def test_keyword_matcher_aho_corasick_case_sensitive(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fast path com case_sensitive=True cobre o ramo sem `.lower()`."""
+    from monitoritcd.resilience import keyword_matcher as kw_module  # noqa: PLC0415
+
+    monkeypatch.setattr(kw_module, "_AHC_AVAILABLE", True)
+    monkeypatch.setattr(kw_module, "ahocorasick", _FakeAhocorasickModule(), raising=False)
+
+    m = kw_module.KeywordMatcher(["ITCD"], case_sensitive=True)
+    assert m.using_aho_corasick
+    matched, _ = m.find_in("ITCD em maiúsculas")
+    assert matched
+    matched_lower, _ = m.find_in("itcd em minúsculas")
+    assert not matched_lower

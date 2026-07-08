@@ -35,6 +35,25 @@
       ]
     },
     {
+      "collectionGroup": "documentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "owner_id", "order": "ASCENDING" },
+        { "fieldPath": "search_index.terms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "original.fetched_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "documentos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "owner_id", "order": "ASCENDING" },
+        { "fieldPath": "source.uf", "order": "ASCENDING" },
+        { "fieldPath": "search_index.terms", "arrayConfig": "CONTAINS" },
+        { "fieldPath": "original.fetched_at", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "audit_log",
       "queryScope": "COLLECTION",
       "fields": [

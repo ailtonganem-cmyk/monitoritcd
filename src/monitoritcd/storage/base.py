@@ -50,7 +50,21 @@ class StorageProtocol(Protocol):
         status: StatusDocumento | None = None,
         uf: str | None = None,
         limit: int = 100,
+        offset: int = 0,
     ) -> list[Documento]: ...
+
+    async def search_documentos(
+        self,
+        *,
+        terms: list[str],
+        uf: str | None = None,
+        since: datetime | None = None,
+        limit: int = 50,
+        scan_limit: int = 5000,
+        include_archived: bool = False,
+    ) -> list[Documento]:
+        """Busca documentos no corpus pesquisável materializado."""
+        ...
 
     async def update_llm(self, doc_id: str, llm: LLMResult) -> None: ...
 
@@ -61,6 +75,10 @@ class StorageProtocol(Protocol):
     ) -> None: ...
 
     async def update_status(self, doc_id: str, status: StatusDocumento) -> None: ...
+
+    async def update_search_index(self, doc_id: str) -> None:
+        """Reconstrói o índice de busca a partir do documento canônico."""
+        ...
 
     async def add_user_tag(self, doc_id: str, tag: str) -> None:
         """Adiciona tag pessoal do dono ao documento (idempotente).

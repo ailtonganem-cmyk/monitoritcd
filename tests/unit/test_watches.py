@@ -23,6 +23,7 @@ from monitoritcd.watches import (
     SIMILAR_HIGH_THRESHOLD,
     evaluate_watches,
     find_template,
+    fuzzy_watches_for_query,
     get_templates,
     is_in_cooldown,
     is_watch_active,
@@ -48,6 +49,7 @@ def _doc(
     tipo: TipoAto = TipoAto.PROJETO_LEI,
     topics: list[Topic] | None = None,
     cluster_id: str | None = None,
+    with_llm: bool = True,
 ) -> Documento:
     raw = RawItem(
         source_id="src",
@@ -65,16 +67,20 @@ def _doc(
         parser=Parser.GENERIC_HTML,
         url="https://x.gov.br/",
     )
-    llm = LLMResult(
-        classified_at=NOW,
-        llm_model="x",
-        llm_prompt_version="v1",
-        tipo=tipo,
-        relevancia=relev,
-        severity_tier=SeverityTier.NORMAL,
-        resumo="resumo padrao",
-        metadados_extraidos=metadados or {},
-        topics=topics or [Topic.ITCD],
+    llm = (
+        LLMResult(
+            classified_at=NOW,
+            llm_model="x",
+            llm_prompt_version="v1",
+            tipo=tipo,
+            relevancia=relev,
+            severity_tier=SeverityTier.NORMAL,
+            resumo="resumo padrao",
+            metadados_extraidos=metadados or {},
+            topics=topics or [Topic.ITCD],
+        )
+        if with_llm
+        else None
     )
     return Documento(
         owner_id="o",
@@ -139,6 +145,14 @@ class TestExpiracao:
         future = NOW + timedelta(days=7)
         assert is_watch_active(_watch(pattern="x", expires_at=future)) is True
 
+    def test_expires_at_naive_datetime(self) -> None:
+        """expires_at sem tzinfo é normalizado para UTC antes da comparação."""
+        future_naive = (NOW + timedelta(days=1)).replace(tzinfo=None)
+        assert is_watch_active(_watch(pattern="x", expires_at=future_naive)) is True
+
+        past_naive = (NOW - timedelta(days=1)).replace(tzinfo=None)
+        assert is_watch_active(_watch(pattern="x", expires_at=past_naive)) is False
+
 
 @pytest.mark.unit
 class TestCooldown:
@@ -154,6 +168,16 @@ class TestCooldown:
         old = NOW - timedelta(hours=48)
         w = _watch(pattern="x", cooldown_hours=24, last_triggered=old)
         assert is_in_cooldown(w) is False
+
+    def test_last_triggered_naive_datetime(self) -> None:
+        """last_triggered sem tzinfo é normalizado para UTC antes da comparação."""
+        recent_naive = (NOW - timedelta(hours=1)).replace(tzinfo=None)
+        w = _watch(pattern="x", cooldown_hours=24, last_triggered=recent_naive)
+        assert is_in_cooldown(w) is True
+
+        old_naive = (NOW - timedelta(hours=48)).replace(tzinfo=None)
+        w2 = _watch(pattern="x", cooldown_hours=24, last_triggered=old_naive)
+        assert is_in_cooldown(w2) is False
 
 
 @pytest.mark.unit
@@ -212,6 +236,32 @@ class TestMatchesDoc:
         # doc relev=5 → False
         assert matches_doc(w, _doc(relev=5)) is False
         assert matches_doc(w, _doc(relev=9)) is True
+
+    def test_pattern_type_desconhecido(self) -> None:
+        """pattern_type fora dos 4 suportados cai no fallback False."""
+        w = _watch(pattern="qualquer", pattern_type="term")
+        # Bypassa o Literal via object.__setattr__ pois Watch não é frozen aqui
+        object.__setattr__(w, "pattern_type", "outro")
+        assert matches_doc(w, _doc()) is False
+
+    def test_term_match_sem_llm(self) -> None:
+        """_term_match ignora resumo quando doc.llm é None."""
+        w = _watch(pattern="ITCMD", pattern_type="term")
+        doc = _doc(titulo="Lei sobre ITCMD em SP", with_llm=False)
+        assert matches_doc(w, doc) is True
+
+    def test_uf_topic_sem_dois_pontos(self) -> None:
+        w = _watch(pattern="SPitcd", pattern_type="uf_topic")
+        assert matches_doc(w, _doc()) is False
+
+    def test_uf_topic_uf_diferente(self) -> None:
+        w = _watch(pattern="RJ:itcd", pattern_type="uf_topic")
+        assert matches_doc(w, _doc(uf="SP")) is False
+
+    def test_uf_topic_sem_llm(self) -> None:
+        w = _watch(pattern="SP:itcd", pattern_type="uf_topic")
+        doc = _doc(uf="SP", with_llm=False)
+        assert matches_doc(w, doc) is False
 
 
 @pytest.mark.unit
@@ -275,3 +325,16 @@ class TestEvaluateWatches:
         ]
         docs = [_doc()]
         assert evaluate_watches(docs, watches) == []
+
+
+@pytest.mark.unit
+class TestFuzzyWatchesForQuery:
+    def test_encontra_similar(self) -> None:
+        docs = [_doc(titulo="Lei ITCMD progressiva SP 2026")]
+        result = fuzzy_watches_for_query(docs, "Lei ITCMD progressiva SP 2026", threshold=0.8)
+        assert len(result) == 1
+
+    def test_sem_match(self) -> None:
+        docs = [_doc(titulo="Assunto totalmente não relacionado")]
+        result = fuzzy_watches_for_query(docs, "Lei ITCMD progressiva SP 2026")
+        assert result == []

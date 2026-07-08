@@ -29,10 +29,11 @@ from monitoritcd.core.models import (
     SeverityTier,
     StatusDocumento,
     TipoAto,
-    Topic,
     TopicEntry,
 )
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT
+from monitoritcd.notifiers.telegram_notifier import render_telegram
+from monitoritcd.search import document_search_corpus, normalize_search_query
 from monitoritcd.security.markdown_escape import escape_markdown_v2, safe_link
 
 if TYPE_CHECKING:
@@ -173,7 +174,7 @@ async def handle_status(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
 
 _BUSCAR_DEFAULT_LIMIT = 10
 _BUSCAR_MAX_LIMIT = 50
-_BUSCAR_FIRESTORE_FETCH = 1000  # janela máxima a varrer no Firestore por busca
+_BUSCAR_SCAN_LIMIT = 5000  # limite defensivo de varredura no backend de busca
 _BUSCAR_RESUMO_PREVIEW = 220
 _BUSCAR_MIN_YEAR = 2020
 _BUSCAR_MAX_YEAR = 2099
@@ -193,7 +194,7 @@ class _BuscarFilters:
     termos: list[str]
     uf: str | None = None
     ano: int | None = None
-    topico: Topic | None = None
+    topico: str | None = None
     tipo: TipoAto | None = None
     severidade: SeverityTier | None = None
     limite: int = _BUSCAR_DEFAULT_LIMIT
@@ -235,10 +236,10 @@ def _parse_buscar_filters(args: list[str]) -> _BuscarFilters | str:  # noqa: PLR
                     return f"❌ Ano fora do intervalo {_BUSCAR_MIN_YEAR}-{_BUSCAR_MAX_YEAR}."
                 f.ano = year
             elif key == "topico":
-                try:
-                    f.topico = Topic(value.lower())
-                except ValueError:
-                    return f"❌ Tópico inválido: `{value}`. Válidos: itcd, sucessoes, regime_bens."
+                topic_id = value.lower()
+                if not _TOPIC_ID_REGEX.fullmatch(topic_id):
+                    return f"❌ Tópico inválido: `{value}`. Use letras minúsculas, dígitos e `_`."
+                f.topico = topic_id
             elif key == "tipo":
                 try:
                     f.tipo = TipoAto(value.lower())
@@ -268,20 +269,11 @@ def _parse_buscar_filters(args: list[str]) -> _BuscarFilters | str:  # noqa: PLR
 
 
 def _matches_text(termos: list[str], doc: object) -> bool:
-    """Termo livre: AND de substrings em titulo+resumo+tags+numero_ato (case-insensitive)."""
+    """Termo livre: AND de substrings no corpus pesquisável materializado."""
     if not termos:
         return True
-    titulo = (doc.original.titulo_raw or "").lower()  # type: ignore[attr-defined]
-    texto_raw = (doc.original.texto_raw or "").lower()  # type: ignore[attr-defined]
-    resumo = ""
-    tags_blob = ""
-    numero = ""
-    if doc.llm is not None:  # type: ignore[attr-defined]
-        resumo = (doc.llm.resumo or "").lower()  # type: ignore[attr-defined]
-        tags_blob = " ".join(t.lower() for t in (doc.llm.tags or []))  # type: ignore[attr-defined]
-        numero = str(doc.llm.metadados_extraidos.get("numero_ato", "")).lower()  # type: ignore[attr-defined]
-    haystack = f"{titulo}\n{resumo}\n{tags_blob}\n{numero}\n{texto_raw}"
-    return all(t.lower() in haystack for t in termos)
+    haystack = document_search_corpus(doc)  # type: ignore[arg-type]
+    return all(normalize_search_query(t) in haystack for t in termos)
 
 
 def _format_buscar_card(doc: object) -> str:
@@ -306,15 +298,18 @@ def _format_buscar_card(doc: object) -> str:
 
     resumo_line = ""
     if doc.llm is not None and doc.llm.resumo:  # type: ignore[attr-defined]
-        snippet = doc.llm.resumo[:_BUSCAR_RESUMO_PREVIEW]  # type: ignore[attr-defined]
-        if len(doc.llm.resumo) > _BUSCAR_RESUMO_PREVIEW:  # type: ignore[attr-defined]
+        resumo = doc.llm.resumo_completo or doc.llm.resumo  # type: ignore[attr-defined]
+        snippet = resumo[:_BUSCAR_RESUMO_PREVIEW]
+        if len(resumo) > _BUSCAR_RESUMO_PREVIEW:
             snippet += "…"
         resumo_line = f"\n  _{escape_markdown_v2(snippet)}_"
 
     return f"• {link}\n  {meta}{resumo_line}"
 
 
-async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  # noqa: PLR0912
+async def handle_buscar(  # noqa: PLR0912, PLR0915
+    ctx: BotContext, cmd: ParsedCommand
+) -> HandlerResult:
     """Repositório pesquisável de notícias coletadas.
 
     Sintaxe:
@@ -339,6 +334,18 @@ async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
     if isinstance(parsed, str):
         return HandlerResult(text=parsed, is_error=True)
 
+    if parsed.topico is not None and parsed.topico not in DEFAULT_TOPIC_IDS:
+        extra_topics = await ctx.storage.get_extra_topics()
+        valid_extra = extra_topics.topic_ids() if extra_topics is not None else set()
+        if parsed.topico not in valid_extra:
+            return HandlerResult(
+                text=(
+                    f"❌ Tópico inválido: `{parsed.topico}`. "
+                    "Use `/topicos listar` para ver os tópicos disponíveis."
+                ),
+                is_error=True,
+            )
+
     has_filter = any([parsed.uf, parsed.ano, parsed.topico, parsed.tipo, parsed.severidade])
     if not parsed.termos and not has_filter:
         return HandlerResult(
@@ -351,10 +358,12 @@ async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
         since = datetime(parsed.ano, 1, 1, tzinfo=UTC)
         until = datetime(parsed.ano + 1, 1, 1, tzinfo=UTC)
 
-    docs = await ctx.storage.list_documentos(
+    docs = await ctx.storage.search_documentos(
+        terms=parsed.termos,
         uf=parsed.uf,
         since=since,
-        limit=_BUSCAR_FIRESTORE_FETCH,
+        limit=_BUSCAR_SCAN_LIMIT,
+        scan_limit=_BUSCAR_SCAN_LIMIT,
     )
 
     matched = []
@@ -391,7 +400,7 @@ async def handle_buscar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
     if parsed.ano:
         filtros_str_parts.append(f"ano\\={parsed.ano}")
     if parsed.topico:
-        filtros_str_parts.append(f"topico\\={escape_markdown_v2(parsed.topico.value)}")
+        filtros_str_parts.append(f"topico\\={escape_markdown_v2(parsed.topico)}")
     if parsed.tipo:
         filtros_str_parts.append(f"tipo\\={escape_markdown_v2(parsed.tipo.value)}")
     if parsed.severidade:
@@ -835,10 +844,17 @@ async def handle_marcar(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
 async def handle_relatorio(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
     """`/relatorio [diario|semanal]` — digest sob demanda do período.
 
-    Lista documentos NOTIFIED ou CLASSIFIED no período (default: 1 dia).
-    Não envia digest pelo Telegram — apenas resume na resposta inline.
+    Renderiza os documentos classificados do período com o mesmo template
+    Telegram do digest automático, incluindo `resumo_completo` quando existe.
+    Documentos pendentes continuam contabilizados no cabeçalho.
     """
     from datetime import UTC, datetime, timedelta  # noqa: PLC0415
+
+    if len(cmd.args) > 1:
+        return HandlerResult(
+            text="❌ Uso: /relatorio [diario|semanal]",
+            is_error=True,
+        )
 
     periodo = (cmd.args[0].lower() if cmd.args else "diario").strip()
     if periodo not in {"diario", "semanal"}:
@@ -854,32 +870,31 @@ async def handle_relatorio(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult
     if not docs:
         return HandlerResult(text=f"📊 Nenhum documento nos últimos {dias} dia(s).")
 
-    # Resumo por severity tier
-    tier_counts: dict[str, int] = {}
-    for d in docs:
-        if d.llm:
-            tier = d.llm.severity_tier.value
-            tier_counts[tier] = tier_counts.get(tier, 0) + 1
-
     label = "Diário" if periodo == "diario" else "Semanal"
-    lines = [f"📊 Relatório {label} ({len(docs)} documentos)"]
-    for tier, count in sorted(tier_counts.items()):
-        lines.append(f"• {tier}: {count}")
-
-    # Top 5 documentos por relevância
-    rated = sorted(
+    classified = sorted(
         (d for d in docs if d.llm is not None),
         key=lambda d: d.llm.relevancia if d.llm else 0,
         reverse=True,
-    )[:5]
-    if rated:
-        lines.append("\nTop 5 por relevância:")
-        for d in rated:
-            rel = d.llm.relevancia if d.llm else 0
-            titulo = d.original.titulo_raw[:50]
-            lines.append(f"• [{d.doc_id[:8]}] rel={rel} — {titulo}")
+    )
+    pendentes = len(docs) - len(classified)
+    if not classified:
+        return HandlerResult(
+            text=f"📊 Relatório {label}: {len(docs)} documento(s), todos pendentes de LLM.",
+        )
 
-    return HandlerResult(text="\n".join(lines))
+    rendered = render_telegram(
+        classified,
+        digest_label=f"Relatório {label}",
+        data_geracao=datetime.now(UTC),
+    )
+    if pendentes:
+        rendered += (
+            "\n\n_"
+            f"{pendentes} documento\\(s\\) pendente\\(s\\) de classificação LLM "
+            "ficaram fora do detalhamento\\."
+            "_"
+        )
+    return HandlerResult(text=rendered, pre_escaped=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

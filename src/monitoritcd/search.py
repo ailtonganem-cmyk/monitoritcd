@@ -35,9 +35,13 @@ Princípios canônicos:
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import UTC, datetime, timedelta
 from difflib import SequenceMatcher
 from typing import TYPE_CHECKING, Final
+
+from monitoritcd.core import limits
+from monitoritcd.core.models import DocumentSearchIndex
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -75,6 +79,11 @@ RE_MES_ANO: Final[re.Pattern[str]] = re.compile(
 )
 RE_QUARTER: Final[re.Pattern[str]] = re.compile(r"^Q([1-4])\s+(\d{4})$", re.IGNORECASE)
 RE_DATE_ISO: Final[re.Pattern[str]] = re.compile(r"^(\d{4})-(\d{2})(?:-(\d{2}))?$")
+RE_SEARCH_TOKEN: Final[re.Pattern[str]] = re.compile(
+    r"\d{1,6}/\d{4}|[\wÀ-ÿ]{3,}",
+    re.IGNORECASE,
+)
+SEARCH_INDEX_VERSION: Final[int] = 2
 
 MES_TO_NUM: Final[dict[str, int]] = {
     "jan": 1,
@@ -103,6 +112,148 @@ def _validate_query(query: str) -> str:
         msg = f"Query inválida (vazia ou > {MAX_QUERY_LENGTH} chars)"
         raise ValueError(msg)
     return query.strip()
+
+
+def _normalize_search_text(text: str) -> str:
+    """Normaliza corpus de busca sem alterar o `original` armazenado."""
+    text = unicodedata.normalize("NFKC", text)
+    text = "".join(c for c in unicodedata.normalize("NFD", text) if unicodedata.category(c) != "Mn")
+    text = "".join(c for c in text if c.isprintable() or c.isspace())
+    return " ".join(text.lower().split())
+
+
+def normalize_search_query(text: str) -> str:
+    """Normaliza termos de consulta com as mesmas regras do corpus."""
+    return _normalize_search_text(text)
+
+
+def search_terms_for_query(terms: Sequence[str]) -> list[str]:
+    """Extrai candidatos compatíveis com `DocumentSearchIndex.terms`."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for term in terms:
+        normalized = normalize_search_query(term)
+        if not normalized:
+            continue
+        candidates = [normalized]
+        candidates.extend(m.group(0) for m in RE_SEARCH_TOKEN.finditer(normalized))
+        for candidate in candidates:
+            value = normalize_search_query(candidate)[: limits.MAX_SEARCH_TERM_LENGTH]
+            if value and value not in seen:
+                seen.add(value)
+                out.append(value)
+    return out
+
+
+def build_document_search_text(doc: Documento) -> str:
+    """Monta o corpus pesquisável de um documento.
+
+    Inclui título, texto bruto, resumos, pontos-chave, metadados, tags, fonte,
+    tópicos e marcações pessoais. O texto é derivado e limitado para caber no
+    documento Firestore sem usar o `original` como índice bruto.
+    """
+    llm_parts: list[str] = []
+    metadata_parts: list[str] = []
+    if doc.llm:
+        metadata_parts = [f"{k} {v}" for k, v in doc.llm.metadados_extraidos.items()]
+        llm_parts = [
+            doc.llm.tipo.value,
+            doc.llm.severity_tier.value,
+            doc.llm.resumo,
+            doc.llm.resumo_completo,
+            doc.llm.motivo_relevancia,
+            doc.llm.contexto,
+            " ".join(doc.llm.pontos_chave),
+            " ".join(doc.llm.assuntos_relacionados),
+            " ".join(doc.llm.tags),
+            " ".join(doc.llm.topics),
+            " ".join(metadata_parts),
+        ]
+
+    raw_excerpt = (doc.original.texto_raw or "")[: limits.MAX_RAW_TEXT_IN_SEARCH_INDEX_LENGTH]
+    parts: list[str] = [
+        doc.doc_id,
+        doc.original.titulo_raw,
+        doc.source.id,
+        doc.source.nome,
+        doc.source.uf,
+        doc.source.tipo.value,
+        " ".join(doc.source.topics),
+        " ".join(doc.user_tags),
+        *llm_parts,
+        doc.original.url,
+        raw_excerpt,
+    ]
+    if doc.original.data_publicacao:
+        parts.append(doc.original.data_publicacao.isoformat())
+    normalized = _normalize_search_text("\n".join(p for p in parts if p))
+    return normalized[: limits.MAX_SEARCH_TEXT_LENGTH]
+
+
+def _structured_terms(doc: Documento) -> list[str]:
+    """Termos exatos importantes para buscas futuras e índices invertidos."""
+    terms = [
+        doc.doc_id,
+        doc.source.id,
+        doc.source.uf,
+        doc.source.tipo.value,
+        *doc.source.topics,
+        *doc.user_tags,
+    ]
+    if doc.original.data_publicacao:
+        terms.append(str(doc.original.data_publicacao.year))
+    if doc.llm:
+        terms.extend(
+            [
+                doc.llm.tipo.value,
+                doc.llm.severity_tier.value,
+                str(doc.llm.relevancia),
+                *doc.llm.topics,
+                *doc.llm.tags,
+                *doc.llm.assuntos_relacionados,
+            ]
+        )
+        for key, value in doc.llm.metadados_extraidos.items():
+            terms.append(key)
+            terms.append(value)
+    return terms
+
+
+def build_document_search_index(
+    doc: Documento,
+    *,
+    generated_at: datetime | None = None,
+) -> DocumentSearchIndex:
+    """Gera índice materializado para persistir junto ao documento."""
+    text = build_document_search_text(doc)
+    seen: set[str] = set()
+    terms: list[str] = []
+    candidates = [*_structured_terms(doc), *(m.group(0) for m in RE_SEARCH_TOKEN.finditer(text))]
+    for candidate in candidates:
+        term = _normalize_search_text(candidate)[: limits.MAX_SEARCH_TERM_LENGTH]
+        if not term:
+            continue
+        if term not in seen:
+            seen.add(term)
+            terms.append(term)
+            if len(terms) >= limits.MAX_SEARCH_TERMS:
+                break
+    topics = doc.llm.topics if doc.llm and doc.llm.topics else list(doc.source.topics)
+    return DocumentSearchIndex(
+        index_version=SEARCH_INDEX_VERSION,
+        generated_at=generated_at or datetime.now(UTC),
+        text=text,
+        terms=terms,
+        topics=topics,
+        prompt_version=doc.llm.llm_prompt_version if doc.llm else "",
+    )
+
+
+def document_search_corpus(doc: Documento) -> str:
+    """Retorna corpus materializado ou gera fallback para documentos antigos."""
+    if doc.search_index is not None and doc.search_index.text:
+        return doc.search_index.text
+    return build_document_search_text(doc)
 
 
 def normalize_act_number(text: str) -> str | None:
@@ -194,11 +345,8 @@ def faceted_search(  # noqa: PLR0912
 
 
 def _contains_term(doc: Documento, term: str) -> bool:
-    """Procura substring em titulo + resumo (case-insensitive)."""
-    haystack = doc.original.titulo_raw.lower()
-    if doc.llm:
-        haystack += " " + doc.llm.resumo.lower()
-    return term in haystack
+    """Procura substring no corpus pesquisável (case-insensitive)."""
+    return _normalize_search_text(term) in document_search_corpus(doc)
 
 
 def _parse_period(period: str) -> datetime | None:
@@ -406,9 +554,7 @@ def regex_search(
 
     matches: list[Documento] = []
     for d in docs:
-        haystack = d.original.titulo_raw
-        if d.llm:
-            haystack += " " + d.llm.resumo
+        haystack = document_search_corpus(d)
         if rgx.search(haystack):
             matches.append(d)
             if len(matches) >= limit:
@@ -422,10 +568,15 @@ __all__ = [
     "MAX_RESULTS",
     "SIMILAR_THRESHOLD",
     "boolean_search",
+    "build_document_search_index",
+    "build_document_search_text",
+    "document_search_corpus",
     "faceted_search",
     "fuzzy_search",
     "highlight_term",
     "more_like_this",
     "normalize_act_number",
+    "normalize_search_query",
     "regex_search",
+    "search_terms_for_query",
 ]

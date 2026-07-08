@@ -16,13 +16,18 @@
     'cluster_id': 'NoneType',
     'doc_id': 'str',
     'llm': dict({
+      'assuntos_relacionados': 'list',
       'classified_at': 'str',
+      'contexto': 'str',
       'llm_model': 'str',
       'llm_prompt_version': 'str',
       'metadados_extraidos': dict({
       }),
+      'motivo_relevancia': 'str',
+      'pontos_chave': 'list',
       'relevancia': 'int',
       'resumo': 'str',
+      'resumo_completo': 'str',
       'severity_tier': 'str',
       'tags': 'list',
       'tipo': 'str',
@@ -45,6 +50,7 @@
     }),
     'owner_id': 'str',
     'schema_version': 'int',
+    'search_index': 'NoneType',
     'source': dict({
       'ativo': 'bool',
       'fragile': 'bool',

@@ -9,6 +9,15 @@ Sem novidades relevantes neste período\.
 {{ item.tier_emoji }} *{{ item.titulo }}*
 {{ item.uf }} · {{ item.tipo_label }}{% if item.data_pub %} · {{ item.data_pub }}{% endif %}
 {{ item.resumo }}
+{% if item.pontos_chave %}
+Pontos: {{ item.pontos_chave }}
+{% endif %}
+{% if item.contexto %}
+🧭 _Contexto \(IA\):_ {{ item.contexto }}
+{% endif %}
+{% if item.assuntos_relacionados %}
+Assuntos: {{ item.assuntos_relacionados }}
+{% endif %}
 [Abrir original]({{ item.url }})
 {% endfor %}
 {% endif %}

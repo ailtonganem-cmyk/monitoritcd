@@ -4,8 +4,8 @@
     'has_pt_br_directive': True,
     'has_relevancia_scale': True,
     'has_topics_section': True,
-    'n_inegociaveis': 1,
-    'n_lines': 39,
-    'version': 'v1.0',
+    'n_inegociaveis': 10,
+    'n_lines': 60,
+    'version': 'v2.1',
   })
 # ---

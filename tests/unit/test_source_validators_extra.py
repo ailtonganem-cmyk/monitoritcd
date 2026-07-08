@@ -63,3 +63,30 @@ def test_lint_all_filters_clean_sources() -> None:
     out = lint_all([clean, dirty])
     assert "clean" not in out
     assert "dirty" in out
+
+
+@pytest.mark.unit
+def test_lint_gov_url_sem_https() -> None:
+    """URL de domínio .gov.br/.jus.br/.leg.br sem HTTPS gera warning."""
+    s = _make_source(url="http://example.gov.br/feed", keywords_required=["ITCD"])
+    warnings = lint_source(s)
+    assert any("sem HTTPS" in w for w in warnings)
+
+
+@pytest.mark.unit
+def test_lint_topics_vazio() -> None:
+    """topics=[] gera warning."""
+    s = _make_source(topics=[], keywords_required=["ITCD"])
+    warnings = lint_source(s)
+    assert any("topics vazio" in w for w in warnings)
+
+
+@pytest.mark.unit
+def test_lint_ativo_sem_geo_restricted_bool() -> None:
+    """Fonte ativa com geo_restricted não-bool (bypass de validação) gera warning."""
+    s = _make_source(keywords_required=["ITCD"])
+    # Princípio 1 garante bool no schema; simula corrupção via model_construct
+    # (bypassa validators) para exercitar o guard defensivo de lint_source.
+    tampered = s.model_construct(**{**s.model_dump(), "geo_restricted": None})
+    warnings = lint_source(tampered)
+    assert any("sem geo_restricted" in w for w in warnings)

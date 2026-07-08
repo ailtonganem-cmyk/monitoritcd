@@ -55,7 +55,7 @@ class GroqProvider:
         if not items_text:
             return []
 
-        items_block = "\n\n---ITEM---\n\n".join(items_text)
+        items_block = "[\n" + ",\n".join(items_text) + "\n]"
         user_msg = (
             f"Classifique os {len(items_text)} itens abaixo. "
             f"Retorne JSON com chave 'items' contendo lista de objetos.\n\n{items_block}"

@@ -38,6 +38,7 @@ from monitoritcd.orchestrator import (
     classify_and_store,
     notify_documents,
     ping_healthcheck,
+    reindex_search_indexes,
     reprocess_documents,
 )
 from monitoritcd.storage import InMemoryStorage
@@ -165,10 +166,15 @@ class TestClassifyAndStoreEdgeCases:
                 # Relevancia 1 mapeia para DESCARTADO em map_relevancia_to_tier
                 return [
                     {
+                        "relacionado": False,
                         "tipo": "noticia",
                         "topics": ["itcd"],
                         "relevancia": 1,
                         "resumo": t[:50],
+                        "resumo_completo": "",
+                        "pontos_chave": [],
+                        "motivo_relevancia": "Fora do escopo.",
+                        "assuntos_relacionados": [],
                         "numero_ato": None,
                         "orgao_emissor": None,
                         "tags": [],
@@ -348,6 +354,109 @@ class TestReprocessErrorPaths:
             )
         # update_llm falhou, mas o batch nao foi creditado
         assert report.items_classified == 0
+
+    @pytest.mark.asyncio
+    async def test_reprocess_pending_vira_classified(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        src, raw = _raw("d1")
+        pending = Documento(
+            owner_id=OWNER,
+            doc_id="d1",
+            source=src,
+            original=raw,
+            status=StatusDocumento.PENDING,
+        )
+        await storage.save_documento(pending)
+
+        class _RelatedLLM:
+            name = "related-llm"
+
+            async def classify_batch(
+                self, items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
+                return [
+                    {
+                        "relacionado": True,
+                        "tipo": "projeto_lei",
+                        "topics": ["itcd"],
+                        "relevancia": 8,
+                        "resumo": "PL sobre ITCMD.",
+                        "resumo_completo": (
+                            "Projeto de lei sobre ITCMD com impacto tributário direto."
+                        ),
+                        "pontos_chave": ["Trata de ITCMD"],
+                        "motivo_relevancia": "Trata diretamente de ITCMD.",
+                        "assuntos_relacionados": ["ITCMD"],
+                        "numero_ato": None,
+                        "orgao_emissor": None,
+                        "tags": ["itcmd"],
+                    }
+                    for _ in items_text
+                ]
+
+        report = await reprocess_documents(
+            storage=storage,
+            llm_provider=_RelatedLLM(),
+            limit=10,
+        )
+
+        assert report.items_classified == 1
+        loaded = await storage.get_documento("d1")
+        assert loaded is not None
+        assert loaded.status == StatusDocumento.CLASSIFIED
+        assert loaded.llm is not None
+
+
+@pytest.mark.integration
+class TestReindexSearch:
+    @pytest.mark.asyncio
+    async def test_reindexa_documento_legado_sem_search_index(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        doc = _make_doc("d1")
+        await storage.save_documento(doc)
+
+        # Simula documento antigo vindo do Firestore v1, antes de `search_index`.
+        stored = storage._documentos["d1"]
+        storage._documentos["d1"] = stored.model_copy(update={"search_index": None})
+
+        report = await reindex_search_indexes(storage=storage, limit=10)
+
+        assert report.items_collected == 1
+        assert report.items_reindexed == 1
+        updated = await storage.get_documento("d1")
+        assert updated is not None
+        assert updated.search_index is not None
+        assert "item d1" in updated.search_index.text
+
+    @pytest.mark.asyncio
+    async def test_missing_only_pula_documento_ja_indexado(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        await storage.save_documento(_make_doc("d1"))
+
+        report = await reindex_search_indexes(storage=storage, limit=10)
+
+        assert report.items_collected == 1
+        assert report.items_reindexed == 0
+
+    @pytest.mark.asyncio
+    async def test_all_recalcula_documento_ja_indexado(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        await storage.save_documento(_make_doc("d1"))
+
+        report = await reindex_search_indexes(storage=storage, limit=10, missing_only=False)
+
+        assert report.items_reindexed == 1
+
+    @pytest.mark.asyncio
+    async def test_reindex_paginas_ate_exaurir(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        for i in range(5):
+            await storage.save_documento(_make_doc(f"d{i}"))
+
+        report = await reindex_search_indexes(storage=storage, limit=2, missing_only=False)
+
+        assert report.items_collected == 5
+        assert report.items_reindexed == 5
 
 
 @pytest.mark.integration

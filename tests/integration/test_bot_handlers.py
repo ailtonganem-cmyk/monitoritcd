@@ -71,13 +71,20 @@ async def _ctx() -> BotContext:
     )
 
 
-def _doc(*, doc_id: str = "d1", titulo: str = "PL ITCMD SP", uf: str = "SP") -> Documento:
+def _doc(
+    *,
+    doc_id: str = "d1",
+    titulo: str = "PL ITCMD SP",
+    uf: str = "SP",
+    status: StatusDocumento = StatusDocumento.CLASSIFIED,
+    content_hash: str = "a" * 64,
+) -> Documento:
     raw = RawItem(
         source_id="s",
         titulo_raw=titulo,
         url="https://x.gov.br/",
         fetched_at=NOW,
-        content_hash="a" * 64,
+        content_hash=content_hash,
     )
     src = Source(
         id="s",
@@ -102,7 +109,7 @@ def _doc(*, doc_id: str = "d1", titulo: str = "PL ITCMD SP", uf: str = "SP") -> 
         source=src,
         original=raw,
         llm=llm,
-        status=StatusDocumento.CLASSIFIED,
+        status=status,
     )
 
 
@@ -154,6 +161,26 @@ class TestBuscar:
         await ctx.storage.save_documento(_doc(titulo="PL 1234/2026 — ITCMD SP"))
         result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["1234"]))
         assert "1234" in result.text
+
+    @pytest.mark.asyncio
+    async def test_busca_nao_exibe_arquivado(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(
+            _doc(doc_id="ativo", titulo="PL ITCMD ativo", content_hash="1" * 64)
+        )
+        await ctx.storage.save_documento(
+            _doc(
+                doc_id="arquivado",
+                titulo="PL ITCMD arquivado",
+                status=StatusDocumento.ARCHIVED,
+                content_hash="2" * 64,
+            )
+        )
+
+        result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD"]))
+
+        assert "ativo" in result.text
+        assert "arquivado" not in result.text
 
 
 @pytest.mark.integration
@@ -539,6 +566,16 @@ class TestRelatorio:
         assert "inválido" in result.text
 
     @pytest.mark.asyncio
+    async def test_argumento_extra_rejeitado(self) -> None:
+        ctx = await _ctx()
+        result = await handle_relatorio(
+            ctx,
+            ParsedCommand(name="relatorio", args=["diario", "lixo"]),
+        )
+        assert result.is_error
+        assert "Uso" in result.text
+
+    @pytest.mark.asyncio
     async def test_diario_vazio(self) -> None:
         ctx = await _ctx()
         result = await handle_relatorio(
@@ -568,7 +605,10 @@ class TestRelatorio:
             ctx,
             ParsedCommand(name="relatorio", args=["diario"]),
         )
-        assert "Diário" in result.text or "Relatório" in result.text
+        assert result.pre_escaped is True
+        assert "Relatório Diário" in result.text
+        assert "PL recente" in result.text
+        assert "Resumo" in result.text
 
     @pytest.mark.asyncio
     async def test_semanal_com_docs(self) -> None:
@@ -591,12 +631,12 @@ class TestRelatorio:
             ctx,
             ParsedCommand(name="relatorio", args=["semanal"]),
         )
-        assert "Semanal" in result.text
+        assert result.pre_escaped is True
+        assert "Relatório Semanal" in result.text
 
     @pytest.mark.asyncio
-    async def test_relatorio_doc_sem_llm_aparece_no_total_mas_nao_em_tier(self) -> None:
-        # Cobre branch 486->485: doc sem llm é contado no total mas pulado
-        # no tier_counts e top-rated.
+    async def test_relatorio_doc_sem_llm_aparece_como_pendente(self) -> None:
+        # Doc sem LLM é contabilizado, mas fica fora do detalhamento.
         from datetime import UTC, datetime  # noqa: PLC0415
 
         from monitoritcd.core.models import RawItem  # noqa: PLC0415
@@ -615,13 +655,11 @@ class TestRelatorio:
             ctx,
             ParsedCommand(name="relatorio", args=["diario"]),
         )
-        # Total = 1, mas nenhum tier nem top-rated
-        assert "1 documentos" in result.text
-        assert "Top 5" not in result.text
+        assert "todos pendentes" in result.text
 
     @pytest.mark.asyncio
-    async def test_relatorio_so_docs_sem_llm_pula_top5(self) -> None:
-        # Cobre branch 501->508: `rated` vazio quando todos docs têm llm=None.
+    async def test_relatorio_so_docs_sem_llm_nao_renderiza_digest(self) -> None:
+        # Quando todos docs têm llm=None, não há digest detalhado para renderizar.
         from datetime import UTC, datetime  # noqa: PLC0415
 
         from monitoritcd.core.models import RawItem  # noqa: PLC0415
@@ -641,7 +679,8 @@ class TestRelatorio:
             ctx,
             ParsedCommand(name="relatorio", args=["diario"]),
         )
-        assert "Top 5" not in result.text
+        assert result.pre_escaped is False
+        assert "todos pendentes" in result.text
 
 
 @pytest.mark.integration
@@ -1260,6 +1299,42 @@ class TestBuscarRichSyntax:
         result = await handle_buscar(ctx, ParsedCommand(name="buscar", args=["ITCMD", "limite=2"]))
         assert "2\\+" in result.text  # marca de truncamento
         assert "Mostrando os primeiros 2" in result.text
+
+    @pytest.mark.asyncio
+    async def test_busca_encontra_match_apos_mil_documentos(self) -> None:
+        from datetime import timedelta  # noqa: PLC0415
+
+        ctx = await _ctx()
+        for i in range(1005):
+            raw = RawItem(
+                source_id="s",
+                titulo_raw=f"Documento ordinário {i}",
+                url=f"https://x.gov.br/{i}",
+                fetched_at=NOW + timedelta(minutes=i),
+                content_hash=f"{i:064x}"[-64:],
+            )
+            await ctx.storage.save_documento(
+                _doc(doc_id=f"n{i}").model_copy(update={"original": raw})
+            )
+
+        target_raw = RawItem(
+            source_id="s",
+            titulo_raw="Parecer raro sobre herança digital",
+            url="https://x.gov.br/target",
+            fetched_at=NOW - timedelta(days=30),
+            content_hash="f" * 64,
+        )
+        target = _doc(doc_id="target").model_copy(update={"original": target_raw})
+        assert target.llm is not None
+        target.llm.resumo_completo = "Discussão de herança digital e ITCMD."
+        await ctx.storage.save_documento(target)
+
+        result = await handle_buscar(
+            ctx,
+            ParsedCommand(name="buscar", args=["heranca", "digital"]),
+        )
+
+        assert "Parecer raro" in result.text
 
 
 @pytest.mark.integration

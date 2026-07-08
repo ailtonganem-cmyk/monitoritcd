@@ -20,12 +20,15 @@ from monitoritcd.core.models import (
 from monitoritcd.search import (
     MAX_QUERY_LENGTH,
     boolean_search,
+    build_document_search_index,
+    document_search_corpus,
     faceted_search,
     fuzzy_search,
     highlight_term,
     more_like_this,
     normalize_act_number,
     regex_search,
+    search_terms_for_query,
 )
 
 NOW = datetime.now(UTC)
@@ -40,6 +43,7 @@ def _doc(
     tipo: TipoAto = TipoAto.PROJETO_LEI,
     tier: SeverityTier = SeverityTier.NORMAL,
     resumo: str = "resumo padrao",
+    texto_raw: str | None = None,
     user_tags: list[str] | None = None,
     doc_id: str = "d1",
     llm_model: str = "gemini-2.5-flash",
@@ -49,6 +53,7 @@ def _doc(
         source_id="src",
         titulo_raw=titulo,
         url=f"https://x.gov.br/{doc_id}",
+        texto_raw=texto_raw,
         fetched_at=NOW,
         data_publicacao=NOW - timedelta(days=age_days),
         content_hash="a" * 64,
@@ -69,6 +74,7 @@ def _doc(
         relevancia=relev,
         severity_tier=tier,
         resumo=resumo,
+        resumo_completo=resumo,
     )
     return Documento(
         owner_id="o",
@@ -107,6 +113,20 @@ class TestFaceted:
             _doc(titulo="Decreto sobre algo", doc_id="b"),
         ]
         result = faceted_search(docs, term="itcmd")
+        assert len(result) == 1
+        assert result[0].doc_id == "a"
+
+    def test_term_filter_usa_resumo_completo(self) -> None:
+        doc = _doc(titulo="Lei estadual", resumo="Resumo curto", doc_id="a")
+        assert doc.llm is not None
+        doc.llm.resumo_completo = "Texto completo menciona herança digital e ITCMD."
+        result = faceted_search([doc], term="herança digital")
+        assert len(result) == 1
+        assert result[0].doc_id == "a"
+
+    def test_term_filter_sem_acento(self) -> None:
+        docs = [_doc(titulo="Decisão sobre sucessões", doc_id="a")]
+        result = faceted_search(docs, term="sucessoes")
         assert len(result) == 1
         assert result[0].doc_id == "a"
 
@@ -281,3 +301,52 @@ class TestRegexSearch:
         # Regex sem quantificador aninhado deve passar
         result = regex_search([], r"\d+/\d{4}")
         assert result == []  # sem docs, sem matches
+
+
+@pytest.mark.unit
+class TestSearchIndex:
+    def test_build_search_index_inclui_metadados_e_pontos(self) -> None:
+        doc = _doc(titulo="Lei estadual", resumo="Resumo curto")
+        assert doc.llm is not None
+        doc.llm.resumo_completo = "Resumo completo sobre ITCMD e base de cálculo."
+        doc.llm.pontos_chave = ["Base de cálculo alterada"]
+        doc.llm.assuntos_relacionados = ["ITCMD progressivo"]
+        doc.llm.metadados_extraidos = {"numero_ato": "1234/2026"}
+
+        idx = build_document_search_index(doc)
+
+        assert "base de calculo alterada" in idx.text
+        assert "1234/2026" in idx.text
+        assert "1234/2026" in idx.terms
+        assert "itcmd progressivo" in idx.text
+
+    def test_build_search_index_inclui_contexto(self) -> None:
+        doc = _doc(titulo="Lei estadual", resumo="Resumo curto")
+        assert doc.llm is not None
+        doc.llm.contexto = "A Súmula 377/STF trata da comunicabilidade dos aquestos."
+
+        idx = build_document_search_index(doc)
+
+        assert "sumula 377/stf" in idx.text
+
+    def test_document_search_corpus_usa_indice_materializado(self) -> None:
+        doc = _doc(titulo="Lei estadual", resumo="Resumo curto")
+        idx = build_document_search_index(doc)
+        indexed = doc.model_copy(update={"search_index": idx})
+
+        assert document_search_corpus(indexed) == idx.text
+
+    def test_search_index_prioriza_campos_llm_antes_do_texto_bruto_longo(self) -> None:
+        doc = _doc(titulo="Lei estadual", texto_raw="x " * 50_000)
+        assert doc.llm is not None
+        doc.llm.resumo_completo = "Resumo completo com assunto raro ITCMD."
+        idx = build_document_search_index(doc)
+
+        assert "assunto raro" in idx.text
+        assert len(idx.text) <= 12_000
+
+    def test_search_terms_for_query_normaliza_ato_e_acentos(self) -> None:
+        terms = search_terms_for_query(["Sucessões", "PL 1234/2026"])
+
+        assert "sucessoes" in terms
+        assert "1234/2026" in terms

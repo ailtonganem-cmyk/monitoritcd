@@ -18,7 +18,12 @@ MAX_OWNER_ID_LENGTH: Final[int] = 64
 MAX_EMAIL_LENGTH: Final[int] = 320  # RFC 5321
 MAX_TITLE_LENGTH: Final[int] = 500
 MAX_SUMMARY_LENGTH: Final[int] = 2000
+MAX_FULL_SUMMARY_LENGTH: Final[int] = 6000
+MIN_FULL_SUMMARY_RELATED_LENGTH: Final[int] = 40
+MAX_RELEVANCE_REASON_LENGTH: Final[int] = 800
+MAX_CONTEXTO_LENGTH: Final[int] = 1500
 MAX_RAW_TEXT_LENGTH: Final[int] = 1_000_000  # 1 MB de texto
+MAX_RAW_TEXT_IN_SEARCH_INDEX_LENGTH: Final[int] = 4000
 MAX_URL_LENGTH: Final[int] = 2048
 MAX_BOT_COMMAND_LENGTH: Final[int] = 256
 MAX_BOT_ARG_LENGTH: Final[int] = 200
@@ -94,6 +99,12 @@ MAX_METADATA_FIELDS: Final[int] = 30
 MIN_ORG_MENTION_LENGTH: Final[int] = 2  # 2 chars permite siglas curtas (UF, OS, AC)
 MAX_ORG_MENTION_LENGTH: Final[int] = 200
 MAX_ORG_MENTIONS: Final[int] = 10
+MAX_KEY_POINTS: Final[int] = 8
+MAX_KEY_POINT_LENGTH: Final[int] = 500
+MAX_RELATED_SUBJECTS: Final[int] = 12
+MAX_SEARCH_TEXT_LENGTH: Final[int] = 12_000
+MAX_SEARCH_TERMS: Final[int] = 4_000
+MAX_SEARCH_TERM_LENGTH: Final[int] = 64
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Object depth (MAX_DEPTH)

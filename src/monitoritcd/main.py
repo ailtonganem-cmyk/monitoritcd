@@ -62,14 +62,15 @@ def _make_backends(
         firestore_client = AsyncClient(project=settings.FIREBASE_PROJECT_ID)
         storage: Any = FirestoreStorage(firestore_client, settings.OWNER_ID)
 
-        # Gemini Free Tier limita 20 req/dia/modelo — insuficiente para 19+ UFs.
-        # Groq Llama 3.3 70B Free aguenta 30 RPM sem teto diário rígido, então
-        # entra como primário. Gemini fica como fallback caso Groq oscile (rede,
-        # 429 momentâneo). Quando GROQ_API_KEY não configurado, mantém Gemini-only.
+        # Decisão do dono (2026-07-08): escopo geográfico reduzido a MG + fontes
+        # federais derruba o volume diário processado pelo LLM, então a cota free
+        # do Gemini (20 req/dia/modelo) volta a ser suficiente. Gemini retorna a
+        # ser o provedor primário; Groq permanece como fallback para absorver
+        # oscilações de rede ou 429 momentâneo. Sem GROQ_API_KEY, mantém Gemini-only.
         gemini = GeminiProvider(settings.GEMINI_API_KEY)
         if settings.GROQ_API_KEY:
             llm: Any = FallbackLLMProvider(
-                primary=GroqProvider(settings.GROQ_API_KEY), fallback=gemini
+                primary=gemini, fallback=GroqProvider(settings.GROQ_API_KEY)
             )
         else:
             llm = gemini
@@ -183,6 +184,51 @@ async def cmd_reprocess(args: argparse.Namespace) -> int:
     return 0
 
 
+async def cmd_reindex_search(args: argparse.Namespace) -> int:
+    """Subcomando `reindex-search` — materializa corpus pesquisável em documentos."""
+    from datetime import UTC, datetime  # noqa: PLC0415
+
+    from monitoritcd.orchestrator import reindex_search_indexes  # noqa: PLC0415
+
+    settings = get_settings()
+    configure_logging(settings.LOG_LEVEL)
+    log = structlog.get_logger("main")
+
+    since: datetime | None = None
+    if args.since:
+        try:
+            since = datetime.fromisoformat(args.since).replace(tzinfo=UTC)
+        except ValueError:
+            log.error("cli.reindex_search.invalid_since", value=args.since)
+            return 1
+
+    storage, _llm = _make_backends(settings, dry_run=False)
+
+    log.info(
+        "cli.reindex_search.start",
+        since=str(since),
+        uf=args.uf,
+        limit=args.limit,
+        missing_only=not args.all,
+    )
+    report = await reindex_search_indexes(
+        storage=storage,
+        since=since,
+        uf=args.uf,
+        limit=args.limit,
+        missing_only=not args.all,
+    )
+    log.info(
+        "cli.reindex_search.done",
+        run_id=report.run_id,
+        scanned=report.items_collected,
+        reindexed=report.items_reindexed,
+        errors=len(report.errors),
+        duration_s=report.duration_seconds,
+    )
+    return 1 if report.errors else 0
+
+
 def cli(argv: list[str] | None = None) -> int:
     """Entry point do CLI."""
     parser = argparse.ArgumentParser(
@@ -222,12 +268,37 @@ def cli(argv: list[str] | None = None) -> int:
         help="Máximo de documentos a reprocessar",
     )
 
+    reidx_p = sub.add_parser(
+        "reindex-search",
+        help="Regenera o índice de busca materializado dos documentos",
+    )
+    reidx_p.add_argument(
+        "--since",
+        type=str,
+        default=None,
+        help="Data inicial (ISO 8601: YYYY-MM-DD)",
+    )
+    reidx_p.add_argument("--uf", type=str, default=None, help="Apenas uma UF")
+    reidx_p.add_argument(
+        "--limit",
+        type=int,
+        default=500,
+        help="Tamanho do lote por página; a reindexação varre todas as páginas",
+    )
+    reidx_p.add_argument(
+        "--all",
+        action="store_true",
+        help="Recalcula também documentos que já têm search_index",
+    )
+
     args = parser.parse_args(argv)
 
     if args.cmd == "run":
         return asyncio.run(cmd_run(args))
     if args.cmd == "reprocess":
         return asyncio.run(cmd_reprocess(args))
+    if args.cmd == "reindex-search":
+        return asyncio.run(cmd_reindex_search(args))
 
     parser.print_help()  # pragma: no cover
     return 1  # pragma: no cover

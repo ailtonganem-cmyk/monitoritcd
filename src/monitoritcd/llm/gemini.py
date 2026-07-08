@@ -56,15 +56,15 @@ class GeminiProvider:
     ) -> list[dict[str, Any]]:
         """Envia batch ao Gemini, retorna lista de dicts.
 
-        Os items são separados por `---ITEM---` no prompt; o LLM retorna JSON array.
+        Os items são enviados como array JSON; o LLM retorna JSON array.
         Quando `system_prompt` é fornecido, substitui o SYSTEM_PROMPT global.
         """
         if not items_text:
             return []
 
-        items_block = "\n\n---ITEM---\n\n".join(items_text)
+        items_block = "[\n" + ",\n".join(items_text) + "\n]"
         sys_p = system_prompt if system_prompt is not None else SYSTEM_PROMPT
-        prompt = f"{sys_p}\n\nClassifique os {len(items_text)} itens abaixo:\n\n{items_block}"
+        prompt = f"Classifique os {len(items_text)} itens JSON abaixo:\n\n{items_block}"
 
         client = self._ensure_client()
 
@@ -74,7 +74,10 @@ class GeminiProvider:
                 client.models.generate_content,
                 model=self._model_name,
                 contents=prompt,
-                config={"response_mime_type": "application/json"},
+                config={
+                    "response_mime_type": "application/json",
+                    "system_instruction": sys_p,
+                },
             ),
             timeout=limits.LLM_TIMEOUT_SECONDS,
         )
