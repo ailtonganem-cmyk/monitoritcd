@@ -1,4 +1,4 @@
-# MonitorITCD — Guia para Claude Code
+# MonitorITCD — Guia para Codex
 
 Sistema autônomo de monitoramento de mudanças legislativas, normativas e jurisprudenciais
 relacionadas ao **ITCD/ITCMD/ITD** (Imposto sobre Transmissão Causa Mortis e Doação) nos
@@ -7,13 +7,13 @@ relacionadas ao **ITCD/ITCMD/ITD** (Imposto sobre Transmissão Causa Mortis e Do
 **Sistema de uso pessoal (single-user)** — uso exclusivo do dono. Sem multi-tenant, sem
 autenticação de terceiros, sem redistribuição.
 
-> Este arquivo orienta o trabalho do Claude Code neste repositório. Mantenha-o atualizado
+> Este arquivo orienta o trabalho do Codex neste repositório. Mantenha-o atualizado
 > conforme decisões arquiteturais forem tomadas.
 
 ## ⚖️ Regra de execução autônoma
 
-**O Claude Code é o único responsável pela implementação.** O dono não executa
-tarefas manuais. Claude Code:
+**O Codex é o único responsável pela implementação.** O dono não executa
+tarefas manuais. Codex:
 
 - Não pede autorização prévia para implementações dentro do escopo do projeto.
 - Instala ferramentas necessárias quando possível (via npm, pip, curl + binários).
@@ -22,31 +22,11 @@ tarefas manuais. Claude Code:
 - Comita, faz push e dispara workflows livremente.
 
 **Único caso em que o dono executa**: tarefas **tecnologicamente impossíveis**
-para o Claude Code — login OAuth interativo no browser, aprovações 2FA por SMS,
+para o Codex — login OAuth interativo no browser, aprovações 2FA por SMS,
 acesso físico a hardware, instalação de software que exige clique em popup. Essas
 tarefas devem ser **explicitamente listadas e justificadas** ao dono.
 
-Decisões registradas em CLAUDE.md/PLAN.md/IDEAS.md são vinculantes para sessões futuras.
-
-## 🧠 Metodologia de trabalho — Orquestrador + Agentes Executores (decisão do dono, 2026-07-08)
-
-**Divisão obrigatória de papéis em toda sessão neste projeto:**
-
-- **Orquestrador (sessão principal, modelo mais capaz disponível)**: responsável por TODO o
-  trabalho de pensamento — planejamento, análise, arquitetura, revisão de código, decisões,
-  supervisão e validação dos resultados. Não executa implementação diretamente.
-- **Agentes executores (`model: sonnet`)**: responsáveis pela EXECUÇÃO — edição de código,
-  escrita de testes, execução de comandos/gates, deploy. Lançados via Agent tool sempre com
-  `model: "sonnet"` (definição canônica em `.claude/agents/executor.md`).
-
-**Regras:**
-1. Toda implementação não-trivial é delegada a agente executor Sonnet; o orquestrador escreve
-   a especificação da tarefa (arquivos, contratos, critérios de aceite) no prompt do agente.
-2. O orquestrador SEMPRE revisa o diff/resultado do agente antes de commitar ou reportar.
-3. Exceção pragmática: micro-edições de documentação/configuração do próprio processo
-   (CLAUDE.md, `.claude/`, memória persistente) podem ser feitas diretamente pelo orquestrador.
-4. Paralelismo de agentes é permitido, exceto quando houver risco de edições concorrentes no
-   mesmo arquivo ou corrida de commits — nesses casos, executar sequencialmente.
+Decisões registradas em AGENTS.md/PLAN.md/IDEAS.md são vinculantes para sessões futuras.
 
 ## 🇧🇷 Idioma da conversa
 
@@ -280,10 +260,6 @@ deve ser preservado **verbatim**, sem alterações automáticas (ver Seção 5).
 - ✅ **Backup mensal**: GH Action → export Firestore → cifra com `age` → Google Drive (12 retenções).
 - ✅ **Retenção**: descartados pelo LLM purgados após 90 dias; `audit_log` 1 ano; `execucoes` 6 meses.
 - ✅ **Padrões de pentest aplicados** (Seção 7): validação de `ownerId`, App Check enforce, deploy de functions antes de dados, bloqueio de literais de secret no pre-commit.
-- ✅ **Escopo geográfico restrito (2026-07-08, decisão do dono)**: monitoramento ativo APENAS **MG + fontes federais**. Os YAMLs das demais UFs permanecem no repo (desativados via `active_uf: ["MG"]` no Firestore); reativação exige nova decisão do dono. Supersede o "MVP enxuto de 5 estados".
-- ✅ **Gemini como sumarizador primário (2026-07-08, decisão do dono)**: Gemini 2.5 Flash volta a ser o provedor primário (Groq fallback) — com escopo MG+federal o volume cabe na cota free. Supersede a inversão de 2026-04-27.
-- ✅ **Enriquecimento contextual por IA (2026-07-08, decisão do dono)**: além do resumo autossuficiente (entendível sem abrir o link), o LLM gera **contextualização** de legislação/jurisprudência citada (o que é a norma, o que muda, significado prático), em campo separado e rotulado como gerado por IA (Seção 5).
-- ✅ **Metodologia orquestrador + agentes Sonnet (2026-07-08, decisão do dono)**: ver seção "Metodologia de trabalho" no topo.
 
 ---
 
@@ -291,28 +267,19 @@ deve ser preservado **verbatim**, sem alterações automáticas (ver Seção 5).
 
 **Princípio inegociável: o LLM NÃO modifica conteúdo original.**
 
-O LLM (Gemini 2.5 Flash primário, fallback Groq) é usado **apenas** para:
+O LLM (Gemini 2.5 Flash, fallback Groq) é usado **apenas** para:
 
 1. **Classificar** o tipo: `PL | Lei Sancionada | Decreto | IN | Portaria | Notícia | Jurisprudência | Doutrina`.
 2. **Pontuar** relevância de 0 a 10 → mapeia em severity tier.
 3. **Extrair** metadados: UF, número do ato, data, órgão emissor.
-4. **Gerar resumo factual autossuficiente** preservando dados originais — nomes, números,
-   datas, cifras **verbatim**. O `resumo_completo` deve permitir entender a informação
-   **sem precisar abrir o link** da fonte.
-5. **Contextualizar** (2026-07-08) legislação, jurisprudência e institutos citados, em campo
-   **separado e rotulado como gerado por IA** (`contexto`): o que é a norma/decisão citada,
-   o que ela muda, e o significado prático para ITCD/sucessões/regime de bens.
+4. **Gerar resumo factual** preservando dados originais — nomes, números, datas, cifras **verbatim**.
 
 **O LLM NÃO pode:**
 
 - ❌ Anonimizar nomes ou substituir partes por placeholders (`[Parte]`, etc.).
 - ❌ Parafrasear de forma que altere o sentido.
 - ❌ Omitir, ofuscar, normalizar ou "limpar" informações.
-- ❌ Inferir ou especular **dentro do resumo factual** (`resumo`/`resumo_completo`) — nesses
-  campos vale só o explícito no texto. Conhecimento jurídico geral entra APENAS no campo
-  `contexto`, que é claramente separado e apresentado ao dono como contextualização por IA.
-- ❌ Inventar norma, número de ato, alíquota ou jurisprudência no `contexto`. Em incerteza,
-  o contexto declara a limitação em vez de especular.
+- ❌ Inferir, especular ou adicionar contexto além do explícito no texto.
 
 ### Separação estrita no schema
 

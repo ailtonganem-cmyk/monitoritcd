@@ -106,7 +106,10 @@ scripts/_run_local_monitor.bat
 # ─────────────────────────────────────────────────────────────────────────────
 .idea/
 .vscode/
-.claude/
+# .claude: versiona só settings.json e agents/ (metodologia); resto é local
+.claude/*
+!.claude/settings.json
+!.claude/agents/
 *.swp
 *.swo
 *~
