@@ -1,0 +1,70 @@
+name: Reprocess LLM (admin)
+
+on:
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "Data inicial (ISO 8601, ex: 2026-07-01)"
+        type: string
+        required: true
+      uf:
+        description: "Apenas uma UF (vazio = todas)"
+        type: string
+        default: ""
+      limit:
+        description: "Máximo de documentos a reprocessar"
+        type: string
+        default: "200"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: monitor-cron
+  cancel-in-progress: false
+
+jobs:
+  reprocess:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Configurar credenciais GCP
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          chmod 600 "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: Reprocess
+        env:
+          OWNER_ID: ${{ secrets.OWNER_ID }}
+          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          ARGS="reprocess --since ${{ github.event.inputs.since }} --limit ${{ github.event.inputs.limit }}"
+          if [ -n "${{ github.event.inputs.uf }}" ]; then
+            ARGS="$ARGS --uf ${{ github.event.inputs.uf }}"
+          fi
+          python -m monitoritcd.main $ARGS
