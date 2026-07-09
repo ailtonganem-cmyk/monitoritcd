@@ -259,7 +259,9 @@ class TelegramNotifier:
                     )
                 if _is_retryable_status(response.status_code):
                     response.raise_for_status()
-        assert response is not None  # loop só sai sem exceção após atribuir response
+        if response is None:  # pragma: no cover - retryer sempre atribui response ou relança
+            msg = "resposta ausente após POST ao Telegram"
+            raise RuntimeError(msg)
         return response
 
     async def send_message(
