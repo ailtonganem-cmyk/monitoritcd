@@ -51,6 +51,40 @@ def escape_markdown_v2(text: str) -> str:
     return "".join(result)
 
 
+def strip_markdown_v2_escapes(text: str) -> str:
+    """Remove escapes de MarkdownV2 — inverso de `escape_markdown_v2`.
+
+    Usado no fallback plain-text quando o Telegram rejeita o MarkdownV2
+    (400 "can't parse entities"): sem `parse_mode`, as barras de escape
+    apareceriam literalmente — removê-las devolve o texto legível.
+
+    Args:
+        text: texto escapado em MarkdownV2 (ex: saída de `escape_markdown_v2`).
+
+    Returns:
+        Texto com as barras de escape removidas.
+
+    Example:
+        >>> strip_markdown_v2_escapes("PL 1234 \\(SP\\) \\- x")
+        'PL 1234 (SP) - x'
+    """
+    if not text:
+        return ""
+
+    result: list[str] = []
+    i = 0
+    length = len(text)
+    while i < length:
+        char = text[i]
+        if char == "\\" and i + 1 < length and text[i + 1] in MARKDOWN_V2_SPECIAL:
+            result.append(text[i + 1])
+            i += 2
+        else:
+            result.append(char)
+            i += 1
+    return "".join(result)
+
+
 def escape_code_block(text: str) -> str:
     """Escapa chars dentro de bloco ` ``` ` (backtick triple)."""
     return text.replace("\\", "\\\\").replace("`", "\\`")

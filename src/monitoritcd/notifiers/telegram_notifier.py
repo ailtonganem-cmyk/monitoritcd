@@ -22,7 +22,7 @@ import httpx
 import structlog
 from tenacity import (
     AsyncRetrying,
-    retry_if_exception_type,
+    retry_if_exception,
     stop_after_attempt,
     wait_exponential,
 )
@@ -40,6 +40,7 @@ from monitoritcd.notifiers.telegram_actions import (
 from monitoritcd.security.markdown_escape import (
     escape_markdown_v2,
     split_for_telegram,
+    strip_markdown_v2_escapes,
 )
 
 if TYPE_CHECKING:
@@ -69,6 +70,28 @@ def is_dnd_window(now: datetime, *, inicio: int = DND_INICIO_BRT, fim: int = DND
         return inicio <= hour_brt < fim
     # Janela cruza meia-noite (ex: 22-7)
     return hour_brt >= inicio or hour_brt < fim
+
+
+def _is_retryable_status(status_code: int) -> bool:
+    """429 (rate limit) e 5xx são transitórios.
+
+    Demais 4xx (ex: 400 "can't parse entities") são permanentes: repetir a
+    mesma requisição nunca muda o resultado, só desperdiça tentativas e
+    esconde o motivo real do erro atrás de um retry inútil.
+    """
+    return status_code == httpx.codes.TOO_MANY_REQUESTS or httpx.codes.is_server_error(status_code)
+
+
+def _extract_error_description(response: httpx.Response) -> str:
+    """Extrai `description` do erro da API do Telegram.
+
+    Faz fallback para o corpo cru (`response.text`) se a resposta não for
+    o JSON `{"ok": false, "description": "..."}` esperado.
+    """
+    try:
+        return str(response.json()["description"])
+    except (ValueError, KeyError, TypeError):
+        return response.text
 
 
 def _escape_for_template(value: str) -> str:
@@ -195,12 +218,49 @@ class TelegramNotifier:
         return f"{TELEGRAM_API_BASE}/bot{token}/{method}"
 
     def _retryer(self) -> AsyncRetrying:
+        def _should_retry(exc: BaseException) -> bool:
+            if isinstance(exc, httpx.HTTPStatusError):
+                return _is_retryable_status(exc.response.status_code)
+            return isinstance(exc, httpx.HTTPError)
+
         return AsyncRetrying(
             stop=stop_after_attempt(limits.RETRY_MAX_ATTEMPTS),
             wait=wait_exponential(multiplier=1, min=2, max=20),
-            retry=retry_if_exception_type(httpx.HTTPError),
+            retry=retry_if_exception(_should_retry),
             reraise=True,
         )
+
+    async def _post_chunk(
+        self,
+        client: httpx.AsyncClient,
+        url: str,
+        payload: dict[str, object],
+        *,
+        chat_id: int,
+    ) -> httpx.Response:
+        """POST de 1 payload à API do Telegram.
+
+        Retry (via `_retryer`) cobre só falha de transporte e 429/5xx —
+        transitórios. 4xx permanente (ex: 400 "can't parse entities") não é
+        retentado: loga o corpo do erro e devolve a resposta sem levantar —
+        quem chama decide o que fazer (`send_message` reenvia em
+        plain-text só para 400).
+        """
+        response: httpx.Response | None = None
+        async for attempt in self._retryer():
+            with attempt:
+                response = await client.post(url, json=payload)
+                if httpx.codes.is_error(response.status_code):
+                    logger.warning(
+                        "telegram.api_error",
+                        status=response.status_code,
+                        description=_extract_error_description(response),
+                        chat_id=chat_id,
+                    )
+                if _is_retryable_status(response.status_code):
+                    response.raise_for_status()
+        assert response is not None  # loop só sai sem exceção após atribuir response
+        return response
 
     async def send_message(
         self,
@@ -221,6 +281,11 @@ class TelegramNotifier:
         Returns:
             message_id da última mensagem enviada (para edit/pin posterior),
             ou None se split em múltiplos chunks impede ID único.
+
+        Note:
+            Chunk que falha com 400 (MarkdownV2 inválido — "can't parse
+            entities") é reenviado UMA vez em texto plano (sem `parse_mode`)
+            para garantir a entrega mesmo com formatação quebrada.
         """
         client = self._ensure_client()
         url = self._api_url("sendMessage")
@@ -241,12 +306,17 @@ class TelegramNotifier:
             if i == 0 and reply_to_message_id is not None:
                 payload["reply_parameters"] = {"message_id": reply_to_message_id}
 
-            async for attempt in self._retryer():
-                with attempt:
-                    response = await client.post(url, json=payload)
-                    response.raise_for_status()
-                    body = response.json()
-                    last_message_id = body.get("result", {}).get("message_id")
+            response = await self._post_chunk(client, url, payload, chat_id=chat_id)
+            if response.status_code == httpx.codes.BAD_REQUEST:
+                # MarkdownV2 inválido é permanente — retry não ajuda.
+                # Reenvia o MESMO chunk em texto plano, 1x só.
+                fallback_payload = dict(payload)
+                fallback_payload["text"] = strip_markdown_v2_escapes(chunk)
+                fallback_payload.pop("parse_mode", None)
+                response = await self._post_chunk(client, url, fallback_payload, chat_id=chat_id)
+            response.raise_for_status()
+            body = response.json()
+            last_message_id = body.get("result", {}).get("message_id")
 
         logger.info("telegram.sent", chat_id=chat_id, chunks=len(chunks))
         return last_message_id if len(chunks) == 1 else None

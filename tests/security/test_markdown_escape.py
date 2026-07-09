@@ -15,6 +15,7 @@ from monitoritcd.security.markdown_escape import (
     escape_markdown_v2,
     safe_link,
     split_for_telegram,
+    strip_markdown_v2_escapes,
 )
 
 
@@ -56,6 +57,38 @@ class TestEscapeMarkdownV2:
             if unescaped_special:
                 pytest.fail(f"Char especial não escapado em pos {i}: {escaped!r}")
             i += 1
+
+
+@pytest.mark.security
+class TestStripMarkdownV2Escapes:
+    @pytest.mark.parametrize("char", list("_*[]()~`>#+-=|{}.!"))
+    def test_each_special_char_unescaped(self, char: str) -> None:
+        assert strip_markdown_v2_escapes(f"a\\{char}b") == f"a{char}b"
+
+    def test_prompt_example(self) -> None:
+        result = strip_markdown_v2_escapes("PL 1234 \\(SP\\) \\- x")
+        assert result == "PL 1234 (SP) - x"
+
+    def test_no_escapes_unchanged(self) -> None:
+        text = "Lei 1234 sancionada hoje"
+        assert strip_markdown_v2_escapes(text) == text
+
+    def test_empty_string_returns_empty(self) -> None:
+        assert strip_markdown_v2_escapes("") == ""
+
+    def test_escaped_backslash_collapses_to_one(self) -> None:
+        assert strip_markdown_v2_escapes("a\\\\b") == "a\\b"
+
+    def test_trailing_lone_backslash_kept_as_is(self) -> None:
+        # Backslash sem char especial após ele não é um escape válido —
+        # mantém como está em vez de descartar (defensivo, não deveria
+        # ocorrer em texto vindo de `escape_markdown_v2`).
+        assert strip_markdown_v2_escapes("fim\\") == "fim\\"
+
+    @given(st.text(max_size=200))
+    def test_inverse_of_escape_markdown_v2(self, text: str) -> None:
+        # Round-trip: desfaz exatamente o que escape_markdown_v2 fez.
+        assert strip_markdown_v2_escapes(escape_markdown_v2(text)) == text
 
 
 @pytest.mark.security

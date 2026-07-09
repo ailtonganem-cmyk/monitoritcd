@@ -291,6 +291,93 @@ class TestTelegramNotifier:
             assert not route.called
 
     @pytest.mark.asyncio
+    async def test_400_faz_fallback_plaintext_e_nao_reenvia_markdown(self) -> None:
+        # 400 "can't parse entities" é permanente — reenvia o MESMO chunk 1x
+        # em texto plano (sem parse_mode) em vez de re-tentar em MarkdownV2.
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(
+                side_effect=[
+                    httpx.Response(
+                        400,
+                        json={
+                            "ok": False,
+                            "error_code": 400,
+                            "description": "Bad Request: can't parse entities: x",
+                        },
+                    ),
+                    httpx.Response(200, json={"ok": True, "result": {"message_id": 55}}),
+                ],
+            )
+
+            async with TelegramNotifier(_settings()) as notifier:
+                msg_id = await notifier.send_message("texto \\* quebrado")
+
+            assert route.call_count == 2
+            assert msg_id == 55
+            first_payload = route.calls[0].request.read().decode()
+            second_payload = route.calls[1].request.read().decode()
+            assert "MarkdownV2" in first_payload
+            assert "parse_mode" not in second_payload
+
+    @pytest.mark.asyncio
+    async def test_200_nao_dispara_fallback(self) -> None:
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(
+                return_value=httpx.Response(200, json={"ok": True, "result": {"message_id": 9}}),
+            )
+
+            async with TelegramNotifier(_settings()) as notifier:
+                msg_id = await notifier.send_message("texto ok")
+
+            assert route.call_count == 1
+            assert msg_id == 9
+
+    @pytest.mark.asyncio
+    async def test_5xx_segue_retry_de_rede_sem_fallback_plaintext(self) -> None:
+        # 500 é transitório — deve retentar via tenacity, NÃO acionar o
+        # fallback plain-text (reservado só para 400 permanente).
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(
+                side_effect=[
+                    httpx.Response(500, text="internal error"),
+                    httpx.Response(200, json={"ok": True, "result": {"message_id": 88}}),
+                ],
+            )
+
+            async with TelegramNotifier(_settings()) as notifier:
+                msg_id = await notifier.send_message("texto")
+
+            assert route.call_count == 2
+            assert msg_id == 88
+            for call in route.calls:
+                assert "MarkdownV2" in call.request.read().decode()
+
+    @pytest.mark.asyncio
+    async def test_timeout_de_rede_segue_retry_sem_fallback_plaintext(self) -> None:
+        # Timeout/erro de transporte segue o retry de rede existente.
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(
+                side_effect=[
+                    httpx.ConnectTimeout("timeout simulado"),
+                    httpx.Response(200, json={"ok": True, "result": {"message_id": 11}}),
+                ],
+            )
+
+            async with TelegramNotifier(_settings()) as notifier:
+                msg_id = await notifier.send_message("texto")
+
+            assert route.call_count == 2
+            assert msg_id == 11
+
+    @pytest.mark.asyncio
     async def test_send_digest_with_keyboard_single_doc(self) -> None:
         async with respx.mock:
             route = respx.post(
