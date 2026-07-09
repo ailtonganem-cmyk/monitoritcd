@@ -9,7 +9,8 @@ Princípios canônicos aplicados:
 1. **Escape MarkdownV2** sempre antes do envio (#124).
 2. **MAX_TELEGRAM_MSG_BYTES** enforcement via `split_for_telegram` (#136).
 3. **Bot token via `SecretStr`** — nunca em logs.
-4. **Identidade do destinatário** via env var (`TELEGRAM_OWNER_CHAT_ID`).
+4. **Destinatário** via env var: owner (`TELEGRAM_OWNER_CHAT_ID`) por default;
+   o digest de novidades pode ir a um grupo (`TELEGRAM_GROUP_CHAT_ID`).
 """
 
 from __future__ import annotations
@@ -207,6 +208,7 @@ class TelegramNotifier:
         *,
         keyboard: InlineKeyboard | None = None,
         reply_to_message_id: int | None = None,
+        chat_id: int | None = None,
     ) -> int | None:
         """Envia uma mensagem (split em chunks ≤ 4096 bytes).
 
@@ -214,6 +216,7 @@ class TelegramNotifier:
             text: texto MarkdownV2.
             keyboard: inline_keyboard opcional (#121, #133, #134, #135, #140).
             reply_to_message_id: threading (#137).
+            chat_id: destino explícito (ex: grupo); default = TELEGRAM_OWNER_CHAT_ID.
 
         Returns:
             message_id da última mensagem enviada (para edit/pin posterior),
@@ -221,7 +224,7 @@ class TelegramNotifier:
         """
         client = self._ensure_client()
         url = self._api_url("sendMessage")
-        chat_id = self._settings.TELEGRAM_OWNER_CHAT_ID
+        chat_id = chat_id if chat_id is not None else self._settings.TELEGRAM_OWNER_CHAT_ID
         chunks = split_for_telegram(text, max_bytes=limits.MAX_TELEGRAM_MSG_BYTES)
 
         last_message_id: int | None = None
@@ -328,6 +331,7 @@ class TelegramNotifier:
         group_by: str | None = None,
         with_keyboards: bool = False,
         respect_dnd: bool = False,
+        chat_id: int | None = None,
     ) -> int | None:
         """Renderiza e envia digest via Telegram.
 
@@ -338,6 +342,7 @@ class TelegramNotifier:
             group_by: "uf" (#127), "tipo" (#128), ou None.
             with_keyboards: se True E há 1 doc, anexa inline keyboard (#121).
             respect_dnd: se True, retorna sem enviar quando em janela DND (#131).
+            chat_id: destino explícito (ex: grupo); default = TELEGRAM_OWNER_CHAT_ID.
         """
         if respect_dnd and is_dnd_window(data_geracao):
             logger.info(
@@ -360,7 +365,7 @@ class TelegramNotifier:
                 doc.doc_id,
                 url=doc.original.url,
             )
-        return await self.send_message(text, keyboard=keyboard)
+        return await self.send_message(text, keyboard=keyboard, chat_id=chat_id)
 
 
 # Re-export de TIPO_LABELS para evitar import circular nas rotas externas

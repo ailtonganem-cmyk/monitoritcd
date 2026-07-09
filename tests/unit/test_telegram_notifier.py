@@ -172,6 +172,41 @@ class TestTelegramNotifier:
             assert "99" in payload
 
     @pytest.mark.asyncio
+    async def test_send_message_with_explicit_chat_id_overrides_owner(self) -> None:
+        # Roteamento p/ grupo (#novidades): chat_id explícito vence o owner default.
+        group_chat_id = -1001234567890
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(return_value=httpx.Response(200, json={"ok": True}))
+
+            async with TelegramNotifier(_settings()) as notifier:
+                await notifier.send_message("Mensagem para o grupo", chat_id=group_chat_id)
+
+            payload = route.calls[0].request.read().decode()
+            assert f'"chat_id":{group_chat_id}' in payload
+            assert f'"chat_id":{CHAT_ID}' not in payload
+
+    @pytest.mark.asyncio
+    async def test_send_digest_with_explicit_chat_id_forwards_to_send_message(self) -> None:
+        group_chat_id = -1001234567890
+        async with respx.mock:
+            route = respx.post(
+                f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+            ).mock(return_value=httpx.Response(200, json={"ok": True}))
+
+            async with TelegramNotifier(_settings()) as notifier:
+                await notifier.send_digest(
+                    [_doc()],
+                    digest_label="Diário",
+                    data_geracao=FIXED_NOW,
+                    chat_id=group_chat_id,
+                )
+
+            payload = route.calls[0].request.read().decode()
+            assert f'"chat_id":{group_chat_id}' in payload
+
+    @pytest.mark.asyncio
     async def test_pin_message(self) -> None:
         async with respx.mock:
             route = respx.post(

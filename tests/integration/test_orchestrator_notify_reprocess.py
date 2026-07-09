@@ -43,7 +43,7 @@ TOKEN = "1234567890:fakeFAKE_token_abc"  # noqa: S105 - test fixture
 CHAT_ID = 123456
 
 
-def _settings() -> Settings:
+def _settings(*, group_chat_id: int | None = None) -> Settings:
     return Settings(
         OWNER_ID=OWNER,
         OWNER_EMAIL="o@example.com",
@@ -52,6 +52,7 @@ def _settings() -> Settings:
         GMAIL_APP_PASSWORD=SecretStr("p"),
         TELEGRAM_BOT_TOKEN=SecretStr(TOKEN),
         TELEGRAM_OWNER_CHAT_ID=CHAT_ID,
+        TELEGRAM_GROUP_CHAT_ID=group_chat_id,
         TELEGRAM_WEBHOOK_SECRET=SecretStr("ws"),
         FIREBASE_PROJECT_ID="p",
         FIREBASE_STORAGE_BUCKET="p.appspot.com",
@@ -133,6 +134,29 @@ class TestNotifyDocuments:
         loaded = await storage.get_documento(doc.doc_id)
         assert loaded is not None
         assert loaded.status == StatusDocumento.NOTIFIED
+
+    @pytest.mark.asyncio
+    async def test_critico_routes_to_group_when_configured(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        doc = _make_doc("d1", tier=SeverityTier.CRITICO)
+        await _save_all(storage, [doc])
+        report = RunReport(run_id="t", started_at=FIXED_NOW)
+        group_chat_id = -1009876543210
+
+        async with respx.mock:
+            route = respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
+                return_value=httpx.Response(200, json={"ok": True}),
+            )
+            await notify_documents(
+                [doc],
+                settings=_settings(group_chat_id=group_chat_id),
+                storage=storage,
+                report=report,
+            )
+
+        payload = route.calls[0].request.read().decode()
+        assert f'"chat_id":{group_chat_id}' in payload
+        assert f'"chat_id":{CHAT_ID}' not in payload
 
     @pytest.mark.asyncio
     async def test_digest_path_alta_normal(self, monkeypatch: pytest.MonkeyPatch) -> None:

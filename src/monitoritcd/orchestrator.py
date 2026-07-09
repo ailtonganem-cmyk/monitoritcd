@@ -512,6 +512,7 @@ async def notify_documents(
         return
 
     now = datetime.now(UTC)
+    digest_chat_id = settings.TELEGRAM_GROUP_CHAT_ID or settings.TELEGRAM_OWNER_CHAT_ID
 
     criticos = [d for d in docs if d.llm and d.llm.severity_tier == SeverityTier.CRITICO]
     digest_docs = [d for d in docs if d.llm and d.llm.severity_tier != SeverityTier.CRITICO]
@@ -521,7 +522,12 @@ async def notify_documents(
         try:
             async with TelegramNotifier(settings) as tg:
                 for doc in criticos:
-                    await tg.send_digest([doc], digest_label="🔴 CRÍTICO", data_geracao=now)
+                    await tg.send_digest(
+                        [doc],
+                        digest_label="🔴 CRÍTICO",
+                        data_geracao=now,
+                        chat_id=digest_chat_id,
+                    )
                     report.items_notified_telegram += 1
                     await storage.update_notificacao(
                         doc.doc_id,
@@ -541,7 +547,12 @@ async def notify_documents(
         # Telegram
         try:
             async with TelegramNotifier(settings) as tg:
-                await tg.send_digest(digest_docs, digest_label=digest_label, data_geracao=now)
+                await tg.send_digest(
+                    digest_docs,
+                    digest_label=digest_label,
+                    data_geracao=now,
+                    chat_id=digest_chat_id,
+                )
                 report.items_notified_telegram += len(digest_docs)
         except Exception as e:
             logger.exception("notify.digest_telegram_failed", error=str(e))

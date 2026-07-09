@@ -84,3 +84,13 @@ class TestSettings:
     def test_dry_run_default_false(self) -> None:
         settings = Settings(**_valid_kwargs())  # type: ignore[arg-type]
         assert settings.DRY_RUN is False
+
+    def test_telegram_group_chat_id_defaults_to_none(self) -> None:
+        settings = Settings(**_valid_kwargs())  # type: ignore[arg-type]
+        assert settings.TELEGRAM_GROUP_CHAT_ID is None
+
+    def test_telegram_group_chat_id_accepts_explicit_value(self) -> None:
+        kwargs = _valid_kwargs()
+        kwargs["TELEGRAM_GROUP_CHAT_ID"] = -1001234567890
+        settings = Settings(**kwargs)  # type: ignore[arg-type]
+        assert settings.TELEGRAM_GROUP_CHAT_ID == -1001234567890

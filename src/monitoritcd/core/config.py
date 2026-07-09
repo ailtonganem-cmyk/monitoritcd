@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────
     TELEGRAM_BOT_TOKEN: SecretStr
     TELEGRAM_OWNER_CHAT_ID: int
+    TELEGRAM_GROUP_CHAT_ID: int | None = None
     TELEGRAM_WEBHOOK_SECRET: SecretStr
 
     # ─────────────────────────────────────────────────────────────────────
