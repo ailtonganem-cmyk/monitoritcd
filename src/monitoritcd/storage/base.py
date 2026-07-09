@@ -131,6 +131,11 @@ class StorageProtocol(Protocol):
 
     async def delete_watch(self, watch_id: str) -> None: ...
 
+    # ─── Subscriptions (opt-in de e-mail — coleção externa do app) ────────
+    async def list_email_subscribers(self) -> list[str]:
+        """E-mails de usuários com opt-in de e-mail ativo (monitor_subscriptions)."""
+        ...
+
     # ─── Audit log ────────────────────────────────────────────────────────
     async def append_audit(self, entry: AuditLogEntry) -> None: ...
 

@@ -363,18 +363,17 @@ def build_json_attachment(docs: Sequence[Documento]) -> bytes:
     return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
 
 
-def _send_via_smtp_sync(
+def _build_message(
     *,
     sender: str,
-    password: str,
     recipient: str,
     subject: str,
     body_html: str,
     body_text: str | None = None,
     reply_to: str | None = None,
     attachments: Sequence[tuple[str, str, bytes]] | None = None,
-) -> None:
-    """Envia via SMTP TLS — bloqueante; chamar via `asyncio.to_thread`.
+) -> EmailMessage:
+    """Monta um EmailMessage para UM destinatário (`To:` só ele).
 
     Args:
         attachments: sequência de (filename, mimetype, content_bytes).
@@ -394,11 +393,77 @@ def _send_via_smtp_sync(
     for filename, mimetype, content in attachments or []:
         maintype, _, subtype = mimetype.partition("/")
         msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
+    return msg
 
+
+def _send_via_smtp_sync(
+    *,
+    sender: str,
+    password: str,
+    recipient: str,
+    subject: str,
+    body_html: str,
+    body_text: str | None = None,
+    reply_to: str | None = None,
+    attachments: Sequence[tuple[str, str, bytes]] | None = None,
+) -> None:
+    """Envia para 1 destinatário via SMTP TLS — bloqueante; via `asyncio.to_thread`."""
+    msg = _build_message(
+        sender=sender,
+        recipient=recipient,
+        subject=subject,
+        body_html=body_html,
+        body_text=body_text,
+        reply_to=reply_to,
+        attachments=attachments,
+    )
     with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
         smtp.starttls()
         smtp.login(sender, password)
         smtp.send_message(msg)
+
+
+def _send_via_smtp_sync_many(
+    *,
+    sender: str,
+    password: str,
+    recipients: Sequence[str],
+    subject: str,
+    body_html: str,
+    body_text: str | None = None,
+    reply_to: str | None = None,
+    attachments: Sequence[tuple[str, str, bytes]] | None = None,
+) -> tuple[int, list[str]]:
+    """Envia individualmente a cada destinatário numa só conexão SMTP.
+
+    Cada destinatário recebe uma mensagem com `To:` apenas ele — servidores
+    não veem os e-mails uns dos outros. Falha em um não aborta os demais.
+
+    Returns:
+        (enviados_ok, lista de destinatários que falharam).
+    """
+    enviados = 0
+    falhas: list[str] = []
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+        smtp.starttls()
+        smtp.login(sender, password)
+        for recipient in recipients:
+            try:
+                msg = _build_message(
+                    sender=sender,
+                    recipient=recipient,
+                    subject=subject,
+                    body_html=body_html,
+                    body_text=body_text,
+                    reply_to=reply_to,
+                    attachments=attachments,
+                )
+                smtp.send_message(msg)
+                enviados += 1
+            except (smtplib.SMTPException, OSError) as e:
+                logger.warning("email.recipient_failed", error=str(e))
+                falhas.append(recipient)
+    return enviados, falhas
 
 
 class EmailNotifier:
@@ -422,8 +487,13 @@ class EmailNotifier:
         dashboard_url: str | None = None,
         repo_url: str | None = None,
         reply_to: str | None = None,
+        recipients: Sequence[str] | None = None,
     ) -> None:
-        """Envia digest com lista de docs."""
+        """Envia digest com lista de docs.
+
+        `recipients`: destinatários; default `[OWNER_EMAIL]`. Cada um recebe um
+        e-mail individual (`To:` só ele) — privacidade entre inscritos.
+        """
         subject, body = render_email(
             docs,
             digest_label=digest_label,
@@ -454,20 +524,24 @@ class EmailNotifier:
                 )
             )
 
-        await asyncio.to_thread(
-            _send_via_smtp_sync,
+        destinatarios = list(dict.fromkeys(recipients or [self._settings.OWNER_EMAIL]))
+        enviados, falhas = await asyncio.to_thread(
+            _send_via_smtp_sync_many,
             sender=self._settings.GMAIL_USER,
             password=self._settings.GMAIL_APP_PASSWORD.get_secret_value(),
-            recipient=self._settings.OWNER_EMAIL,
+            recipients=destinatarios,
             subject=subject,
             body_html=body,
             reply_to=reply_to,
             attachments=attachments or None,
         )
 
+        # Não logar e-mails em claro (dado pessoal) — só contagens.
         logger.info(
             "email.sent",
-            recipient=self._settings.OWNER_EMAIL,
+            recipients_count=len(destinatarios),
+            enviados=enviados,
+            falhas=len(falhas),
             count=len(docs),
             digest=digest_label,
             mode=mode,

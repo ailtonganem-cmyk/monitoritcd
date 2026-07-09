@@ -558,13 +558,20 @@ async def notify_documents(
             logger.exception("notify.digest_telegram_failed", error=str(e))
             report.errors.append(f"notify_digest_telegram: {e}")
 
-        # Email (digest único)
+        # Email (digest único) — owner + inscritos com opt-in ativo (fase 2)
         try:
+            subscribers: list[str] = []
+            try:
+                subscribers = await storage.list_email_subscribers()
+            except Exception:  # ler inscritos nunca derruba o envio ao owner
+                logger.exception("notify.subscribers_read_failed")
+            recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
             email_notifier = EmailNotifier(settings)
             await email_notifier.send_digest(
                 digest_docs,
                 digest_label=digest_label,
                 data_geracao=now,
+                recipients=recipients,
             )
             report.items_notified_email += len(digest_docs)
         except Exception as e:

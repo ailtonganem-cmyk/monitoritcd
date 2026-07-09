@@ -194,6 +194,40 @@ class TestNotifyDocuments:
             assert loaded is not None
             assert loaded.status == StatusDocumento.NOTIFIED
 
+    @pytest.mark.asyncio
+    async def test_digest_email_inclui_inscritos(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        # Fase 2: o digest por e-mail vai ao owner + inscritos com opt-in ativo.
+        storage = InMemoryStorage(OWNER)
+        storage._email_subscribers = ["sub@sef.mg.gov.br"]
+        doc = _make_doc("d1", tier=SeverityTier.ALTA)
+        await _save_all(storage, [doc])
+        report = RunReport(run_id="t", started_at=FIXED_NOW)
+
+        from monitoritcd.notifiers import email_notifier as _email_mod  # noqa: PLC0415
+
+        capturado: dict[str, object] = {}
+
+        async def _fake_send_digest(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            capturado["recipients"] = kwargs.get("recipients")
+
+        monkeypatch.setattr(_email_mod.EmailNotifier, "send_digest", _fake_send_digest)
+
+        async with respx.mock:
+            respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
+                return_value=httpx.Response(200, json={"ok": True}),
+            )
+            await notify_documents(
+                [doc],
+                settings=_settings(),
+                storage=storage,
+                report=report,
+                digest_label="Diário",
+            )
+
+        assert capturado["recipients"] == ["o@example.com", "sub@sef.mg.gov.br"]
+
 
 @pytest.mark.integration
 class TestReprocessDocuments:

@@ -52,6 +52,7 @@ class InMemoryStorage:
         self._extra_topics: ExtraTopicsConfig | None = None
         self._watches: dict[str, Watch] = {}
         self._audit: list[AuditLogEntry] = []
+        self._email_subscribers: list[str] = []
 
     @property
     def owner_id(self) -> str:
@@ -61,6 +62,16 @@ class InMemoryStorage:
         if doc_owner != self._owner_id:
             msg = f"owner_id mismatch: expected {self._owner_id!r}, got {doc_owner!r}"
             raise OwnershipError(msg)
+
+    async def list_email_subscribers(self) -> list[str]:
+        """E-mails opt-in (configurável nos testes via `_email_subscribers`)."""
+        seen: set[str] = set()
+        out: list[str] = []
+        for email in self._email_subscribers:
+            if isinstance(email, str) and email.strip() and email not in seen:
+                seen.add(email)
+                out.append(email)
+        return out
 
     # ─── Documentos ───────────────────────────────────────────────────────
 

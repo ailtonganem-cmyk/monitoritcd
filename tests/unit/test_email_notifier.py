@@ -25,6 +25,7 @@ from monitoritcd.notifiers.email_notifier import (
     _format_subject,
     _saudacao_dinamica,
     _send_via_smtp_sync,
+    _send_via_smtp_sync_many,
     build_csv_attachment,
     build_jinja_env,
     build_json_attachment,
@@ -91,7 +92,8 @@ class TestEmailNotifier:
     async def test_send_digest_calls_smtp(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync",
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -101,7 +103,7 @@ class TestEmailNotifier:
             mock_send.assert_called_once()
             kwargs = mock_send.call_args.kwargs
             assert kwargs["sender"] == "bot@example.com"
-            assert kwargs["recipient"] == "owner@example.com"
+            assert kwargs["recipients"] == ["owner@example.com"]
             assert kwargs["password"] == "apppass"  # noqa: S105 - test fixture
             assert "Diário" in kwargs["subject"]
             assert "<html" in kwargs["body_html"].lower()
@@ -109,7 +111,10 @@ class TestEmailNotifier:
     @pytest.mark.asyncio
     async def test_send_empty_digest(self) -> None:
         notifier = EmailNotifier(_settings())
-        with patch("monitoritcd.notifiers.email_notifier._send_via_smtp_sync") as mock_send:
+        with patch(
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
+        ) as mock_send:
             await notifier.send_digest(
                 [],
                 digest_label="Semanal",
@@ -290,7 +295,8 @@ class TestSendDigestExtras:
     async def test_send_with_csv_and_json(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync",
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -308,7 +314,8 @@ class TestSendDigestExtras:
     async def test_send_with_reply_to(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync",
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -323,7 +330,8 @@ class TestSendDigestExtras:
     async def test_send_executivo_mode(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync",
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -333,3 +341,73 @@ class TestSendDigestExtras:
             )
             kwargs = mock_send.call_args.kwargs
             assert "<html" in kwargs["body_html"].lower()
+
+
+@pytest.mark.unit
+class TestSendDigestRecipients:
+    """Fase 2 — envio a múltiplos destinatários (owner + inscritos opt-in)."""
+
+    @pytest.mark.asyncio
+    async def test_recipients_repassados(self) -> None:
+        notifier = EmailNotifier(_settings(), env=build_jinja_env())
+        with patch(
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(2, []),
+        ) as mock_send:
+            await notifier.send_digest(
+                [_doc()],
+                digest_label="Diário",
+                data_geracao=FIXED_NOW,
+                recipients=["owner@example.com", "servidor@sef.mg.gov.br"],
+            )
+            assert mock_send.call_args.kwargs["recipients"] == [
+                "owner@example.com",
+                "servidor@sef.mg.gov.br",
+            ]
+
+    @pytest.mark.asyncio
+    async def test_recipients_dedup(self) -> None:
+        notifier = EmailNotifier(_settings(), env=build_jinja_env())
+        with patch(
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
+        ) as mock_send:
+            await notifier.send_digest(
+                [_doc()],
+                digest_label="Diário",
+                data_geracao=FIXED_NOW,
+                recipients=["a@x.com", "a@x.com", "b@x.com"],
+            )
+            assert mock_send.call_args.kwargs["recipients"] == ["a@x.com", "b@x.com"]
+
+
+@pytest.mark.unit
+class TestSendViaSMTPMany:
+    def test_envia_individual_a_cada(self) -> None:
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            inst = mock_smtp.return_value.__enter__.return_value
+            enviados, falhas = _send_via_smtp_sync_many(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
+                recipients=["a@x.com", "b@x.com"],
+                subject="Test",
+                body_html="<p>Hi</p>",
+            )
+            assert enviados == 2
+            assert falhas == []
+            inst.login.assert_called_once()  # 1 conexão para todos
+            assert inst.send_message.call_count == 2
+
+    def test_falha_isolada_nao_aborta(self) -> None:
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            inst = mock_smtp.return_value.__enter__.return_value
+            inst.send_message.side_effect = [OSError("boom"), None]
+            enviados, falhas = _send_via_smtp_sync_many(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
+                recipients=["ruim@x.com", "ok@x.com"],
+                subject="Test",
+                body_html="<p>Hi</p>",
+            )
+            assert enviados == 1
+            assert falhas == ["ruim@x.com"]

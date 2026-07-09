@@ -41,6 +41,7 @@ COLLECTION_ACTIVE_STATES = "monitor_config"
 COLLECTION_WATCHES = "monitor_watches"
 COLLECTION_AUDIT = "monitor_audit_log"
 COLLECTION_RUNS = "monitor_runs"
+COLLECTION_SUBSCRIPTIONS = "monitor_subscriptions"
 
 
 def _dt_to_stored(value: datetime) -> str:
@@ -467,6 +468,29 @@ class FirestoreStorage:
             if data and data.get("owner_id") == self._owner_id:
                 results.append(Watch(**data))
         return results
+
+    async def list_email_subscribers(self) -> list[str]:
+        """E-mails de usuários com opt-in ativo em `monitor_subscriptions`.
+
+        Coleção externa (gravada pelo app SEFWorkStation via Admin SDK), não
+        owner-scoped deste pipeline. Descarta e-mails vazios/duplicados.
+        """
+        query = self._client.collection(COLLECTION_SUBSCRIPTIONS).where(
+            "emailOptin",
+            "==",
+            True,
+        )
+        emails: list[str] = []
+        seen: set[str] = set()
+        async for snapshot in query.stream():
+            data = snapshot.to_dict()
+            if not data:
+                continue
+            email = data.get("email")
+            if isinstance(email, str) and email.strip() and email not in seen:
+                seen.add(email)
+                emails.append(email)
+        return emails
 
     async def delete_watch(self, watch_id: str) -> None:
         ref = self._client.collection(COLLECTION_WATCHES).document(watch_id)
