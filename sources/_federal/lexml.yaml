@@ -7,8 +7,9 @@ url: "https://www.lexml.gov.br/busca/search"
 selectors:
   palavras_chave: "ITCMD|ITCD|causa mortis|sucessão|inventário|regime de bens"
   tipo_documento: "Legislação"
-  # localidades vazio = aceita TODOS os entes (federal + 27 estados)
-  localidades: ""
+  # Só federal (brasil) + MG — sistema é MG-only (feed SEF-MG). Exclui leis
+  # estaduais de outras UFs que o LexML indexa (ex: Lei 10.705/SP).
+  localidades: "brasil|minas.gerais"
 keywords_required:
   - ITCMD
   - ITCD
