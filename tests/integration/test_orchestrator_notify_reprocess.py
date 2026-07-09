@@ -195,9 +195,7 @@ class TestNotifyDocuments:
             assert loaded.status == StatusDocumento.NOTIFIED
 
     @pytest.mark.asyncio
-    async def test_digest_email_inclui_inscritos(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    async def test_digest_email_inclui_inscritos(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Fase 2: o digest por e-mail vai ao owner + inscritos com opt-in ativo.
         storage = InMemoryStorage(OWNER)
         storage._email_subscribers = ["sub@sef.mg.gov.br"]
