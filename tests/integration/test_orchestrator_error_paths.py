@@ -41,7 +41,7 @@ from monitoritcd.orchestrator import (
     reindex_search_indexes,
     reprocess_documents,
 )
-from monitoritcd.storage import InMemoryStorage
+from monitoritcd.storage import InMemoryStorage, OwnershipError
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -246,6 +246,40 @@ class TestClassifyAndStoreErrorPaths:
         assert any("save_documento" in e for e in report.errors)
 
     @pytest.mark.asyncio
+    async def test_save_documento_ownership_error_isola_doc_e_segue(self) -> None:
+        # Regressão do incidente 2026-07-09: OwnershipError NÃO é ValueError
+        # nem RuntimeError. Antes do fix, escapava do try/except deste branch
+        # e abortava classify_and_store inteiro — inclusive docs subsequentes
+        # do MESMO batch que salvariam com sucesso (ver comentário no
+        # orchestrator, branch principal de save_documento). Este teste prova
+        # que 1 doc com owner divergente é isolado e o batch segue.
+        storage = InMemoryStorage(OWNER)
+        report = RunReport(run_id="t", started_at=NOW)
+        call_count = 0
+
+        async def _first_call_ownership_mismatch(_doc: Documento) -> None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                msg = "owner_id mismatch: expected 'owner-test', got 'legacy-owner'"
+                raise OwnershipError(msg)
+
+        with patch.object(storage, "save_documento", side_effect=_first_call_ownership_mismatch):
+            items = [_raw("d1"), _raw("d2")]
+            result = await classify_and_store(
+                items,
+                llm_provider=FakeLLMProvider(),
+                storage=storage,
+                owner_id=OWNER,
+                report=report,
+            )
+        # d1 colidiu (owner divergente) mas d2 foi salvo — batch não abortou.
+        assert len(result) == 1
+        assert result[0].doc_id == "src:2222222222222222"
+        assert report.items_stored == 1
+        assert any("save_documento" in e for e in report.errors)
+
+    @pytest.mark.asyncio
     async def test_llm_providers_exhausted_defere_como_pending(self) -> None:
         # Cenário real cron 24957305420: Gemini 429 + Groq 429 simultâneo.
         # Comportamento esperado: salva itens como PENDING (sem llm) para
@@ -311,6 +345,37 @@ class TestClassifyAndStoreErrorPaths:
         # report.errors registra o defer; save_deferred_failed vai pro log
         assert any("classify_deferred" in e for e in report.errors)
 
+    @pytest.mark.asyncio
+    async def test_llm_exhausted_ownership_error_no_defer_nao_quebra(self) -> None:
+        # Mesma regressão do teste acima, mas no branch de defer (quota
+        # exhausted): OwnershipError também precisa ficar isolada aqui.
+        class _ExhaustedLLM:
+            name = "gemini+groq"
+
+            async def classify_batch(
+                self, _items_text: list[str], *, system_prompt: str | None = None
+            ) -> list[dict[str, Any]]:
+                raise LLMProvidersExhaustedError("both exhausted")
+
+        storage = InMemoryStorage(OWNER)
+        report = RunReport(run_id="t", started_at=NOW)
+
+        async def _failing_save(_doc: Documento) -> None:
+            msg = "owner_id mismatch: expected 'owner-test', got 'legacy-owner'"
+            raise OwnershipError(msg)
+
+        with patch.object(storage, "save_documento", side_effect=_failing_save):
+            items = [_raw("d1")]
+            result = await classify_and_store(
+                items,
+                llm_provider=_ExhaustedLLM(),
+                storage=storage,
+                owner_id=OWNER,
+                report=report,
+            )
+        assert result == []
+        assert any("classify_deferred" in e for e in report.errors)
+
 
 @pytest.mark.integration
 class TestReprocessErrorPaths:
@@ -353,6 +418,25 @@ class TestReprocessErrorPaths:
                 limit=10,
             )
         # update_llm falhou, mas o batch nao foi creditado
+        assert report.items_classified == 0
+
+    @pytest.mark.asyncio
+    async def test_reprocess_ownership_error_continua(self) -> None:
+        # Mesma regressão: reprocess.yml (workflow admin) não pode abortar
+        # o lote inteiro por causa de 1 doc com owner_id legado.
+        storage = InMemoryStorage(OWNER)
+        await _save_all(storage, [_make_doc("d1")])
+
+        async def _failing_update(_doc_id: str, _llm: LLMResult) -> None:
+            msg = "owner_id mismatch: expected 'owner-test', got 'legacy-owner'"
+            raise OwnershipError(msg)
+
+        with patch.object(storage, "update_llm", side_effect=_failing_update):
+            report = await reprocess_documents(
+                storage=storage,
+                llm_provider=FakeLLMProvider(),
+                limit=10,
+            )
         assert report.items_classified == 0
 
     @pytest.mark.asyncio

@@ -79,7 +79,7 @@ from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.severity import effective_severity
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
-from monitoritcd.storage.audit_log import AuditChainError, AuditLog
+from monitoritcd.storage.audit_log import AuditChainError, AuditLog, OwnershipError
 
 if TYPE_CHECKING:
     from monitoritcd.core.base_collector import BaseCollector
@@ -299,10 +299,13 @@ async def classify_and_store(
                 try:
                     await storage.save_documento(deferred)
                     report.items_stored += 1
-                except (ValueError, RuntimeError) as save_exc:
+                except (OwnershipError, ValueError, RuntimeError) as save_exc:
+                    # OwnershipError incluído de propósito — mesmo racional do
+                    # branch principal de save_documento logo abaixo neste arquivo.
                     logger.exception(
                         "storage.save_deferred_failed",
                         doc_id=doc_id,
+                        error_type=type(save_exc).__name__,
                         error=str(save_exc),
                     )
             continue
@@ -342,10 +345,25 @@ async def classify_and_store(
                 await storage.save_documento(doc)
                 docs_saved.append(doc)
                 report.items_stored += 1
-            except (ValueError, RuntimeError) as e:
+            except (OwnershipError, ValueError, RuntimeError) as e:
+                # OwnershipError entra aqui de propósito. `doc_id` já existe no
+                # Firestore com `owner_id` diferente do atual — ex: execução local
+                # antiga gravando no mesmo projeto/coleção com outro OWNER_ID no
+                # `.env`. Antes deste fix, OwnershipError não era ValueError nem
+                # RuntimeError e escapava deste try/except, abortando TODO
+                # `run_pipeline` (inclusive notificações, audit log, healthcheck e
+                # a persistência do RunReport) — 1 doc com owner legado zerava a
+                # gravação do dia inteiro (incidente 2026-07-09: 14 docs
+                # `camara-deputados-proposicoes:*` gravados por run local com
+                # OWNER_ID=sefworkstation-monitor-homolog no projeto de produção
+                # sefworkstation-app, colidindo com todo run subsequente do cron).
+                # Isolar e seguir aqui preserva a intenção do guard — nunca
+                # sobrescrever doc de outro owner — sem propagar o efeito
+                # catastrófico ao resto do batch/run.
                 logger.exception(
                     "storage.save_failed",
                     doc_id=doc_id,
+                    error_type=type(e).__name__,
                     error=str(e),
                 )
                 report.errors.append(f"save_documento {doc_id}: {e}")
@@ -417,7 +435,9 @@ async def reprocess_documents(
                 elif doc.status in {StatusDocumento.PENDING, StatusDocumento.ARCHIVED}:
                     await storage.update_status(doc.doc_id, StatusDocumento.CLASSIFIED)
                 report.items_classified += 1
-            except (ValueError, RuntimeError) as e:
+            except (OwnershipError, ValueError, RuntimeError) as e:
+                # OwnershipError não deve abortar o reprocessamento inteiro — mesmo
+                # racional do guard em classify_and_store, acima neste arquivo.
                 bound.warning("reprocess.update_failed", doc_id=doc.doc_id, error=str(e))
 
     report.finished_at = datetime.now(UTC)
@@ -472,7 +492,9 @@ async def reindex_search_indexes(
             try:
                 await storage.update_search_index(doc.doc_id)
                 report.items_reindexed += 1
-            except (ValueError, RuntimeError) as e:
+            except (OwnershipError, ValueError, RuntimeError) as e:
+                # OwnershipError não deve abortar a reindexação inteira — mesmo
+                # racional do guard em classify_and_store, acima neste arquivo.
                 bound.warning("reindex_search.update_failed", doc_id=doc.doc_id, error=str(e))
                 report.errors.append(f"reindex_search {doc.doc_id}: {e}")
 
@@ -590,7 +612,9 @@ async def notify_documents(
                     ),
                 )
                 await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
-            except (ValueError, RuntimeError) as e:
+            except (OwnershipError, ValueError, RuntimeError) as e:
+                # OwnershipError não deve abortar a marcação do restante do digest —
+                # mesmo racional do guard em classify_and_store, acima neste arquivo.
                 logger.warning("notify.status_update_failed", doc_id=doc.doc_id, error=str(e))
 
 
