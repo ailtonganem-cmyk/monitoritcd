@@ -36,8 +36,8 @@ def fake_settings() -> object:
         TELEGRAM_BOT_TOKEN = None
         TELEGRAM_OWNER_CHAT_ID = 0
         TELEGRAM_WEBHOOK_SECRET = None
-        GMAIL_USER = "noreply@example.com"
-        GMAIL_APP_PASSWORD = None
+        RESEND_API_KEY = None
+        RESEND_FROM_EMAIL = "noreply@example.com"
         ENV = "test"
         DRY_RUN = True
 

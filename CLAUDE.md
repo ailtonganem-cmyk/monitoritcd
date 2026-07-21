@@ -780,8 +780,8 @@ GitHub Secrets:
 |---|---|
 | `GEMINI_API_KEY` | LLM primário |
 | `GROQ_API_KEY` | LLM fallback |
-| `GMAIL_USER` | E-mail de envio |
-| `GMAIL_APP_PASSWORD` | App password (16 chars) |
+| `RESEND_API_KEY` | API key do Resend (e-mail de envio) |
+| `RESEND_FROM_EMAIL` | Endereço do domínio verificado no Resend (remetente exibido como "SefWorkStation") |
 | `EMAIL_RECIPIENT` | E-mail do dono |
 | `TELEGRAM_BOT_TOKEN` | Bot do BotFather |
 | `TELEGRAM_OWNER_CHAT_ID` | Chat ID do dono (ÚNICO autorizado) |

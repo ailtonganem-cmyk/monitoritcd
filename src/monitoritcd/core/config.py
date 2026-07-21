@@ -38,10 +38,10 @@ class Settings(BaseSettings):
     GROQ_API_KEY: SecretStr | None = None
 
     # ─────────────────────────────────────────────────────────────────────
-    # E-mail
+    # E-mail (Resend — ver notifiers/email_notifier.py)
     # ─────────────────────────────────────────────────────────────────────
-    GMAIL_USER: EmailStr
-    GMAIL_APP_PASSWORD: SecretStr
+    RESEND_API_KEY: SecretStr
+    RESEND_FROM_EMAIL: EmailStr
 
     # ─────────────────────────────────────────────────────────────────────
     # Telegram
@@ -91,7 +91,7 @@ class Settings(BaseSettings):
             f"Settings("
             f"OWNER_ID={self.OWNER_ID!r}, "
             f"OWNER_EMAIL={self.OWNER_EMAIL!r}, "
-            f"GMAIL_USER={self.GMAIL_USER!r}, "
+            f"RESEND_FROM_EMAIL={self.RESEND_FROM_EMAIL!r}, "
             f"FIREBASE_PROJECT_ID={self.FIREBASE_PROJECT_ID!r}, "
             f"ENV={self.ENV!r}, "
             f"LOG_LEVEL={self.LOG_LEVEL!r}, "
