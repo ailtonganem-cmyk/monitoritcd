@@ -146,8 +146,8 @@
 98. [x] Tabela de conteúdos (TOC) clicável para digests longos. ✅ 2026-04-26 (≥ 8 itens)
 99. [x] Seção "destaques da semana". ✅ pré-existente (highlights tier crítico/alta)
 100. [x] Digest diário (configurável horário via env). ✅ pré-existente (monitor.yml cron diário envia)
-101. [x] Digest semanal (todo domingo 18h). ✅ 2026-04-26 (workflows/digests.yml — TODO: CLI digest)
-102. [x] Digest mensal (último dia do mês). ✅ 2026-04-26 (workflows/digests.yml — TODO: CLI digest)
+101. [x] Digest semanal (todo domingo 18h). ✅ 2026-07-21 (workflows/digests.yml + `monitoritcd digest`)
+102. [x] Digest mensal (último dia do mês). ✅ 2026-07-21 (workflows/digests.yml + `monitoritcd digest`)
 103. [x] Ranking dos itens mais relevantes do período. ✅ 2026-04-26 (top 5 destacado) ⭐ Tier 1
 104. [ ] Gráfico de tendências inline (PNG base64 via matplotlib). ⚠️ triagem desaconselhou
 105. [ ] Anexo PDF do digest (gerado com WeasyPrint). ⚠️ triagem desaconselhou

@@ -41,9 +41,9 @@ from __future__ import annotations
 import asyncio
 import uuid
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path  # noqa: TC003 — usado em runtime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Final
 
 import httpx
 import structlog
@@ -616,6 +616,87 @@ async def notify_documents(
                 # OwnershipError não deve abortar a marcação do restante do digest —
                 # mesmo racional do guard em classify_and_store, acima neste arquivo.
                 logger.warning("notify.status_update_failed", doc_id=doc.doc_id, error=str(e))
+
+
+DIGEST_WINDOW_DIAS: Final[dict[str, int]] = {"semanal": 7, "mensal": 30}
+
+
+async def run_digest(
+    settings: Settings,
+    *,
+    storage: StorageProtocol,
+    periodicidade: str,
+) -> RunReport:
+    """Digest agregado (semanal/mensal) — IDEAS.md #101/#102.
+
+    Reconsolida documentos já classificados na janela em um único envio
+    (Telegram + Email), independente do digest diário do `run_pipeline`.
+    Não atualiza `NotificacaoStatus`: é um rollup do que já foi notificado,
+    não uma notificação nova (mesmo racional do `/relatorio` do bot).
+    """
+    if periodicidade not in DIGEST_WINDOW_DIAS:
+        msg = f"periodicidade inválida: {periodicidade!r} (use 'semanal' ou 'mensal')"
+        raise ValueError(msg)
+
+    run_id = str(uuid.uuid4())
+    report = RunReport(run_id=run_id, started_at=datetime.now(UTC))
+    bound = logger.bind(run_id=run_id, periodicidade=periodicidade)
+    bound.info("digest.start")
+
+    since = datetime.now(UTC) - timedelta(days=DIGEST_WINDOW_DIAS[periodicidade])
+    docs = await storage.list_documentos(since=since, limit=1000)
+    classified = [d for d in docs if d.llm is not None]
+    report.items_collected = len(docs)
+    report.items_classified = len(classified)
+
+    if not classified:
+        bound.info("digest.no_documents")
+        report.finished_at = datetime.now(UTC)
+        return report
+
+    digest_label = "Semanal" if periodicidade == "semanal" else "Mensal"
+    now = datetime.now(UTC)
+    digest_chat_id = settings.TELEGRAM_GROUP_CHAT_ID or settings.TELEGRAM_OWNER_CHAT_ID
+
+    try:
+        async with TelegramNotifier(settings) as tg:
+            await tg.send_digest(
+                classified,
+                digest_label=digest_label,
+                data_geracao=now,
+                chat_id=digest_chat_id,
+            )
+        report.items_notified_telegram = len(classified)
+    except Exception as e:  # noqa: BLE001 — notif não pode derrubar o digest; logado com traceback
+        bound.exception("digest.telegram_failed", error=str(e))
+        report.errors.append(f"digest_telegram: {e}")
+
+    try:
+        subscribers: list[str] = []
+        try:
+            subscribers = await storage.list_email_subscribers()
+        except Exception:  # noqa: BLE001 — ler inscritos nunca derruba o envio ao owner
+            bound.exception("digest.subscribers_read_failed")
+        recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
+        email_notifier = EmailNotifier(settings)
+        await email_notifier.send_digest(
+            classified,
+            digest_label=digest_label,
+            data_geracao=now,
+            recipients=recipients,
+        )
+        report.items_notified_email = len(classified)
+    except Exception as e:  # noqa: BLE001 — notif não pode derrubar o digest; logado com traceback
+        bound.exception("digest.email_failed", error=str(e))
+        report.errors.append(f"digest_email: {e}")
+
+    report.finished_at = datetime.now(UTC)
+    bound.info(
+        "digest.complete",
+        duration_s=report.duration_seconds,
+        classified=len(classified),
+    )
+    return report
 
 
 async def ping_healthcheck(settings: Settings, *, success: bool = True) -> None:

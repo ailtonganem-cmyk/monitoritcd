@@ -3,12 +3,16 @@
 Subcomandos:
     run [--dry-run] [--source-id ID] [--uf UF]
         Executa pipeline completa (cron diário).
+    digest --periodicidade {semanal,mensal} [--dry-run]
+        Envia rollup agregado (Telegram + Email) dos documentos já
+        classificados na janela (IDEAS.md #101/#102).
     seed
         Popula Firestore com active_states default a partir de
         config/active_states.default.yaml.
 
 Uso típico (cron):
     python -m monitoritcd run
+    python -m monitoritcd digest --periodicidade semanal
 
 Uso em desenvolvimento:
     python -m monitoritcd run --dry-run --source-id lexml-federal
@@ -184,6 +188,34 @@ async def cmd_reprocess(args: argparse.Namespace) -> int:
     return 0
 
 
+async def cmd_digest(args: argparse.Namespace) -> int:
+    """Subcomando `digest` — envia rollup semanal/mensal (IDEAS.md #101/#102)."""
+    from monitoritcd.orchestrator import run_digest  # noqa: PLC0415
+
+    settings = get_settings()
+    configure_logging(settings.LOG_LEVEL)
+    log = structlog.get_logger("main")
+
+    storage, _llm = _make_backends(settings, dry_run=args.dry_run)
+
+    log.info("cli.digest.start", periodicidade=args.periodicidade, dry_run=args.dry_run)
+    report = await run_digest(
+        settings,
+        storage=storage,
+        periodicidade=args.periodicidade,
+    )
+    log.info(
+        "cli.digest.done",
+        run_id=report.run_id,
+        classified=report.items_classified,
+        notified_telegram=report.items_notified_telegram,
+        notified_email=report.items_notified_email,
+        errors=len(report.errors),
+        duration_s=report.duration_seconds,
+    )
+    return 1 if report.errors else 0
+
+
 async def cmd_reindex_search(args: argparse.Namespace) -> int:
     """Subcomando `reindex-search` — materializa corpus pesquisável em documentos."""
     from datetime import UTC, datetime  # noqa: PLC0415
@@ -268,6 +300,22 @@ def cli(argv: list[str] | None = None) -> int:
         help="Máximo de documentos a reprocessar",
     )
 
+    digest_p = sub.add_parser(
+        "digest",
+        help="Envia digest agregado (semanal/mensal) — IDEAS.md #101/#102",
+    )
+    digest_p.add_argument(
+        "--periodicidade",
+        type=str,
+        choices=["semanal", "mensal"],
+        required=True,
+    )
+    digest_p.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Usa storage in-memory (sem Firestore nem envio real)",
+    )
+
     reidx_p = sub.add_parser(
         "reindex-search",
         help="Regenera o índice de busca materializado dos documentos",
@@ -299,6 +347,8 @@ def cli(argv: list[str] | None = None) -> int:
         return asyncio.run(cmd_reprocess(args))
     if args.cmd == "reindex-search":
         return asyncio.run(cmd_reindex_search(args))
+    if args.cmd == "digest":
+        return asyncio.run(cmd_digest(args))
 
     parser.print_help()  # pragma: no cover
     return 1  # pragma: no cover
