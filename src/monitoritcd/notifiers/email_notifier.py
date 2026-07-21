@@ -1,4 +1,4 @@
-"""Notificação por e-mail via API do Resend.
+"""Notificação por e-mail via SMTP Gmail.
 
 Suporta múltiplos templates (default/compacto/executivo/newsletter — #111-#114),
 saudação dinâmica por horário (#117), subject configurável com placeholders
@@ -8,26 +8,20 @@ dark-mode automático (#97) via prefers-color-scheme nos templates.
 Princípios canônicos aplicados:
 1. **Jinja2 com `autoescape=True`** — XSS em conteúdo de itens neutralizado.
 2. **CSP no `<head>`** — restringe execução mesmo se template fosse comprometido.
-3. **`SecretStr` para a API key** — nunca em logs ou exceções.
-
-Migrado de SMTP Gmail para a API do Resend (2026-07-21, decisão do dono):
-`httpx` (já dependência do projeto, async-first) substitui `smtplib` bloqueante
-— sem necessidade de `asyncio.to_thread`. Remetente exibido como "SefWorkStation
-<RESEND_FROM_EMAIL>" (`RESEND_SENDER_NAME`). Preserva a semântica de privacidade
-original: cada destinatário recebe uma chamada de API própria (`to` com um único
-endereço) — nenhum destinatário vê o e-mail dos demais.
+3. **`SecretStr` para senha** — nunca em logs ou exceções.
 """
 
 from __future__ import annotations
 
-import base64
+import asyncio
 import csv
 import io
 import json
+import smtplib
 from datetime import UTC
+from email.message import EmailMessage
 from typing import TYPE_CHECKING, Final, Literal
 
-import httpx
 import structlog
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -42,9 +36,8 @@ if TYPE_CHECKING:
 
 logger = structlog.get_logger(__name__)
 
-RESEND_API_URL: Final[str] = "https://api.resend.com/emails"
-RESEND_SENDER_NAME: Final[str] = "SefWorkStation"
-RESEND_TIMEOUT_SECONDS: Final[float] = 30.0
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = 587
 
 EmailMode = Literal["default", "compacto", "executivo", "newsletter"]
 
@@ -370,45 +363,43 @@ def build_json_attachment(docs: Sequence[Documento]) -> bytes:
     return json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8")
 
 
-def _build_resend_payload(
+def _build_message(
     *,
-    from_email: str,
+    sender: str,
     recipient: str,
     subject: str,
     body_html: str,
     body_text: str | None = None,
     reply_to: str | None = None,
     attachments: Sequence[tuple[str, str, bytes]] | None = None,
-) -> dict[str, object]:
-    """Monta o payload JSON da API do Resend para UM destinatário (`to` só ele).
+) -> EmailMessage:
+    """Monta um EmailMessage para UM destinatário (`To:` só ele).
 
     Args:
-        attachments: sequência de (filename, mimetype, content_bytes) — mimetype
-            não é usado pelo Resend (infere pelo filename), mantido na assinatura
-            só por compatibilidade com os chamadores existentes.
+        attachments: sequência de (filename, mimetype, content_bytes).
     """
-    payload: dict[str, object] = {
-        "from": f"{RESEND_SENDER_NAME} <{from_email}>",
-        "to": [recipient],
-        "subject": subject,
-        "html": body_html,
-    }
-    if body_text:
-        payload["text"] = body_text
+    msg = EmailMessage()
+    msg["From"] = sender
+    msg["To"] = recipient
+    msg["Subject"] = subject
     if reply_to:
-        payload["reply_to"] = reply_to
-    if attachments:
-        payload["attachments"] = [
-            {"filename": filename, "content": base64.b64encode(content).decode("ascii")}
-            for filename, _mimetype, content in attachments
-        ]
-    return payload
+        msg["Reply-To"] = reply_to
+    if body_text:
+        msg.set_content(body_text)
+    else:
+        msg.set_content("Seu cliente de e-mail não suporta HTML.")
+    msg.add_alternative(body_html, subtype="html")
+
+    for filename, mimetype, content in attachments or []:
+        maintype, _, subtype = mimetype.partition("/")
+        msg.add_attachment(content, maintype=maintype, subtype=subtype, filename=filename)
+    return msg
 
 
-async def _send_via_resend(
+def _send_via_smtp_sync(
     *,
-    api_key: str,
-    from_email: str,
+    sender: str,
+    password: str,
     recipient: str,
     subject: str,
     body_html: str,
@@ -416,9 +407,9 @@ async def _send_via_resend(
     reply_to: str | None = None,
     attachments: Sequence[tuple[str, str, bytes]] | None = None,
 ) -> None:
-    """Envia para 1 destinatário via API do Resend (`POST /emails`)."""
-    payload = _build_resend_payload(
-        from_email=from_email,
+    """Envia para 1 destinatário via SMTP TLS — bloqueante; via `asyncio.to_thread`."""
+    msg = _build_message(
+        sender=sender,
         recipient=recipient,
         subject=subject,
         body_html=body_html,
@@ -426,19 +417,16 @@ async def _send_via_resend(
         reply_to=reply_to,
         attachments=attachments,
     )
-    async with httpx.AsyncClient(timeout=RESEND_TIMEOUT_SECONDS) as client:
-        response = await client.post(
-            RESEND_API_URL,
-            headers={"Authorization": f"Bearer {api_key}"},
-            json=payload,
-        )
-        response.raise_for_status()
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+        smtp.starttls()
+        smtp.login(sender, password)
+        smtp.send_message(msg)
 
 
-async def _send_via_resend_many(
+def _send_via_smtp_sync_many(
     *,
-    api_key: str,
-    from_email: str,
+    sender: str,
+    password: str,
     recipients: Sequence[str],
     subject: str,
     body_html: str,
@@ -446,38 +434,40 @@ async def _send_via_resend_many(
     reply_to: str | None = None,
     attachments: Sequence[tuple[str, str, bytes]] | None = None,
 ) -> tuple[int, list[str]]:
-    """Envia individualmente a cada destinatário, uma chamada de API por vez.
+    """Envia individualmente a cada destinatário numa só conexão SMTP.
 
-    Cada destinatário recebe uma mensagem com `to` apenas ele — o Resend nunca
-    vê os e-mails uns dos outros na mesma chamada. Falha em um não aborta os
-    demais (mesma semântica do envio via SMTP que este substitui).
+    Cada destinatário recebe uma mensagem com `To:` apenas ele — servidores
+    não veem os e-mails uns dos outros. Falha em um não aborta os demais.
 
     Returns:
         (enviados_ok, lista de destinatários que falharam).
     """
     enviados = 0
     falhas: list[str] = []
-    for recipient in recipients:
-        try:
-            await _send_via_resend(
-                api_key=api_key,
-                from_email=from_email,
-                recipient=recipient,
-                subject=subject,
-                body_html=body_html,
-                body_text=body_text,
-                reply_to=reply_to,
-                attachments=attachments,
-            )
-            enviados += 1
-        except httpx.HTTPError as e:
-            logger.warning("email.recipient_failed", error=str(e))
-            falhas.append(recipient)
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30) as smtp:
+        smtp.starttls()
+        smtp.login(sender, password)
+        for recipient in recipients:
+            try:
+                msg = _build_message(
+                    sender=sender,
+                    recipient=recipient,
+                    subject=subject,
+                    body_html=body_html,
+                    body_text=body_text,
+                    reply_to=reply_to,
+                    attachments=attachments,
+                )
+                smtp.send_message(msg)
+                enviados += 1
+            except (smtplib.SMTPException, OSError) as e:
+                logger.warning("email.recipient_failed", error=str(e))
+                falhas.append(recipient)
     return enviados, falhas
 
 
 class EmailNotifier:
-    """Notificador por e-mail via API do Resend."""
+    """Notificador por e-mail via Gmail SMTP."""
 
     def __init__(self, settings: Settings, env: Environment | None = None) -> None:
         self._settings = settings
@@ -535,9 +525,10 @@ class EmailNotifier:
             )
 
         destinatarios = list(dict.fromkeys(recipients or [self._settings.OWNER_EMAIL]))
-        enviados, falhas = await _send_via_resend_many(
-            api_key=self._settings.RESEND_API_KEY.get_secret_value(),
-            from_email=self._settings.RESEND_FROM_EMAIL,
+        enviados, falhas = await asyncio.to_thread(
+            _send_via_smtp_sync_many,
+            sender=self._settings.GMAIL_USER,
+            password=self._settings.GMAIL_APP_PASSWORD.get_secret_value(),
             recipients=destinatarios,
             subject=subject,
             body_html=body,

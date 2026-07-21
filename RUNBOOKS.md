@@ -82,7 +82,7 @@ Para deixar rodando 24/7 num server pessoal:
 **Trigger**: lembrete mensal via Telegram (script futuro).
 
 Para cada secret:
-1. Gerar novo no provedor (Gemini Studio, BotFather, Resend, etc.).
+1. Gerar novo no provedor (Gemini Studio, BotFather, Gmail, etc.).
 2. Atualizar GitHub Secret correspondente.
 3. Atualizar `.env` local se for usar dev.
 4. Revogar credencial antiga no provedor.
@@ -91,7 +91,7 @@ Para cada secret:
 Secrets a rotar:
 - `GEMINI_API_KEY`
 - `GROQ_API_KEY`
-- `RESEND_API_KEY`
+- `GMAIL_APP_PASSWORD`
 - `TELEGRAM_BOT_TOKEN` (raro — só se vazou)
 - `TELEGRAM_WEBHOOK_SECRET`
 - `FIREBASE_SERVICE_ACCOUNT_JSON` (rotação de chave do SA)

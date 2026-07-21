@@ -115,8 +115,8 @@ jobs:
           OWNER_ID: ${{ secrets.OWNER_ID }}
           OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_FROM_EMAIL: ${{ secrets.RESEND_FROM_EMAIL }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
@@ -130,8 +130,8 @@ jobs:
           OWNER_ID: "$OWNER_ID"
           OWNER_EMAIL: "$OWNER_EMAIL"
           GEMINI_API_KEY: "$GEMINI_API_KEY"
-          RESEND_API_KEY: "$RESEND_API_KEY"
-          RESEND_FROM_EMAIL: "$RESEND_FROM_EMAIL"
+          GMAIL_USER: "$GMAIL_USER"
+          GMAIL_APP_PASSWORD: "$GMAIL_APP_PASSWORD"
           TELEGRAM_BOT_TOKEN: "$TELEGRAM_BOT_TOKEN"
           TELEGRAM_OWNER_CHAT_ID: "$TELEGRAM_OWNER_CHAT_ID"
           TELEGRAM_WEBHOOK_SECRET: "$TELEGRAM_WEBHOOK_SECRET"

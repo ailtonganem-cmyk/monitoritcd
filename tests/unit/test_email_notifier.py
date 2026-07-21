@@ -1,14 +1,11 @@
-"""Testes do EmailNotifier (API do Resend mockada via `respx`)."""
+"""Testes do EmailNotifier (SMTP mockado)."""
 
 from __future__ import annotations
 
-import json
 from datetime import UTC, datetime
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
-import httpx
 import pytest
-import respx
 from pydantic import SecretStr
 
 from monitoritcd.core.config import Settings
@@ -24,12 +21,11 @@ from monitoritcd.core.models import (
     TipoFonte,
 )
 from monitoritcd.notifiers.email_notifier import (
-    RESEND_API_URL,
     EmailNotifier,
     _format_subject,
     _saudacao_dinamica,
-    _send_via_resend,
-    _send_via_resend_many,
+    _send_via_smtp_sync,
+    _send_via_smtp_sync_many,
     build_csv_attachment,
     build_jinja_env,
     build_json_attachment,
@@ -44,8 +40,8 @@ def _settings() -> Settings:
         OWNER_ID="o",
         OWNER_EMAIL="owner@example.com",
         GEMINI_API_KEY=SecretStr("g"),
-        RESEND_API_KEY=SecretStr("re_apikey"),
-        RESEND_FROM_EMAIL="bot@example.com",
+        GMAIL_USER="bot@example.com",
+        GMAIL_APP_PASSWORD=SecretStr("apppass"),
         TELEGRAM_BOT_TOKEN=SecretStr("t"),
         TELEGRAM_OWNER_CHAT_ID=1,
         TELEGRAM_WEBHOOK_SECRET=SecretStr("ws"),
@@ -93,11 +89,11 @@ def _doc() -> Documento:
 @pytest.mark.unit
 class TestEmailNotifier:
     @pytest.mark.asyncio
-    async def test_send_digest_calls_resend(self) -> None:
+    async def test_send_digest_calls_smtp(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -106,9 +102,9 @@ class TestEmailNotifier:
             )
             mock_send.assert_called_once()
             kwargs = mock_send.call_args.kwargs
-            assert kwargs["from_email"] == "bot@example.com"
+            assert kwargs["sender"] == "bot@example.com"
             assert kwargs["recipients"] == ["owner@example.com"]
-            assert kwargs["api_key"] == "re_apikey"
+            assert kwargs["password"] == "apppass"  # noqa: S105 - test fixture
             assert "Diário" in kwargs["subject"]
             assert "<html" in kwargs["body_html"].lower()
 
@@ -116,8 +112,8 @@ class TestEmailNotifier:
     async def test_send_empty_digest(self) -> None:
         notifier = EmailNotifier(_settings())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [],
@@ -130,79 +126,38 @@ class TestEmailNotifier:
 
 
 @pytest.mark.unit
-class TestSendViaResend:
-    @pytest.mark.asyncio
-    async def test_posts_to_resend_with_auth_and_payload(self) -> None:
-        with respx.mock:
-            route = respx.post(RESEND_API_URL).mock(
-                return_value=httpx.Response(200, json={"id": "abc"}),
-            )
-            await _send_via_resend(
-                api_key="re_apikey",
-                from_email="bot@example.com",
+class TestSendViaSMTP:
+    def test_smtp_login_and_send(self) -> None:
+        # Mocka smtplib.SMTP completamente
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            mock_instance = mock_smtp.return_value.__enter__.return_value
+            _send_via_smtp_sync(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
                 recipient="owner@example.com",
                 subject="Test",
                 body_html="<p>Hello</p>",
             )
-            assert route.called
-            request = route.calls.last.request
-            assert request.headers["Authorization"] == "Bearer re_apikey"
-            payload = json.loads(request.content)
-            assert payload["from"] == "SefWorkStation <bot@example.com>"
-            assert payload["to"] == ["owner@example.com"]
-            assert payload["subject"] == "Test"
-            assert payload["html"] == "<p>Hello</p>"
+            mock_smtp.assert_called_once_with("smtp.gmail.com", 587, timeout=30)
+            mock_instance.starttls.assert_called_once()
+            mock_instance.login.assert_called_once_with("bot@example.com", "pw")
+            mock_instance.send_message.assert_called_once()
 
-    @pytest.mark.asyncio
-    async def test_with_plain_text_body(self) -> None:
-        with respx.mock:
-            route = respx.post(RESEND_API_URL).mock(
-                return_value=httpx.Response(200, json={"id": "abc"}),
-            )
-            await _send_via_resend(
-                api_key="re_apikey",
-                from_email="bot@example.com",
-                recipient="owner@example.com",
-                subject="Test",
-                body_html="<p>Hello</p>",
-                body_text="Hello",
-            )
-            payload = json.loads(route.calls.last.request.content)
-            assert payload["text"] == "Hello"
-
-    @pytest.mark.asyncio
-    async def test_with_attachments_and_reply_to(self) -> None:
-        with respx.mock:
-            route = respx.post(RESEND_API_URL).mock(
-                return_value=httpx.Response(200, json={"id": "abc"}),
-            )
-            await _send_via_resend(
-                api_key="re_apikey",
-                from_email="bot@example.com",
+    def test_smtp_with_attachments_and_reply_to(self) -> None:
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            mock_instance = mock_smtp.return_value.__enter__.return_value
+            _send_via_smtp_sync(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
                 recipient="owner@example.com",
                 subject="Test",
                 body_html="<p>Hello</p>",
                 reply_to="feedback@example.com",
                 attachments=[("data.csv", "text/csv", b"a,b\n1,2\n")],
             )
-            payload = json.loads(route.calls.last.request.content)
-            assert payload["reply_to"] == "feedback@example.com"
-            assert payload["attachments"][0]["filename"] == "data.csv"
-
-    @pytest.mark.asyncio
-    async def test_raises_on_http_error(self) -> None:
-        with respx.mock:
-            respx.post(RESEND_API_URL).mock(
-                return_value=httpx.Response(422, json={"message": "bad"}),
-            )
-            with pytest.raises(httpx.HTTPStatusError):
-                await _send_via_resend(
-                    api_key="re_apikey",
-                    from_email="bot@example.com",
-                    recipient="owner@example.com",
-                    subject="Test",
-                    body_html="<p>Hello</p>",
-                )
+            mock_instance.send_message.assert_called_once()
+            sent_msg = mock_instance.send_message.call_args.args[0]
+            assert sent_msg["Reply-To"] == "feedback@example.com"
 
 
 @pytest.mark.unit
@@ -340,8 +295,8 @@ class TestSendDigestExtras:
     async def test_send_with_csv_and_json(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -359,8 +314,8 @@ class TestSendDigestExtras:
     async def test_send_with_reply_to(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -375,8 +330,8 @@ class TestSendDigestExtras:
     async def test_send_executivo_mode(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -396,8 +351,8 @@ class TestSendDigestRecipients:
     async def test_recipients_repassados(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(2, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(2, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -414,8 +369,8 @@ class TestSendDigestRecipients:
     async def test_recipients_dedup(self) -> None:
         notifier = EmailNotifier(_settings(), env=build_jinja_env())
         with patch(
-            "monitoritcd.notifiers.email_notifier._send_via_resend_many",
-            new=AsyncMock(return_value=(1, [])),
+            "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+            return_value=(1, []),
         ) as mock_send:
             await notifier.send_digest(
                 [_doc()],
@@ -427,36 +382,29 @@ class TestSendDigestRecipients:
 
 
 @pytest.mark.unit
-class TestSendViaResendMany:
-    @pytest.mark.asyncio
-    async def test_envia_individual_a_cada(self) -> None:
-        with respx.mock:
-            route = respx.post(RESEND_API_URL).mock(
-                return_value=httpx.Response(200, json={"id": "abc"}),
-            )
-            enviados, falhas = await _send_via_resend_many(
-                api_key="re_apikey",
-                from_email="bot@example.com",
+class TestSendViaSMTPMany:
+    def test_envia_individual_a_cada(self) -> None:
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            inst = mock_smtp.return_value.__enter__.return_value
+            enviados, falhas = _send_via_smtp_sync_many(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
                 recipients=["a@x.com", "b@x.com"],
                 subject="Test",
                 body_html="<p>Hi</p>",
             )
             assert enviados == 2
             assert falhas == []
-            assert route.call_count == 2
+            inst.login.assert_called_once()  # 1 conexão para todos
+            assert inst.send_message.call_count == 2
 
-    @pytest.mark.asyncio
-    async def test_falha_isolada_nao_aborta(self) -> None:
-        with respx.mock:
-            respx.post(RESEND_API_URL).mock(
-                side_effect=[
-                    httpx.Response(500, json={"message": "boom"}),
-                    httpx.Response(200, json={"id": "ok"}),
-                ],
-            )
-            enviados, falhas = await _send_via_resend_many(
-                api_key="re_apikey",
-                from_email="bot@example.com",
+    def test_falha_isolada_nao_aborta(self) -> None:
+        with patch("monitoritcd.notifiers.email_notifier.smtplib.SMTP") as mock_smtp:
+            inst = mock_smtp.return_value.__enter__.return_value
+            inst.send_message.side_effect = [OSError("boom"), None]
+            enviados, falhas = _send_via_smtp_sync_many(
+                sender="bot@example.com",
+                password="pw",  # noqa: S106 - test fixture
                 recipients=["ruim@x.com", "ok@x.com"],
                 subject="Test",
                 body_html="<p>Hi</p>",
