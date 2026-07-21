@@ -11,11 +11,11 @@ Subcomandos:
         config/active_states.default.yaml.
 
 Uso típico (cron):
-    python -m monitoritcd run
-    python -m monitoritcd digest --periodicidade semanal
+    python -m monitoritcd.main run
+    python -m monitoritcd.main digest --periodicidade semanal
 
 Uso em desenvolvimento:
-    python -m monitoritcd run --dry-run --source-id lexml-federal
+    python -m monitoritcd.main run --dry-run --source-id lexml-federal
 """
 
 from __future__ import annotations
