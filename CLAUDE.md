@@ -799,9 +799,28 @@ GitHub Secrets:
 
 ## 14. Cron e janela de execução
 
-- Workflow: **`13 10 * * *`** (10:13 UTC = 07:13 BRT) — fora dos horários "redondos".
+- Workflow `Monitor (cron diário)`: **três crons espalhados** para mitigar drops do GHA em alta carga:
+  - `33 02 * * *` (02:33 UTC = 23:33 BRT) — janela de baixa carga global.
+  - `13 10 * * *` (10:13 UTC = 07:13 BRT) — manhã do dono.
+  - `47 14 * * *` (14:47 UTC = 11:47 BRT) — meio-dia do dono.
+- Pipeline é idempotente (Firestore dedup por `content_hash`); runs extras não duplicam notificações.
 - `workflow_dispatch` para execução manual com inputs (ex: `--reprocess`, `--source-id`).
 - Timeout: **30 minutos**. Se passar, há algo errado.
+
+### Watchdog (`.github/workflows/cron-watchdog.yml`)
+
+Workflow independente que detecta runs pulados do Monitor:
+
+- Roda em 3 horários espalhados (06:23, 13:37, 21:53 UTC).
+- Consulta GitHub API: se passou ≥ 18h sem run bem-sucedido, alerta no Telegram do dono e pinga `/fail` no Healthchecks.io.
+- Threshold ajustável via `workflow_dispatch` input.
+- Razão: GitHub Actions documenta que crons podem ser pulados em alta carga; sem watchdog, sintoma é "silêncio" (dono não recebe digest e não sabe se nada mudou ou se o cron sumiu).
+
+### Healthchecks.io (configuração no painel)
+
+- Pings: `/start` (início do run), `/` sucesso (fim OK), `/fail` (erro).
+- Configurar **schedule** = `13 10 * * *` (ou um dos crons) com **grace period** suficiente (~3h) para tolerar atrasos do GHA.
+- Healthchecks.io envia alerta nativo se ping de sucesso não chegar dentro do grace period — segundo nível de defesa, independente do watchdog.
 
 ---
 
