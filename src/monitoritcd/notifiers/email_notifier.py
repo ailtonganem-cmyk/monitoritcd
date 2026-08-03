@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Final, Literal
 import structlog
 from jinja2 import Environment, PackageLoader, select_autoescape
 
+from monitoritcd.core.config import AVISO_EMAIL_DESABILITADO
 from monitoritcd.notifiers.severity import emoji_for_tier, label_for_tier
 
 if TYPE_CHECKING:
@@ -493,7 +494,16 @@ class EmailNotifier:
 
         `recipients`: destinatários; default `[OWNER_EMAIL]`. Cada um recebe um
         e-mail individual (`To:` só ele) — privacidade entre inscritos.
+
+        Sem credencial de Gmail o envio é ignorado com aviso: a ausência deste
+        canal não pode derrubar quem o chamou.
         """
+        credenciais = self._settings.credenciais_email
+        if credenciais is None:
+            logger.warning("email.desabilitado", motivo=AVISO_EMAIL_DESABILITADO)
+            return
+        remetente, senha = credenciais
+
         subject, body = render_email(
             docs,
             digest_label=digest_label,
@@ -527,8 +537,8 @@ class EmailNotifier:
         destinatarios = list(dict.fromkeys(recipients or [self._settings.OWNER_EMAIL]))
         enviados, falhas = await asyncio.to_thread(
             _send_via_smtp_sync_many,
-            sender=self._settings.GMAIL_USER,
-            password=self._settings.GMAIL_APP_PASSWORD.get_secret_value(),
+            sender=remetente,
+            password=senha.get_secret_value(),
             recipients=destinatarios,
             subject=subject,
             body_html=body,

@@ -353,12 +353,15 @@ class DocumentSearchIndex(StrictModel):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+CanalNotificacao = Literal["email", "telegram", "discord", "ntfy"]
+
+
 class NotificacaoStatus(StrictModel):
     """Estado de notificação do documento."""
 
     enviada: bool = False
     enviada_em: datetime | None = None
-    canais: list[Literal["email", "telegram", "discord", "ntfy"]] = Field(
+    canais: list[CanalNotificacao] = Field(
         default_factory=list,
         max_length=limits.MAX_NOTIFICATION_CHANNELS,
     )
@@ -573,6 +576,7 @@ __all__ = [
     "ActiveStatesConfig",
     "AuditLogEntry",
     "BotCommand",
+    "CanalNotificacao",
     "DocumentSearchIndex",
     "Documento",
     "ExtraKeyword",

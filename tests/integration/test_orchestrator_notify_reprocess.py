@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import httpx
 import pytest
 import respx
 from pydantic import SecretStr
+from structlog.testing import capture_logs
 
 from monitoritcd.core.config import Settings
 from monitoritcd.core.models import (
@@ -43,13 +45,14 @@ TOKEN = "1234567890:fakeFAKE_token_abc"  # noqa: S105 - test fixture
 CHAT_ID = 123456
 
 
-def _settings(*, group_chat_id: int | None = None) -> Settings:
+def _settings(*, group_chat_id: int | None = None, email_habilitado: bool = True) -> Settings:
     return Settings(
+        _env_file=None,
         OWNER_ID=OWNER,
         OWNER_EMAIL="o@example.com",
         GEMINI_API_KEY=SecretStr("g"),
-        GMAIL_USER="b@example.com",
-        GMAIL_APP_PASSWORD=SecretStr("p"),
+        GMAIL_USER="b@example.com" if email_habilitado else "",
+        GMAIL_APP_PASSWORD=SecretStr("p") if email_habilitado else "",
         TELEGRAM_BOT_TOKEN=SecretStr(TOKEN),
         TELEGRAM_OWNER_CHAT_ID=CHAT_ID,
         TELEGRAM_GROUP_CHAT_ID=group_chat_id,
@@ -225,6 +228,87 @@ class TestNotifyDocuments:
             )
 
         assert capturado["recipients"] == ["o@example.com", "sub@sef.mg.gov.br"]
+
+    @pytest.mark.asyncio
+    async def test_sem_credencial_de_email_telegram_e_gravacao_seguem(self) -> None:
+        # Regressão: a falta de credencial de UM canal não pode parar a coleta,
+        # a notificação por Telegram nem a gravação do estado do documento.
+        storage = InMemoryStorage(OWNER)
+        doc = _make_doc("d1", tier=SeverityTier.ALTA)
+        await _save_all(storage, [doc])
+        report = RunReport(run_id="t", started_at=FIXED_NOW)
+
+        from monitoritcd.notifiers import email_notifier as _email_mod  # noqa: PLC0415
+
+        async def _explode(*_args: object, **_kwargs: object) -> None:
+            msg = "SMTP não pode ser chamado sem credencial"
+            raise AssertionError(msg)
+
+        with (
+            patch.object(_email_mod.EmailNotifier, "send_digest", _explode),
+            capture_logs() as logs,
+        ):
+            async with respx.mock:
+                respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
+                    return_value=httpx.Response(200, json={"ok": True}),
+                )
+                await notify_documents(
+                    [doc],
+                    settings=_settings(email_habilitado=False),
+                    storage=storage,
+                    report=report,
+                    digest_label="Diário",
+                )
+
+        assert report.items_notified_telegram == 1
+        assert report.items_notified_email == 0
+        assert report.errors == []
+
+        loaded = await storage.get_documento("d1")
+        assert loaded is not None
+        assert loaded.status == StatusDocumento.NOTIFIED
+        assert loaded.notificacao.enviada is True
+        assert loaded.notificacao.canais == ["telegram"]
+
+        avisos = [e for e in logs if e["event"] == "notify.email_desabilitado"]
+        assert len(avisos) == 1
+        assert avisos[0]["log_level"] == "warning"
+
+    @pytest.mark.asyncio
+    async def test_canais_registram_apenas_o_que_foi_enviado(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        # Telegram falha, e-mail vai: `canais` deve refletir só o e-mail.
+        storage = InMemoryStorage(OWNER)
+        doc = _make_doc("d1", tier=SeverityTier.NORMAL)
+        await _save_all(storage, [doc])
+        report = RunReport(run_id="t", started_at=FIXED_NOW)
+
+        from monitoritcd.notifiers import email_notifier as _email_mod  # noqa: PLC0415
+        from monitoritcd.notifiers import telegram_notifier as _tg_mod  # noqa: PLC0415
+
+        async def _fake_send_digest(self, *args, **kwargs):  # type: ignore[no-untyped-def]
+            return None
+
+        async def _telegram_fora_do_ar(*_args: object, **_kwargs: object) -> None:
+            msg = "telegram down"
+            raise RuntimeError(msg)
+
+        monkeypatch.setattr(_email_mod.EmailNotifier, "send_digest", _fake_send_digest)
+        monkeypatch.setattr(_tg_mod.TelegramNotifier, "send_digest", _telegram_fora_do_ar)
+
+        await notify_documents(
+            [doc],
+            settings=_settings(),
+            storage=storage,
+            report=report,
+            digest_label="Diário",
+        )
+
+        loaded = await storage.get_documento("d1")
+        assert loaded is not None
+        assert loaded.notificacao.canais == ["email"]
 
 
 @pytest.mark.integration

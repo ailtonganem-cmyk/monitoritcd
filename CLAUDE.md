@@ -780,8 +780,8 @@ GitHub Secrets:
 |---|---|
 | `GEMINI_API_KEY` | LLM primário |
 | `GROQ_API_KEY` | LLM fallback |
-| `GMAIL_USER` | E-mail de envio |
-| `GMAIL_APP_PASSWORD` | App password (16 chars) |
+| `GMAIL_USER` | E-mail de envio — **opcional**; ausente/vazio desliga só o canal de e-mail |
+| `GMAIL_APP_PASSWORD` | App password (16 chars) — **opcional**; idem acima |
 | `EMAIL_RECIPIENT` | E-mail do dono |
 | `TELEGRAM_BOT_TOKEN` | Bot do BotFather |
 | `TELEGRAM_OWNER_CHAT_ID` | Chat ID do dono (ÚNICO autorizado) |

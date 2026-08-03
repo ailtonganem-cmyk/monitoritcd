@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import SecretStr
+from structlog.testing import capture_logs
 
 from monitoritcd.core.config import Settings
 from monitoritcd.core.models import (
@@ -107,6 +108,44 @@ class TestEmailNotifier:
             assert kwargs["password"] == "apppass"  # noqa: S105 - test fixture
             assert "Diário" in kwargs["subject"]
             assert "<html" in kwargs["body_html"].lower()
+
+    @pytest.mark.asyncio
+    async def test_sem_credencial_nao_chama_smtp_e_avisa(self) -> None:
+        # Canal de e-mail desligado não pode derrubar quem chamou (a coleta).
+        settings = Settings(
+            _env_file=None,
+            OWNER_ID="o",
+            OWNER_EMAIL="owner@example.com",
+            GEMINI_API_KEY=SecretStr("g"),
+            GMAIL_USER="",
+            GMAIL_APP_PASSWORD="",
+            TELEGRAM_BOT_TOKEN=SecretStr("t"),
+            TELEGRAM_OWNER_CHAT_ID=1,
+            TELEGRAM_WEBHOOK_SECRET=SecretStr("ws"),
+            FIREBASE_PROJECT_ID="p",
+            FIREBASE_STORAGE_BUCKET="p.appspot.com",
+            FIREBASE_SERVICE_ACCOUNT_JSON=SecretStr("{}"),
+        )
+        notifier = EmailNotifier(settings, env=build_jinja_env())
+
+        with (
+            patch(
+                "monitoritcd.notifiers.email_notifier._send_via_smtp_sync_many",
+                side_effect=AssertionError("SMTP não pode ser chamado sem credencial"),
+            ) as mock_send,
+            capture_logs() as logs,
+        ):
+            await notifier.send_digest(
+                [_doc()],
+                digest_label="Diário",
+                data_geracao=FIXED_NOW,
+            )
+
+        mock_send.assert_not_called()
+        eventos = [entrada for entrada in logs if entrada["event"] == "email.desabilitado"]
+        assert len(eventos) == 1
+        assert eventos[0]["log_level"] == "warning"
+        assert "GMAIL_USER" in eventos[0]["motivo"]
 
     @pytest.mark.asyncio
     async def test_send_empty_digest(self) -> None:

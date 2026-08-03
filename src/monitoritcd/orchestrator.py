@@ -63,6 +63,7 @@ from monitoritcd.collectors import (
     SefazSPCollector,
     SenadoCollector,
 )
+from monitoritcd.core.config import AVISO_EMAIL_DESABILITADO
 from monitoritcd.core.models import (
     Documento,
     NotificacaoStatus,
@@ -84,7 +85,7 @@ from monitoritcd.storage.audit_log import AuditChainError, AuditLog, OwnershipEr
 if TYPE_CHECKING:
     from monitoritcd.core.base_collector import BaseCollector
     from monitoritcd.core.config import Settings
-    from monitoritcd.core.models import RawItem, Source
+    from monitoritcd.core.models import CanalNotificacao, RawItem, Source
     from monitoritcd.filters.llm_classifier import LLMProvider
     from monitoritcd.storage.base import StorageProtocol
 
@@ -566,6 +567,8 @@ async def notify_documents(
 
     # 2. Digest consolidado (Telegram + Email) para o resto
     if digest_docs:
+        canais_usados: list[CanalNotificacao] = []
+
         # Telegram
         try:
             async with TelegramNotifier(settings) as tg:
@@ -576,29 +579,34 @@ async def notify_documents(
                     chat_id=digest_chat_id,
                 )
                 report.items_notified_telegram += len(digest_docs)
+                canais_usados.append("telegram")
         except Exception as e:
             logger.exception("notify.digest_telegram_failed", error=str(e))
             report.errors.append(f"notify_digest_telegram: {e}")
 
         # Email (digest único) — owner + inscritos com opt-in ativo (fase 2)
-        try:
-            subscribers: list[str] = []
+        if not settings.email_habilitado:
+            logger.warning("notify.email_desabilitado", motivo=AVISO_EMAIL_DESABILITADO)
+        else:
             try:
-                subscribers = await storage.list_email_subscribers()
-            except Exception:  # ler inscritos nunca derruba o envio ao owner
-                logger.exception("notify.subscribers_read_failed")
-            recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
-            email_notifier = EmailNotifier(settings)
-            await email_notifier.send_digest(
-                digest_docs,
-                digest_label=digest_label,
-                data_geracao=now,
-                recipients=recipients,
-            )
-            report.items_notified_email += len(digest_docs)
-        except Exception as e:
-            logger.exception("notify.digest_email_failed", error=str(e))
-            report.errors.append(f"notify_digest_email: {e}")
+                subscribers: list[str] = []
+                try:
+                    subscribers = await storage.list_email_subscribers()
+                except Exception:  # ler inscritos nunca derruba o envio ao owner
+                    logger.exception("notify.subscribers_read_failed")
+                recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
+                email_notifier = EmailNotifier(settings)
+                await email_notifier.send_digest(
+                    digest_docs,
+                    digest_label=digest_label,
+                    data_geracao=now,
+                    recipients=recipients,
+                )
+                report.items_notified_email += len(digest_docs)
+                canais_usados.append("email")
+            except Exception as e:
+                logger.exception("notify.digest_email_failed", error=str(e))
+                report.errors.append(f"notify_digest_email: {e}")
 
         # Marca como notificado
         for doc in digest_docs:
@@ -606,9 +614,9 @@ async def notify_documents(
                 await storage.update_notificacao(
                     doc.doc_id,
                     NotificacaoStatus(
-                        enviada=True,
+                        enviada=bool(canais_usados),
                         enviada_em=now,
-                        canais=["telegram", "email"],
+                        canais=canais_usados,
                     ),
                 )
                 await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
@@ -671,24 +679,27 @@ async def run_digest(
         bound.exception("digest.telegram_failed", error=str(e))
         report.errors.append(f"digest_telegram: {e}")
 
-    try:
-        subscribers: list[str] = []
+    if not settings.email_habilitado:
+        bound.warning("digest.email_desabilitado", motivo=AVISO_EMAIL_DESABILITADO)
+    else:
         try:
-            subscribers = await storage.list_email_subscribers()
-        except Exception:  # noqa: BLE001 — ler inscritos nunca derruba o envio ao owner
-            bound.exception("digest.subscribers_read_failed")
-        recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
-        email_notifier = EmailNotifier(settings)
-        await email_notifier.send_digest(
-            classified,
-            digest_label=digest_label,
-            data_geracao=now,
-            recipients=recipients,
-        )
-        report.items_notified_email = len(classified)
-    except Exception as e:  # noqa: BLE001 — notif não pode derrubar o digest; logado com traceback
-        bound.exception("digest.email_failed", error=str(e))
-        report.errors.append(f"digest_email: {e}")
+            subscribers: list[str] = []
+            try:
+                subscribers = await storage.list_email_subscribers()
+            except Exception:  # noqa: BLE001 — ler inscritos nunca derruba o envio ao owner
+                bound.exception("digest.subscribers_read_failed")
+            recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
+            email_notifier = EmailNotifier(settings)
+            await email_notifier.send_digest(
+                classified,
+                digest_label=digest_label,
+                data_geracao=now,
+                recipients=recipients,
+            )
+            report.items_notified_email = len(classified)
+        except Exception as e:  # noqa: BLE001 — notif não derruba o digest; logado com traceback
+            bound.exception("digest.email_failed", error=str(e))
+            report.errors.append(f"digest_email: {e}")
 
     report.finished_at = datetime.now(UTC)
     bound.info(

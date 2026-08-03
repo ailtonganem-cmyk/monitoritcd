@@ -36,6 +36,28 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    # Configuração compartilhada pelo guard (check-config) e pela execução.
+    # Secret inexistente chega como string vazia — o Settings trata "" como
+    # ausente e desliga apenas o canal correspondente.
+    env:
+      OWNER_ID: ${{ secrets.OWNER_ID }}
+      OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GMAIL_USER: ${{ secrets.GMAIL_USER }}
+      GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
+      TELEGRAM_GROUP_CHAT_ID: ${{ secrets.TELEGRAM_GROUP_CHAT_ID }}
+      TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+      # Proxy BR (Cloud Function southamerica-east1) para fontes geo_restricted
+      PROXY_BR_URL: ${{ secrets.PROXY_BR_URL }}
+      PROXY_BR_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -66,25 +88,13 @@ jobs:
           chmod 600 "$RUNNER_TEMP/sa.json"
           echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
 
+      # Guard de configuração: falha cedo e legível se faltar credencial
+      # ESSENCIAL; canal opcional ausente (e-mail) vira aviso na aba Actions.
+      # 25 execuções falharam de forma idêntica por 13 dias sem ninguém notar.
+      - name: Verificar configuração (canais e credenciais essenciais)
+        run: python -m monitoritcd.main check-config
+
       - name: Run pipeline
-        env:
-          OWNER_ID: ${{ secrets.OWNER_ID }}
-          OWNER_EMAIL: ${{ secrets.OWNER_EMAIL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_OWNER_CHAT_ID: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
-          TELEGRAM_GROUP_CHAT_ID: ${{ secrets.TELEGRAM_GROUP_CHAT_ID }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
-          # Proxy BR (Cloud Function southamerica-east1) para fontes geo_restricted
-          PROXY_BR_URL: ${{ secrets.PROXY_BR_URL }}
-          PROXY_BR_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
         run: |
           # Com PROXY_BR_URL configurado, fontes geo_restricted (ex: ALMG)
           # fazem fallback automatico via Cloud Function southamerica-east1.

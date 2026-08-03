@@ -29,7 +29,11 @@ from typing import Any
 
 import structlog
 
-from monitoritcd.core.config import get_settings
+from monitoritcd.core.config import (
+    ConfiguracaoEssencialAusenteError,
+    diagnosticar_configuracao,
+    get_settings,
+)
 from monitoritcd.llm.fake import FakeLLMProvider
 from monitoritcd.orchestrator import run_pipeline
 from monitoritcd.security.log_redactor import redact_sensitive
@@ -261,6 +265,33 @@ async def cmd_reindex_search(args: argparse.Namespace) -> int:
     return 1 if report.errors else 0
 
 
+def _anotacao_actions(nivel: str, titulo: str, mensagem: str) -> str:
+    """Formata anotação do GitHub Actions (quebras de linha exigem `%0A`)."""
+    escapada = mensagem.replace("\n", "%0A")
+    return f"::{nivel} title={titulo}::{escapada}"
+
+
+def cmd_check_config(_args: argparse.Namespace) -> int:
+    """Subcomando `check-config` — valida credenciais e reporta canais ativos.
+
+    Guard de CI: falha (exit 1) só quando falta credencial ESSENCIAL; canal
+    opcional ausente vira aviso visível, não quebra a execução.
+    """
+    try:
+        settings = get_settings()
+    except ConfiguracaoEssencialAusenteError as e:
+        print(_anotacao_actions("error", "Configuração essencial ausente", str(e)))
+        print(str(e))
+        return 1
+
+    diagnostico = diagnosticar_configuracao(settings)
+    print(f"Canais ativos: {', '.join(diagnostico.canais_ativos)}")
+    print(f"Canais desabilitados: {', '.join(diagnostico.canais_desabilitados) or '(nenhum)'}")
+    for aviso in diagnostico.avisos:
+        print(_anotacao_actions("warning", "Canal de notificação desabilitado", aviso))
+    return 0
+
+
 def cli(argv: list[str] | None = None) -> int:
     """Entry point do CLI."""
     parser = argparse.ArgumentParser(
@@ -339,19 +370,33 @@ def cli(argv: list[str] | None = None) -> int:
         help="Recalcula também documentos que já têm search_index",
     )
 
+    sub.add_parser(
+        "check-config",
+        help="Valida credenciais essenciais e reporta canais de notificação ativos",
+    )
+
     args = parser.parse_args(argv)
 
-    if args.cmd == "run":
-        return asyncio.run(cmd_run(args))
-    if args.cmd == "reprocess":
-        return asyncio.run(cmd_reprocess(args))
-    if args.cmd == "reindex-search":
-        return asyncio.run(cmd_reindex_search(args))
-    if args.cmd == "digest":
-        return asyncio.run(cmd_digest(args))
+    if args.cmd == "check-config":
+        return cmd_check_config(args)
 
-    parser.print_help()  # pragma: no cover
-    return 1  # pragma: no cover
+    subcomandos = {
+        "run": cmd_run,
+        "reprocess": cmd_reprocess,
+        "reindex-search": cmd_reindex_search,
+        "digest": cmd_digest,
+    }
+    subcomando = subcomandos.get(args.cmd)
+    if subcomando is None:  # pragma: no cover
+        parser.print_help()
+        return 1
+
+    try:
+        return asyncio.run(subcomando(args))
+    except ConfiguracaoEssencialAusenteError as e:
+        print(_anotacao_actions("error", "Configuração essencial ausente", str(e)))
+        print(str(e))
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover
