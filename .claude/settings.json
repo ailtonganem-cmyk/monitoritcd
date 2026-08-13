@@ -1,5 +1,1 @@
-{
-  "env": {
-    "MONITORITCD_EXECUTOR_MODEL": "sonnet"
-  }
-}
+{}
