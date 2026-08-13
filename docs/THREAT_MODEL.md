@@ -29,7 +29,7 @@ Componentes:
 
 | Ameaça | Mitigação |
 |---|---|
-| Modificação de `original.*` por LLM | Pydantic `frozen=True` em `RawItem`; CLAUDE.md §5 |
+| Modificação de `original.*` por LLM | Pydantic `frozen=True` em `RawItem`; `regras/40-regras-negocio.md` |
 | Tampering em audit log | Hash chain com `prev_hash`; `audit.verify_chain()` em runtime (Sugestão #25) |
 | Modificação de YAMLs em PR malicioso | Pre-commit + CI: `lint_sources_yaml.py`, `gitleaks`, `detect-secrets` |
 | Race condition em writes Firestore | Single-user; sem concorrência. Mas idempotência via `content_hash` |
@@ -92,5 +92,5 @@ Este documento deve ser revisado a cada mudança arquitetural significativa
 ## Referências
 
 - `SECURITY.md` — políticas operacionais
-- `CLAUDE.md` Seção 7 — princípios canônicos e padrões
+- `regras/60-backend.md` — princípios canônicos, camadas de sanitização e padrões
 - ADRs em `docs/adr/`

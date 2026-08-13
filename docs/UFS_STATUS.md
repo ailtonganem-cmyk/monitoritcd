@@ -68,7 +68,7 @@ Atualizar a cada PR que toca em `sources/{UF}/` ou em `config/active_states.defa
 
 ## Como ativar uma UF nova
 
-1. Verificar gate da Seção 6 do CLAUDE.md:
+1. Verificar os critérios de ativação em `regras/40-regras-negocio.md`:
    - YAML existe em `sources/{UF}/` para ≥ 2 fontes.
    - Cassette VCR em `tests/integration/test_sources_{UF}.py` passa.
    - 1 item real classificado em sandbox.

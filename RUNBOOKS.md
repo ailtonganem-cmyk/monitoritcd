@@ -127,7 +127,7 @@ python scripts/cleanup_retention.py --dry-run
 python scripts/cleanup_retention.py
 ```
 
-Política aplicada (CLAUDE.md):
+Política aplicada (`regras/40-regras-negocio.md` — regras seladas):
 - Documentos descartados (relevancia < 5): 90 dias.
 - Audit log: 1 ano.
 - Execuções: 6 meses.

@@ -6,7 +6,7 @@ Claude Code (única implementação) operando.
 
 ## Princípios canônicos
 
-Antes de qualquer alteração, leia [CLAUDE.md](../CLAUDE.md) seção 🛡️.
+Antes de qualquer alteração, leia [regras/60-backend.md](../regras/60-backend.md).
 Os 3 princípios são **inegociáveis**:
 
 1. 🔒 **Backend nunca confia em entrada externa** (incluindo bot do dono)

@@ -8,7 +8,8 @@ brasileiras em **3 áreas correlatas**:
 - **Regime de Bens** — Direito Civil (CC arts. 1.639-1.688).
 
 > 🟢 **MVP completo** — 10 fases concluídas. Veja [PLAN.md](PLAN.md) para o tracker
-> de fases e [CLAUDE.md](CLAUDE.md) para arquitetura, princípios canônicos e convenções.
+> de fases, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para a arquitetura e
+> [regras/](regras/) para as regras vinculantes de trabalho, negócio e segurança.
 
 ## Características
 
@@ -25,7 +26,7 @@ brasileiras em **3 áreas correlatas**:
 
 ## Princípios canônicos
 
-Três princípios inegociáveis (detalhados em [CLAUDE.md](CLAUDE.md#-princípios-canônicos-fontes-da-verdade)):
+Três princípios inegociáveis (detalhados em [regras/60-backend.md](regras/60-backend.md)):
 
 1. 🔒 **Nunca confiar no frontend** — backend valida tudo, sempre.
 2. 📏 **`input_limits` obrigatórios** — `MAX_LENGTH/ITEMS/DEPTH/BYTES/DURATION`.
@@ -164,7 +165,9 @@ Veja [docs/ufs/](docs/ufs/) para particularidades por UF (alíquotas, lei princi
 
 | Arquivo | Conteúdo |
 |---|---|
-| [CLAUDE.md](CLAUDE.md) | Arquitetura, princípios canônicos, convenções, threat model |
+| [regras/](regras/) | **Fonte da verdade das regras** — método, negócio, backend, testes, git, limites |
+| [CLAUDE.md](CLAUDE.md) / [AGENTS.md](AGENTS.md) | Hubs de índice lidos pelos agentes de IA (Claude Code / demais) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura em níveis C4 + diagramas do pipeline |
 | [PLAN.md](PLAN.md) | Plano de execução por fases (10 fases — todas concluídas no MVP) |
 | [SECURITY.md](SECURITY.md) | Threat model, ameaças mapeadas, resposta a incidente |
 | [RUNBOOKS.md](RUNBOOKS.md) | Procedimentos operacionais passo-a-passo |
