@@ -1,22 +1,42 @@
-# 20 — Orquestração e modelos por papel [determinação do dono 2026-08-13]
+# 20 — Orquestração e modelos por papel [dono 2026-08-14 — orquestrador fixo Gemini/Antigravity; papel Planejador criado]
 
-> Fonte da verdade de **quem pensa, quem codifica, com que modelo e esforço**.
-> A regra é escrita por **PAPEL**; a tabela de mapeamento nome↔papel é o único
-> lugar a atualizar quando um modelo novo é lançado.
+> Fonte da verdade de **quem gerencia, quem pensa, quem codifica, com que
+> modelo e esforço**. A regra é escrita por **PAPEL**; a tabela de mapeamento
+> nome↔papel é o único lugar a atualizar quando um modelo novo é lançado.
 
 ## Papéis
 
-### Orquestrador (modelo de pensamento)
+### Orquestrador — techlead (Gemini/Antigravity, fixo) [dono 2026-08-14]
 
-Responsável por **todo** o planejamento, revisão, validação e **supervisão** dos
-demais agentes: conduz P+R, escreve a SPEC de Execução, **lança os
-agentes/subagentes executores**, acompanha o estado compartilhado (`30`),
-valida com olhar independente e confirma. Também é o **único que usa git para
-escrever** e o único que cria/integra worktrees (`80`).
+**Gerência pura, sem produção de artefato técnico.** Função principal e
+prioritária: **gerenciar e distribuir as tarefas entre os demais agentes**.
+Recebe a demanda do dono, **verifica os limites de uso** dos agentes-alvo antes
+de cada despacho, cria a worktree e o ESTADO da tarefa, **despacha o
+planejador**, recebe de volta a SPEC com a classificação de complexidade,
+**dispara executores e críticos**, acompanha o estado compartilhado (`30`),
+integra (git — único que escreve e que cria/integra worktrees, `80`), confirma,
+reporta e puxa a próxima tarefa (Gauntlet Loop). **Proibido ao orquestrador:
+escrever SPEC, criar ou revisar código.** Ele confere que os gates rodaram e
+que a evidência foi reportada — o julgamento técnico é do planejador/crítico.
+
+- **Modelo:** Gemini, o mais forte disponível, no esforço mais alto disponível.
+- **Limites de uso:** agente-alvo sem quota → despachar ao equivalente do mesmo
+  papel no outro fornecedor; todos esgotados → registrar o bloqueio no ESTADO e
+  aguardar a janela.
+
+### Planejador / Crítico (modelo de pensamento)
+
+Concentra o trabalho técnico de pensamento, **por despacho do orquestrador**:
+conduz **P+R**, escreve a **SPEC de Execução** com **classificação de
+complexidade obrigatória** (trivial | média | grande) — que vincula a escolha
+do executor —, indica MCPs/CLIs e frentes, e **devolve ao orquestrador**. A
+**crítica/validação** (V do PREVC e crítico do Gauntlet) é exercida por
+**instância NOVA deste mesmo tier, com contexto limpo** — nunca quem
+implementou, nunca crítico que viu rascunho anterior.
 
 - **Modelo:** o **mais forte disponível** do fornecedor escolhido, em esforço
   **máximo ou extra alto (xhigh)**.
-- **Fornecedores habilitados como orquestrador:** Claude e ChatGPT.
+- **Fornecedores habilitados como planejador/crítico:** Claude e ChatGPT.
 
 ### Executor complexo
 
@@ -36,8 +56,9 @@ mecânica.
 
 | Papel | Fornecedor | Modelo | Esforço |
 | --- | --- | --- | --- |
-| Orquestrador | Claude | **Fable 5** (`fable`) quando disponível; fallback **Opus 5** (`opus`) | máximo / xhigh |
-| Orquestrador | ChatGPT | o mais forte disponível na conta | máximo / xhigh |
+| Orquestrador (techlead) | Google | **Gemini/Antigravity** (Gemini, o mais forte disponível) | o mais alto disponível |
+| Planejador/Crítico | Claude | **Fable 5** (`fable`) quando disponível; fallback **Opus 5** (`opus`) | máximo / xhigh |
+| Planejador/Crítico | ChatGPT | o mais forte disponível na conta | máximo / xhigh |
 | Executor complexo | Claude | família **Opus** (`model: opus`) | xhigh / high |
 | Executor complexo | ChatGPT | família de topo disponível | xhigh / high |
 | Executor simples | Claude | família **Sonnet** (`model: sonnet`) | high / xhigh / max |
@@ -48,8 +69,30 @@ mecânica.
 `haiku`. Nome de modelo de outro fornecedor é conferido no próprio fornecedor
 antes de ser escrito aqui — esta tabela não registra modelo não verificado.*
 
-*Fallback do orquestrador: indisponível o mais forte, cai para o intermediário
-do mesmo fornecedor. A disciplina de papéis não muda no fallback.*
+*Fallbacks e interinidade [dono 2026-08-14]: (a) **Gemini/Antigravity
+indisponível** → o planejador disponível (Fable 5 ou o mais forte do ChatGPT)
+**assume interinamente a orquestração** daquela tarefa, registrando no ESTADO e
+no relatório; o papel volta ao Gemini na tarefa seguinte. (b) Planejador de um
+fornecedor esgotado → o do outro assume. (c) Dentro de um papel, indisponível o
+mais forte → intermediário do mesmo fornecedor. (d) **Acesso direto do dono** a
+um agente que não o Gemini vale como delegação: o agente acionado orquestra
+aquela demanda interinamente, respeitando os papéis nos despachos. A disciplina
+de papéis não muda em nenhum fallback.*
+
+## Fluxo da tarefa (pipeline canônico) [dono 2026-08-14]
+
+1. Dono encaminha a demanda ao **orquestrador** (Gemini/Antigravity).
+2. Orquestrador **verifica limites de uso** e despacha a demanda ao
+   **planejador**.
+3. Planejador conduz P+R e devolve a **SPEC** com a classificação de
+   complexidade, MCPs e frentes.
+4. Orquestrador **dispara os executores** conforme a complexidade indicada e
+   acompanha pelo ESTADO (`30`).
+5. Concluída a execução, o orquestrador **dispara o crítico** (instância nova
+   do tier planejador, contexto limpo) — loop builder×crítico até a barra
+   (`10`, Gauntlet).
+6. Aprovado, o orquestrador **integra** (git/merge — `80`), confirma, reporta
+   ao dono e puxa a próxima tarefa da fila.
 
 ### Subagentes definidos neste repositório
 
@@ -63,9 +106,10 @@ do mesmo fornecedor. A disciplina de papéis não muda no fallback.*
 1. **Proibido despachar executor sem SPEC ratificada** referenciada no prompt
    (`10`). Executor que receber despacho sem SPEC, ou com seção material vazia,
    **devolve ao orquestrador** — não improvisa.
-2. **A escolha entre executor complexo e simples é do orquestrador**, caso a
-   caso. Na dúvida, suba para o complexo: o custo de um refactor malfeito supera
-   a diferença de modelo.
+2. **A complexidade vem da SPEC** (classificada pelo planejador); o
+   orquestrador escolhe o fornecedor conforme a tabela e os **limites de uso**.
+   Na dúvida, o planejador classifica para cima: o custo de um refactor
+   malfeito supera a diferença de modelo.
 3. Ao delegar codificação por ferramenta de subagente, passar o **modelo
    explicitamente** — agente lançado sem o parâmetro herda o modelo da sessão e
    viola esta regra.
@@ -81,11 +125,13 @@ do mesmo fornecedor. A disciplina de papéis não muda no fallback.*
    durante, relatório na volta. Integração, validação e git permanecem
    exclusivos do orquestrador.
 7. Paralelizar só quando houver ganho real; tarefa trivial não justifica agente.
-8. **MCPs indicados na SPEC** [dono 2026-08-13]: o orquestrador verifica na fase
-   P se há MCP aplicável e a SPEC indica os MCPs/CLIs a utilizar (`10`,
-   princípio 7). Executor que encontrar MCP indicado porém **não vinculado** ao
-   seu agente devolve o bloqueio ao orquestrador, que conduz a vinculação com o
-   dono (guiando o login; credenciais nunca passam pelo agente).
+8. **MCPs indicados na SPEC** [dono 2026-08-13; papel ajustado 2026-08-14]: o
+   **planejador** verifica na fase P se há MCP aplicável e a SPEC indica os
+   MCPs/CLIs a utilizar (`10`, princípio 7); o **orquestrador** confere a
+   vinculação e os limites antes do despacho. Executor que encontrar MCP
+   indicado porém **não vinculado** ao seu agente devolve o bloqueio ao
+   orquestrador, que conduz a vinculação com o dono (guiando o login;
+   credenciais nunca passam pelo agente).
 
 ## Limites que a orquestração não dissolve
 

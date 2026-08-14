@@ -32,9 +32,14 @@ tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
 **C**onfirmação (`regras/10-metodo-trabalho.md`).
 
-- **Se você planeja (orquestrador):** produza a **SPEC de Execução escrita**
-  antes de qualquer edição — em `specs/SPEC_<ID>_<slug>.md` para tarefa
-  média/grande — e só então despache, referenciando-a.
+- **Se você orquestra (Gemini/Antigravity — techlead):** gerencie e distribua —
+  verifique limites de uso, despache o planejador, dispare executores e
+  críticos conforme a SPEC, integre e reporte. **Não escreva SPEC, não crie nem
+  revise código** (`regras/20`).
+- **Se você planeja (planejador — por despacho do orquestrador):** produza a
+  **SPEC de Execução escrita** com a **complexidade classificada** antes de
+  qualquer edição — em `specs/SPEC_<ID>_<slug>.md` para tarefa média/grande — e
+  devolva ao orquestrador, que despacha os executores.
 - **Se você codifica (executor):** **sem SPEC, não comece** — despacho sem SPEC
   ou com seção material vazia é devolvido ao orquestrador. Implemente com
   fidelidade; ambiguidade → interpretação razoável + suposição registrada no
@@ -84,9 +89,10 @@ própria.
 
 ## MCPs e superfícies
 
-**Havendo possibilidade técnica, resolva a tarefa via MCP** — o orquestrador
-verifica e indica na SPEC qual utilizar (candidatos aqui: Firebase, Chrome
-DevTools). MCP indicado porém **não vinculado** ao seu agente → devolva o
+**Havendo possibilidade técnica, resolva a tarefa via MCP** — o **planejador**
+indica na SPEC qual utilizar (candidatos aqui: Firebase, Chrome DevTools); o
+**orquestrador** confere vinculação e limites antes do despacho. MCP indicado
+porém **não vinculado** ao seu agente → devolva o
 bloqueio ao orquestrador, que conduz a vinculação com o dono guiando o login
 (credenciais nunca passam pelo agente). Detalhe: `regras/10-metodo-trabalho.md`, princípio 7.
 

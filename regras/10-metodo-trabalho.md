@@ -33,6 +33,8 @@ codificação (regra de despacho no módulo `20`).
   Modelo pronto: `specs/_TEMPLATE_SPEC.md`.
 - **A SPEC é versionada no git** [decisão do dono 2026-08-13] e entra no commit
   da tarefa — é o registro durável do *porquê*, que o `git log` não captura.
+- A SPEC **classifica a complexidade** (trivial | média | grande) — campo
+  obrigatório que vincula a escolha do executor pelo orquestrador (`20`).
 - **Limite duro:** a SPEC não cria fato — nenhuma seção autoriza arbitrar dado
   normativo (`40`/`90`); diante de lacuna, aponta a fonte a consultar.
 
@@ -81,8 +83,8 @@ Shumer), aplicado em duas camadas:
    atravessa o PREVC completo e, confirmada, o orquestrador **reporta e inicia
    imediatamente a próxima**, na ordem da fila.
 2. **Dentro da tarefa — estrutura do E↔V:**
-   - o orquestrador decompõe o objetivo nas **menores partes julgáveis
-     separadamente**;
+   - o **planejador** decompõe o objetivo nas **menores partes julgáveis
+     separadamente** (o orquestrador despacha e acompanha — `20`);
    - cada parte tem um **builder** (executor) e um **crítico separado, com
      contexto limpo** — quem implementa **nunca** julga o próprio trabalho;
    - a **barra de qualidade é definida ANTES e é concreta**: critérios
@@ -114,7 +116,8 @@ e o loop **não dissolve** as NUNCAs nem a tabela perguntar × agir (`90`).
 7. **MCP primeiro, havendo possibilidade técnica** [dono 2026-08-13]: em toda
    tarefa, inventariar as CLIs/MCPs/superfícies aplicáveis; **existindo MCP
    tecnicamente capaz de resolver a tarefa, ele DEVE ser utilizado** — o
-   orquestrador verifica na fase P e **indica na SPEC qual MCP usar**. Se a
+   **planejador** verifica na fase P e **indica na SPEC qual MCP usar** (o
+   orquestrador confere vinculação e limites antes do despacho — `20`). Se a
    ferramenta MCP existir mas ainda não estiver **vinculada/autenticada**,
    **solicitar a vinculação ao dono, guiando-o passo a passo no login** — a
    autenticação é sempre dele (credenciais, códigos e tokens nunca passam pelo

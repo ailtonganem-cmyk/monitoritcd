@@ -47,9 +47,13 @@ de contexto limpo contra barra concreta; `regras/10`) [decisão do dono
 
 ## Orquestração de modelos (resumo)
 
-Pensar no papel **Orquestrador** (modelo mais forte disponível, esforço máximo);
-codificar por complexidade em **Executor complexo** (`opus`) e **Executor
-simples** (`sonnet`), sempre com `model` explícito e SPEC referenciada.
+**Orquestrador fixo = Gemini/Antigravity** (techlead — gerencia, distribui,
+supervisiona e controla limites de uso; não produz SPEC, código nem review).
+**Planejador/Crítico** (Fable 5 ou o mais forte do ChatGPT, máximo/xhigh)
+conduz P+R, escreve a SPEC com complexidade classificada e valida em instância
+de contexto limpo. Codificar por complexidade em **Executor complexo** (`opus`)
+e **Executor simples** (`sonnet`), sempre com `model` explícito e SPEC
+referenciada. Acesso direto do dono a um agente = orquestração interina.
 Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:
 `regras/30-memoria-compartilhada.md`.
 
