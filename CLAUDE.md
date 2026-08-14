@@ -36,13 +36,14 @@ média/grande tem SPEC versionada em `specs/`. V vermelho = tarefa não concluí
 até 3 rodadas E↔V, depois escalar ao dono.
 **Detalhe integral:** `regras/10-metodo-trabalho.md`.
 
-## Ritmo — autonomia dentro da tarefa, parada entre tarefas
+## Ritmo — autonomia dentro da tarefa, loop contínuo entre tarefas
 
 Conduzir a tarefa inteira sem interrupção (a regra de execução autônoma do
 projeto autoriza instalar, configurar, commitar, deployar e disparar workflow —
-`regras/00-identidade-projeto.md`). **Concluída a tarefa: reportar com evidência e aguardar
-determinação do dono.** Não há loop entre tarefas, não há wakeup reagendado, não
-se puxa o próximo item por conta própria [decisão do dono 2026-08-13].
+`regras/00-identidade-projeto.md`). **Concluída a tarefa: reportar com evidência
+e prosseguir imediatamente à próxima da fila — Gauntlet Loop** (builder×crítico
+de contexto limpo contra barra concreta; `regras/10`) [decisão do dono
+2026-08-14 — substitui a parada entre tarefas de 2026-08-13].
 
 ## Orquestração de modelos (resumo)
 

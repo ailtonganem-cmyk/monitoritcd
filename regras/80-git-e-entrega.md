@@ -91,5 +91,5 @@ módulo `regras/` correspondente (e, se crítica, resumir no hub).
 Concluir = **reportar ao dono com evidência verificável**: saída dos gates,
 SHA do commit, o que foi conferido empiricamente e o que ficou pendente.
 Critério de aceite: matriz de validação (`70`) + documentação durável vinculadas
-ao mesmo SHA. Depois de reportar, **aguardar determinação do dono** para a
-próxima tarefa (`10`) — não encadear por conta própria.
+ao mesmo SHA. Depois de reportar, **prosseguir imediatamente à próxima tarefa
+da fila — Gauntlet Loop** (`10`).

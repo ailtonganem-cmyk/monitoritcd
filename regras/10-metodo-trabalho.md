@@ -55,21 +55,46 @@ codificação (regra de despacho no módulo `20`).
 - **Grande (arquitetura, produção, segurança, dados):** PREVC formal; SPEC +
   ADR em `docs/adr/` quando a decisão for arquitetural; V reforçada.
 
-## Ritmo — autonomia dentro da tarefa, parada entre tarefas
+## Ritmo — autonomia dentro da tarefa, loop contínuo entre tarefas
 
-[decisão do dono 2026-08-13 — **supersede** o modo `/loop` autônomo contínuo]
+[decisão do dono 2026-08-14 — **Gauntlet Loop substitui** a "parada entre
+tarefas" de 2026-08-13]
 
 - **Autonomia vale DENTRO da tarefa:** conduzir sem interrupção até a conclusão
   (PREVC completo); não pausar por bloqueio percebido — fazer o preparatório
   possível e explicitar a pendência no chat. A "regra de execução autônoma" do
   projeto (`00`) opera aqui: instalar, configurar, commitar, deployar e disparar
   workflow são livres dentro da tarefa, com gates verdes.
-- **Entre tarefas NÃO há loop:** concluída a tarefa, **reportar com evidência e
-  aguardar** determinação expressa do dono. Encadear tarefas exige ordem
-  explícita — não reagendar wakeup nem puxar o próximo item por conta própria.
+- **Entre tarefas HÁ loop — Gauntlet Loop:** concluída e confirmada a tarefa,
+  **reportar com evidência e prosseguir imediatamente à próxima** na ordem da
+  fila, até esgotá-la ou haver ordem de parada. Ver "Gauntlet Loop" abaixo.
 - Questionamento técnico razoável sem resposta em **60 s** → considerar
   autorizado e prosseguir (anunciar). Não vale para itens da tabela
   perguntar × agir (`90`) nem para informação exclusiva do dono.
+
+## Gauntlet Loop — método do ritmo contínuo [dono 2026-08-14]
+
+Método de iteração multi-agente **builder × crítico** (popularizado por Matt
+Shumer), aplicado em duas camadas:
+
+1. **Entre tarefas — loop contínuo:** a fila é percorrida em loop; cada tarefa
+   atravessa o PREVC completo e, confirmada, o orquestrador **reporta e inicia
+   imediatamente a próxima**, na ordem da fila.
+2. **Dentro da tarefa — estrutura do E↔V:**
+   - o orquestrador decompõe o objetivo nas **menores partes julgáveis
+     separadamente**;
+   - cada parte tem um **builder** (executor) e um **crítico separado, com
+     contexto limpo** — quem implementa **nunca** julga o próprio trabalho;
+   - a **barra de qualidade é definida ANTES e é concreta**: critérios
+     objetivos + **exemplar de referência** comparado **lado a lado** com o
+     resultado — nunca "faça excelente";
+   - reprovado → o crítico aponta **o maior gap remanescente** e devolve ao
+     builder; **crítico que viu rascunho anterior não julga o retry** — crítico
+     de contexto novo a cada rodada;
+   - aprovado na barra → segue para a Confirmação do PREVC.
+
+O anti-loop do PREVC permanece (3 rodadas E↔V sem convergir → escalar ao dono)
+e o loop **não dissolve** as NUNCAs nem a tabela perguntar × agir (`90`).
 
 ## Princípios de trabalho
 
