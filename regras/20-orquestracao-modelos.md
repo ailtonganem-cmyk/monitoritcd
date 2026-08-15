@@ -20,10 +20,13 @@ escrever SPEC, criar ou revisar código.** Ele confere que os gates rodaram e
 que a evidência foi reportada — o julgamento técnico é do planejador/crítico.
 
 - **Modelo:** Codex/ChatGPT **GPT-5.6 Sol**, em **esforço máximo**.
-- **Limites de uso — tarefa permanente do orquestrador:** pensar sempre nos
-  limites disponíveis de cada agente; agente-alvo sem quota → despachar ao
-  substituto do mesmo papel; todos esgotados → registrar o bloqueio no ESTADO e
-  aguardar a janela.
+- **Escolhe a trilha da tarefa** (Direta | Padrão | Gauntlet — `10`) ao receber
+  a demanda, e a registra em uma linha no despacho.
+- **Limites de uso — orçamento por tarefa, não checagem por despacho** [v3]: ao
+  abrir a tarefa, o orquestrador fixa o modelo preferido e o substituto de cada
+  papel e **só reavalia se a quota estourar ou o agente falhar** — verificar
+  antes de cada despacho é atrito sem ganho. Todos esgotados → registrar o
+  bloqueio e aguardar a janela.
 
 ### Planejador / Crítico (modelo de pensamento)
 
@@ -82,7 +85,26 @@ orquestrador vale como delegação: o agente acionado orquestra aquela demanda
 interinamente, respeitando os papéis nos despachos. A disciplina de papéis não
 muda em nenhum fallback.*
 
-## Fluxo da tarefa (pipeline canônico) [dono 2026-08-14]
+## Fluxo da tarefa — por trilha [dono 2026-08-14 v3]
+
+A trilha (`10`) define quantos saltos a tarefa dá. **A separação de papéis é
+estrita em todas elas** — o orquestrador nunca planeja nem codifica; o que muda
+é quantos agentes a tarefa atravessa.
+
+### Trilha Direta (padrão — o volume do dia a dia): 4 etapas
+
+1. Dono encaminha a demanda ao **orquestrador**.
+2. Orquestrador classifica a trilha e despacha **UM único agente** com o pedido
+   e o **critério de aceite** — sem SPEC em arquivo.
+3. Esse agente conduz **P + E + V** da tarefa inteira e devolve o resultado com
+   a **saída literal dos gates**.
+4. Orquestrador confere a evidência, **integra** (`80`), reporta e puxa a
+   próxima tarefa.
+
+*Sem cadeia planejador→executor→crítico: ela existe para isolar contexto e dar
+perspectiva fresca — numa mudança local não há o que isolar.*
+
+### Trilhas Padrão e Gauntlet (pipeline completo)
 
 1. Dono encaminha a demanda ao **orquestrador** (Codex — GPT-5.6 Sol, esforço
    máximo).

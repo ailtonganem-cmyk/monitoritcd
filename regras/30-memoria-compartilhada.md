@@ -8,7 +8,9 @@
 
 ## O arquivo de estado
 
-Para cada tarefa média ou grande, o **orquestrador cria**, junto com a SPEC:
+**Só quando há 2+ agentes na tarefa** (`10`) — tarefa de agente único não precisa
+de quadro-branco compartilhado: o relatório final é o registro. Nesses casos, o
+**orquestrador cria**, junto com a SPEC:
 
 ```
 _trabalho/ESTADO_<id-da-tarefa>.md

@@ -58,13 +58,17 @@ referenciada. Acesso direto do dono a um agente = orquestração interina.
 Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:
 `regras/30-memoria-compartilhada.md`.
 
-## Worktree por tarefa (resumo)
+## Trilhas e worktree (resumo)
 
-**Toda tarefa — inclusive trivial — é realizada em worktree git própria**
-(`../MonitorITCD-worktrees/<id>`), criada e integrada pelo orquestrador; a
-árvore principal nunca recebe edição direta. Worktree não herda `.venv` nem
-gitignorados — recriar o venv e copiar o que está em `.worktreeinclude`.
-Fluxo completo: `regras/80-git-e-entrega.md`.
+**A formalidade escala com o risco** [v3]: trilha **Direta** (padrão — um agente
+conduz P+E+V, validação por gates, sem SPEC em arquivo nem crítico separado) ·
+**Padrão** (SPEC-lite + crítico na entrega) · **Gauntlet** (pipeline completo).
+**Worktree por risco** (`../MonitorITCD-worktrees/<id>`) — paralelismo, refactor
+amplo, experimento ou trilha Gauntlet —, reutilizada de um **pool pré-aquecido**
+com `.venv` já criado; tarefa sequencial de um agente vai em branch curto.
+Worktree nova não herda `.venv` nem gitignorados — recriar o venv e copiar o que
+está em `.worktreeinclude`. Detalhes: `regras/10-metodo-trabalho.md` e
+`regras/80-git-e-entrega.md`.
 
 ## §4.5 — NUNCAs (resumo inegociável)
 

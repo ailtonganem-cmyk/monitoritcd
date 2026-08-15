@@ -30,7 +30,12 @@ tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 ## Método — PREVC e SPEC de Execução
 
 Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
-**C**onfirmação (`regras/10-metodo-trabalho.md`).
+**C**onfirmação (`regras/10-metodo-trabalho.md`). **A formalidade escala com a
+trilha** [v3]: **Direta** (padrão — um único agente conduz P+E+V, validação por
+gates objetivos, sem SPEC em arquivo nem crítico separado) · **Padrão**
+(SPEC-lite de 5 campos + crítico separado na entrega) · **Gauntlet** (pipeline
+completo, alto risco e acabamento). Quem encontrar risco não previsto **sobe a
+tarefa de trilha** e registra o motivo.
 
 - **Se você orquestra (Codex — GPT-5.6 Sol, esforço máximo — techlead):**
   gerencie e distribua — pense sempre nos limites de uso de cada agente,

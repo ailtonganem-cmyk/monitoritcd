@@ -2,13 +2,31 @@
 
 > Fonte da verdade de **como o trabalho vira commit, entrega e registro**.
 
-## Worktree por tarefa — obrigatória, sem exceção [determinação do dono 2026-08-13]
+## Worktree — por risco, com pool pré-aquecido [dono 2026-08-14 v3 — substitui a obrigatoriedade sem exceção de 2026-08-13]
 
-**Toda tarefa — independente do porte, inclusive trivial — é realizada em
-worktree git própria.** A árvore principal (`C:\Projetos\MonitorITCD`) nunca
-recebe edição direta de tarefa.
+> **Por que mudou:** worktree nova a cada tarefa exige recriar o `.venv` antes
+> do primeiro commit — minutos de espera para mudar uma mensagem. O isolamento
+> fica onde protege; o pedágio sai de onde não protegia nada.
 
-Fluxo canônico, todo ele executado pelo **orquestrador**:
+**Worktree obrigatória quando:** há **paralelismo real** (2+ agentes editando ao
+mesmo tempo); **refactor amplo** ou mudança multi-arquivo com risco de
+regressão; **experimento descartável**; ou a tarefa é de trilha **Gauntlet**
+(`10`).
+
+**Dispensada quando:** tarefa **sequencial, de um único agente e baixo risco**
+(trilha Direta) — trabalha-se em **branch curto** na árvore principal, com
+commit atômico e merge imediato. A árvore principal nunca fica com trabalho
+pendente entre tarefas.
+
+**Pool pré-aquecido:** as worktrees de `../MonitorITCD-worktrees/` são
+**reutilizáveis** — mantenha 2–3 permanentes (`w1`, `w2`, `w3`) com `.venv`
+próprio já criado. Para usar: `git checkout -B tarefa/<id>` a partir do `main`
+atualizado; reinstalar dependências **só quando o `requirements` mudou**; ao
+concluir, devolver ao `main` e **não remover** a worktree. **Nunca symlinkar
+`.venv`** entre worktrees.
+
+Fluxo canônico **quando a worktree é criada do zero**, executado pelo
+**orquestrador**:
 
 1. **Criar**, a partir do `main` atualizado:
    ```bash

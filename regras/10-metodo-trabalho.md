@@ -3,10 +3,37 @@
 > Fonte da verdade do **como se trabalha**. Vale para todo agente, de qualquer
 > fornecedor.
 
+## Trilhas de trabalho — o esforço é proporcional ao risco [dono 2026-08-14 v3]
+
+> **Correção de rumo:** exigir o pipeline completo em toda tarefa trava o
+> processo. A régua é **risco × reversibilidade**, não formalidade uniforme.
+> Fundamento: a própria Anthropic documenta a cadeia
+> `planejador → executor → testador` como anti-padrão ("telefone sem fio") fora
+> dos casos em que isolamento de contexto, paralelismo ou perspectiva fresca
+> realmente compensam.
+
+| Trilha | Quando | Como roda |
+| --- | --- | --- |
+| **Direta** (**padrão**) | Mudança local, texto/mensagem, ajuste de YAML de fonte, doc, poda mecânica, bugfix pequeno com teste | O orquestrador despacha **UM único agente**, que conduz **P + E + V da tarefa inteira** — sem subdividir em planejador/executor/crítico. Validação = **gates objetivos + evidência**. Sem SPEC em arquivo, sem crítico separado. |
+| **Padrão** | Feature pequena/média, refactor localizado, decisão técnica reversível | P+R pelo planejador (**SPEC-lite**, 5 campos), execução por executor, **crítico separado na entrega**. |
+| **Gauntlet** | Alto risco: arquitetura, segurança, regra de negócio crítica (`40`), parser novo de fonte, dado de produção | Pipeline completo — decomposição em partes julgáveis, **builder × crítico de contexto limpo** por parte, barra concreta com exemplar, SPEC formal, worktree. |
+
+- **Quem escolhe:** o orquestrador, ao receber a demanda; o dono pode fixar a
+  trilha a qualquer momento.
+- **Subir de trilha é livre e esperado:** qualquer agente que encontre risco não
+  previsto **para e sobe a tarefa de trilha**, registrando o motivo. **Descer de
+  trilha exige ordem do dono.**
+- **Limiar de fan-out:** só vale dividir entre agentes quando há **3+ frentes
+  independentes** de porte relevante. Abaixo disso, um agente só é mais rápido
+  fim a fim — cada handoff custa contexto duplicado e perda de sinal.
+- **Lote de triviais:** tarefas triviais correlatas podem ser agrupadas em **um
+  único lote** que percorre o ciclo uma vez, com evidência por item.
+
 ## Ciclo obrigatório — PREVC
 
 Toda tarefa passa por **P**lanejamento → **R**evisão do plano → **E**xecução →
-**V**alidação → **C**onfirmação, em dois blocos:
+**V**alidação → **C**onfirmação, em dois blocos. **O ciclo é universal; o que
+escala com a trilha é a formalidade de cada etapa.**
 
 ### Bloco 1 — Especificação (P + R), ANTES de tocar em código
 
@@ -23,9 +50,13 @@ métodos e melhores práticas do caso concreto são registrados por escrito ANTE
 de qualquer edição. A SPEC é a **única entrada autorizada** de um agente de
 codificação (regra de despacho no módulo `20`).
 
-- Tarefa **trivial** (1 linha, typo) → SPEC condensada no próprio despacho, sem
-  arquivo, mas com escopo, arquivo alvo, critério de aceite e comando de validação.
-- Tarefa **média ou grande** → arquivo `specs/SPEC_<ID>_<slug>.md` com as seções:
+- Trilha **Direta** → **sem SPEC**: o pedido + o critério de aceite em uma linha
+  bastam. Gatilho: *escreva a SPEC se você ficaria insatisfeito com o agente
+  interpretando o pedido de outro jeito; se um follow-up rápido corrigiria o
+  resultado, não escreva.*
+- Trilha **Padrão** → **SPEC-lite** no próprio despacho, **5 campos**: objetivo ·
+  arquivos · critério de aceite · plano de validação · riscos e limites.
+- Trilha **Gauntlet** → arquivo `specs/SPEC_<ID>_<slug>.md` com as seções:
   identificação · problema e objetivo · escopo (dentro/fora) · mapa de arquivos ·
   system design · decisões e alternativas descartadas · métodos e melhores
   práticas obrigatórias · plano de execução · riscos e armadilhas · critério de
@@ -50,12 +81,14 @@ codificação (regra de despacho no módulo `20`).
 5. **C — Confirmação:** só com V plenamente verde. Deploy quando aplicável +
    smoke + evidência anexada + persistir só o durável (`80`).
 
-## Escala por risco/tamanho (GSD — anti-over-engineering)
+## Escala por risco/tamanho (GSD) — equivale às trilhas
 
-- **Trivial:** P+R condensados (auto-revisão dupla); SPEC no despacho; V mínimo.
-- **Média (5–10 arquivos):** PREVC pleno; SPEC em arquivo; olhar independente na V.
-- **Grande (arquitetura, produção, segurança, dados):** PREVC formal; SPEC +
-  ADR em `docs/adr/` quando a decisão for arquitetural; V reforçada.
+- **Trivial → trilha Direta:** um agente conduz P+E+V; validação por gate focal
+  do que foi tocado + evidência; sem SPEC em arquivo, sem crítico separado.
+- **Média (5–10 arquivos) → trilha Padrão:** SPEC-lite; crítico separado na
+  entrega; olhar independente na V.
+- **Grande (arquitetura, produção, segurança, dados) → trilha Gauntlet:** SPEC
+  formal + ADR em `docs/adr/` quando a decisão for arquitetural; V reforçada.
 
 ## Ritmo — autonomia dentro da tarefa, loop contínuo entre tarefas
 
@@ -94,6 +127,22 @@ Shumer), aplicado em duas camadas:
      builder; **crítico que viu rascunho anterior não julga o retry** — crítico
      de contexto novo a cada rodada;
    - aprovado na barra → segue para a Confirmação do PREVC.
+
+### Quando o loop builder × crítico vale a pena [v3]
+
+- **A camada 1 (loop entre tarefas) vale em TODAS as trilhas; a camada 2
+  (builder × crítico) é da trilha Gauntlet** — opcional na Padrão, dispensada na
+  Direta.
+- **Gauntlet é segunda passada, não primeiro rascunho** — assim é no método
+  original: a primeira versão sai pela trilha Direta ou Padrão e o loop entra
+  para **afinar** contra a referência concreta. Usá-lo para produzir rascunho é
+  o uso mais caro e menos eficaz da técnica.
+- **Crítico dosado:** obrigatório onde o julgamento é **subjetivo** (UI,
+  microcopy, arquitetura, regra de negócio); onde a evidência é **objetiva**
+  (tipos, lint, testes, build, smoke), o **gate verde com saída literal É a
+  validação** — crítico adicional ali é cerimônia sem ganho.
+- **Stopping condition definida ANTES do run:** máximo de **3 rodadas** E↔V e,
+  em execuções longas, também um teto de tempo.
 
 O anti-loop do PREVC permanece (3 rodadas E↔V sem convergir → escalar ao dono)
 e o loop **não dissolve** as NUNCAs nem a tabela perguntar × agir (`90`).
