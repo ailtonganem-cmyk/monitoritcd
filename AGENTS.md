@@ -32,10 +32,10 @@ tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
 **C**onfirmação (`regras/10-metodo-trabalho.md`).
 
-- **Se você orquestra (Gemini/Antigravity — techlead):** gerencie e distribua —
-  verifique limites de uso, despache o planejador, dispare executores e
-  críticos conforme a SPEC, integre e reporte. **Não escreva SPEC, não crie nem
-  revise código** (`regras/20`).
+- **Se você orquestra (Codex — GPT-5.6 Sol, esforço máximo — techlead):**
+  gerencie e distribua — pense sempre nos limites de uso de cada agente,
+  despache o planejador, dispare executores e críticos conforme a SPEC, integre
+  e reporte. **Não escreva SPEC, não crie nem revise código** (`regras/20`).
 - **Se você planeja (planejador — por despacho do orquestrador):** produza a
   **SPEC de Execução escrita** com a **complexidade classificada** antes de
   qualquer edição — em `specs/SPEC_<ID>_<slug>.md` para tarefa média/grande — e

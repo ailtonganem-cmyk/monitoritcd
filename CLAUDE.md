@@ -47,11 +47,12 @@ de contexto limpo contra barra concreta; `regras/10`) [decisão do dono
 
 ## Orquestração de modelos (resumo)
 
-**Orquestrador fixo = Gemini/Antigravity** (techlead — gerencia, distribui,
-supervisiona e controla limites de uso; não produz SPEC, código nem review).
-**Planejador/Crítico** (Fable 5 ou o mais forte do ChatGPT, máximo/xhigh)
-conduz P+R, escreve a SPEC com complexidade classificada e valida em instância
-de contexto limpo. Codificar por complexidade em **Executor complexo** (`opus`)
+**Orquestrador fixo = Codex, GPT-5.6 Sol, esforço máximo** (techlead —
+gerencia, distribui, supervisiona e pensa permanentemente nos limites de uso de
+cada agente; não produz SPEC, código nem review; Sol indisponível → Fable 5
+orquestra interinamente). **Planejador/Crítico = Fable 5** (máximo/xhigh;
+fallback Opus 5 ou o próprio Sol) conduz P+R, escreve a SPEC com complexidade
+classificada e valida em instância de contexto limpo. Codificar por complexidade em **Executor complexo** (`opus`)
 e **Executor simples** (`sonnet`), sempre com `model` explícito e SPEC
 referenciada. Acesso direto do dono a um agente = orquestração interina.
 Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:

@@ -1,4 +1,4 @@
-# 20 — Orquestração e modelos por papel [dono 2026-08-14 — orquestrador fixo Gemini/Antigravity; papel Planejador criado]
+# 20 — Orquestração e modelos por papel [dono 2026-08-14 v2 — orquestrador fixo Codex Sol; planejador Fable 5; PREVALECE sobre disposições locais]
 
 > Fonte da verdade de **quem gerencia, quem pensa, quem codifica, com que
 > modelo e esforço**. A regra é escrita por **PAPEL**; a tabela de mapeamento
@@ -6,7 +6,7 @@
 
 ## Papéis
 
-### Orquestrador — techlead (Gemini/Antigravity, fixo) [dono 2026-08-14]
+### Orquestrador — techlead (Codex — GPT-5.6 Sol, fixo) [dono 2026-08-14 v2]
 
 **Gerência pura, sem produção de artefato técnico.** Função principal e
 prioritária: **gerenciar e distribuir as tarefas entre os demais agentes**.
@@ -19,9 +19,10 @@ reporta e puxa a próxima tarefa (Gauntlet Loop). **Proibido ao orquestrador:
 escrever SPEC, criar ou revisar código.** Ele confere que os gates rodaram e
 que a evidência foi reportada — o julgamento técnico é do planejador/crítico.
 
-- **Modelo:** Gemini, o mais forte disponível, no esforço mais alto disponível.
-- **Limites de uso:** agente-alvo sem quota → despachar ao equivalente do mesmo
-  papel no outro fornecedor; todos esgotados → registrar o bloqueio no ESTADO e
+- **Modelo:** Codex/ChatGPT **GPT-5.6 Sol**, em **esforço máximo**.
+- **Limites de uso — tarefa permanente do orquestrador:** pensar sempre nos
+  limites disponíveis de cada agente; agente-alvo sem quota → despachar ao
+  substituto do mesmo papel; todos esgotados → registrar o bloqueio no ESTADO e
   aguardar a janela.
 
 ### Planejador / Crítico (modelo de pensamento)
@@ -34,9 +35,10 @@ do executor —, indica MCPs/CLIs e frentes, e **devolve ao orquestrador**. A
 **instância NOVA deste mesmo tier, com contexto limpo** — nunca quem
 implementou, nunca crítico que viu rascunho anterior.
 
-- **Modelo:** o **mais forte disponível** do fornecedor escolhido, em esforço
-  **máximo ou extra alto (xhigh)**.
-- **Fornecedores habilitados como planejador/crítico:** Claude e ChatGPT.
+- **Modelo:** Claude **Fable 5** (o mais forte disponível), esforço **máximo
+  ou extra alto (xhigh)**.
+- **Fallback do planejador:** Fable 5 indisponível → **Opus 5** ou o próprio
+  **Codex Sol**, à escolha do orquestrador conforme os limites disponíveis.
 
 ### Executor complexo
 
@@ -56,32 +58,34 @@ mecânica.
 
 | Papel | Fornecedor | Modelo | Esforço |
 | --- | --- | --- | --- |
-| Orquestrador (techlead) | Google | **Gemini/Antigravity** (Gemini, o mais forte disponível) | o mais alto disponível |
-| Planejador/Crítico | Claude | **Fable 5** (`fable`) quando disponível; fallback **Opus 5** (`opus`) | máximo / xhigh |
-| Planejador/Crítico | ChatGPT | o mais forte disponível na conta | máximo / xhigh |
+| Orquestrador (techlead) | Codex/ChatGPT | **GPT-5.6 Sol** (fixo) | **máximo** |
+| Planejador/Crítico | Claude | **Fable 5** (`fable`) quando disponível | máximo / xhigh |
+| Planejador/Crítico (fallback) | Claude / Codex | **Opus 5** (`opus`) ou **GPT-5.6 Sol** — só se Fable 5 indisponível | máximo / xhigh |
 | Executor complexo | Claude | família **Opus** (`model: opus`) | xhigh / high |
 | Executor complexo | ChatGPT | família de topo disponível | xhigh / high |
 | Executor simples | Claude | família **Sonnet** (`model: sonnet`) | high / xhigh / max |
 | Executor simples | ChatGPT | família intermediária/rápida | max |
-| Executor simples | Grok / Gemini / opencode | o mais forte disponível | o mais alto disponível |
+| Executor simples | Grok / Gemini / opencode | o mais forte disponível (opencode: **disponível para codificação** — modelo decidido pelo orquestrador conforme a tarefa) | o mais alto disponível |
 
 *Valores de `model` aceitos pela CLI do Claude Code: `fable`, `opus`, `sonnet`,
 `haiku`. Nome de modelo de outro fornecedor é conferido no próprio fornecedor
 antes de ser escrito aqui — esta tabela não registra modelo não verificado.*
 
-*Fallbacks e interinidade [dono 2026-08-14]: (a) **Gemini/Antigravity
-indisponível** → o planejador disponível (Fable 5 ou o mais forte do ChatGPT)
-**assume interinamente a orquestração** daquela tarefa, registrando no ESTADO e
-no relatório; o papel volta ao Gemini na tarefa seguinte. (b) Planejador de um
-fornecedor esgotado → o do outro assume. (c) Dentro de um papel, indisponível o
-mais forte → intermediário do mesmo fornecedor. (d) **Acesso direto do dono** a
-um agente que não o Gemini vale como delegação: o agente acionado orquestra
-aquela demanda interinamente, respeitando os papéis nos despachos. A disciplina
-de papéis não muda em nenhum fallback.*
+*Fallbacks e interinidade [dono 2026-08-14 v2]: (a) **Orquestrador (Codex Sol)
+indisponível** → o **Fable 5 assume interinamente a orquestração** daquela
+tarefa, registrando no ESTADO e no relatório; o papel volta ao Codex Sol na
+tarefa seguinte. (b) **Planejador (Fable 5) indisponível** → **Opus 5** ou o
+próprio **Codex Sol** assume o planejamento, à escolha do orquestrador conforme
+os limites. (c) Dentro de um papel, indisponível o mais forte → intermediário
+do mesmo fornecedor. (d) **Acesso direto do dono** a um agente que não o
+orquestrador vale como delegação: o agente acionado orquestra aquela demanda
+interinamente, respeitando os papéis nos despachos. A disciplina de papéis não
+muda em nenhum fallback.*
 
 ## Fluxo da tarefa (pipeline canônico) [dono 2026-08-14]
 
-1. Dono encaminha a demanda ao **orquestrador** (Gemini/Antigravity).
+1. Dono encaminha a demanda ao **orquestrador** (Codex — GPT-5.6 Sol, esforço
+   máximo).
 2. Orquestrador **verifica limites de uso** e despacha a demanda ao
    **planejador**.
 3. Planejador conduz P+R e devolve a **SPEC** com a classificação de
