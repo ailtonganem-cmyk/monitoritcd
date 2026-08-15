@@ -22,11 +22,14 @@ que a evidência foi reportada — o julgamento técnico é do planejador/críti
 - **Modelo:** Codex/ChatGPT **GPT-5.6 Sol**, em **esforço máximo**.
 - **Escolhe a trilha da tarefa** (Direta | Padrão | Gauntlet — `10`) ao receber
   a demanda, e a registra em uma linha no despacho.
-- **Limites de uso — orçamento por tarefa, não checagem por despacho** [v3]: ao
-  abrir a tarefa, o orquestrador fixa o modelo preferido e o substituto de cada
-  papel e **só reavalia se a quota estourar ou o agente falhar** — verificar
-  antes de cada despacho é atrito sem ganho. Todos esgotados → registrar o
-  bloqueio e aguardar a janela.
+- **Opera pela camada nativa do harness** (`25`): `run-create` → `task-create`
+  (DAG) → `worker-start --agent --model --effort` → `check --wait` → gates →
+  integração. Protocolo manual só para agente fora do harness.
+- **Limites de uso — leitura no início da tarefa/ciclo** [v4]: consultar o
+  medidor (`orca account list --json`) e aplicar o **roteamento por limiar**
+  (`25`) — titular com uso semanal ≥ 85% cede ao substituto; ≥ 95% só com ordem
+  do dono. **Não** reconsultar a cada despacho. O **roteamento efetivo** entra no
+  relatório.
 
 ### Planejador / Crítico (modelo de pensamento)
 
@@ -42,6 +45,19 @@ implementou, nunca crítico que viu rascunho anterior.
   ou extra alto (xhigh)**.
 - **Fallback do planejador:** Fable 5 indisponível → **Opus 5** ou o próprio
   **Codex Sol**, à escolha do orquestrador conforme os limites disponíveis.
+
+### Revisor do plano (R) [papel próprio desde v4]
+
+Ataca o plano **antes** da execução: furos, riscos, conflito com `90`/`40`,
+alternativa melhor. **Cruzamento:** de fornecedor diferente do planejador sempre
+que houver disponibilidade. Ratifica a SPEC ou devolve com o motivo.
+
+### Validador (V) [papel próprio desde v4]
+
+Roda a matriz de validação (`70`) e emite o veredito **contra o critério de
+aceite**, em **instância nova de contexto limpo** — nunca quem implementou;
+**cruzado** com o executor. Evidência objetiva com saída literal **é** o
+veredito; julgamento subjetivo vai contra a barra concreta.
 
 ### Executor complexo
 
@@ -61,9 +77,10 @@ mecânica.
 
 | Papel | Fornecedor | Modelo | Esforço |
 | --- | --- | --- | --- |
-| Orquestrador (techlead) | Codex/ChatGPT | **GPT-5.6 Sol** (fixo) | **máximo** |
-| Planejador/Crítico | Claude | **Fable 5** (`fable`) quando disponível | máximo / xhigh |
-| Planejador/Crítico (fallback) | Claude / Codex | **Opus 5** (`opus`) ou **GPT-5.6 Sol** — só se Fable 5 indisponível | máximo / xhigh |
+| **Orquestrador** | Codex/ChatGPT | **GPT-5.6 Sol** · subst.: Fable 5 → Opus 5 | **máximo** |
+| **Planejador (P)** | Claude | **Fable 5** (`fable`) · subst.: Opus 5 (`opus`) → Codex Sol | máximo / xhigh |
+| **Revisor do plano (R)** | Codex / Gemini | **GPT-5.6 Sol** (cruzado com o planejador) · subst.: Gemini 3 Pro → Opus 5 | xhigh |
+| **Validador (V)** | Claude / Gemini | **Opus 5** em contexto limpo (cruzado com o executor) · subst.: Gemini 3 Pro → Codex Sol | xhigh / máximo |
 | Executor complexo | Claude | família **Opus** (`model: opus`) | xhigh / high |
 | Executor complexo | ChatGPT | família de topo disponível | xhigh / high |
 | Executor simples | Claude | família **Sonnet** (`model: sonnet`) | high / xhigh / max |

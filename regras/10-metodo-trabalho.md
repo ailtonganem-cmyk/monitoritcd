@@ -128,6 +128,24 @@ Shumer), aplicado em duas camadas:
      de contexto novo a cada rodada;
    - aprovado na barra → segue para a Confirmação do PREVC.
 
+### 3. Camada de FILA — ciclo da tasklist com barra mínima [v4]
+
+**A tasklist inteira roda em ciclos** até atingir um mínimo aceitável declarado.
+
+1. **Abrir o ciclo** (`run-create`, `25`) declarando **objetivo** e **barra
+   mínima** verificável: 100% dos gates verdes (`70`) com saída literal · zero
+   regressão · zero item crítico aberto entre os do ciclo · doc durável
+   atualizada (`80`) · evidência do roteamento de papéis (`25`).
+2. **Decompor a fila em tasks com dependências** (`task-create --deps`).
+3. **Rodar a rodada:** independentes em paralelo, espera por evento, validação
+   item a item por validador de contexto limpo.
+4. **Gate de fila** (`gate-create`/`gate-resolve`): atingiu → fecha; não atingiu
+   → o validador nomeia **o maior gap remanescente**, que vira a rodada seguinte
+   — **validador novo** a cada rodada.
+5. **Anti-loop:** 3 rodadas sem convergir → escalar ao dono com o gap nomeado.
+
+**A barra é declarada ANTES da primeira rodada.**
+
 ### Quando o loop builder × crítico vale a pena [v3]
 
 - **A camada 1 (loop entre tarefas) vale em TODAS as trilhas; a camada 2

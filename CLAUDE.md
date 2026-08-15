@@ -98,6 +98,7 @@ Tabela completa: `regras/90-seguranca-limites.md`.
 | Identidade, pessoas, IDs, stack, execução autônoma | `regras/00-identidade-projeto.md` |
 | Método de trabalho (PREVC, SPEC, verificação, GSD) | `regras/10-metodo-trabalho.md` |
 | Orquestração e modelos por papel | `regras/20-orquestracao-modelos.md` |
+| **Harness: comandos, DAG, gates, limites de uso** | `regras/25-harness-orca.md` |
 | Memória compartilhada entre agentes | `regras/30-memoria-compartilhada.md` |
 | Regras de negócio: domínio, fatos protegidos, LLM, UFs | `regras/40-regras-negocio.md` |
 | Saídas: e-mail, Telegram, bot | `regras/50-saidas-notificacoes.md` |
