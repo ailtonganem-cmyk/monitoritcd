@@ -80,6 +80,6 @@ Inventar fato normativo (`40`) · alterar `original` · secret em arquivo
 versionado · `except: pass` · defensive coding em código interno · feature
 flag/shim quando dá para simplesmente mudar o código · comentário WHAT ou
 docstring multi-parágrafo (`10`) · corrigir silenciosamente código não
-relacionado · despachar executor sem SPEC (`20`) · editar a árvore principal em
-concluir com gate vermelho (`70`) · encadear a próxima
+relacionado · despachar executor sem SPEC (`20`) · commitar com `git add .` em
+árvore com outra frente (`80`) · concluir com gate vermelho (`70`) · encadear a próxima
 tarefa sem ordem do dono (`10`).

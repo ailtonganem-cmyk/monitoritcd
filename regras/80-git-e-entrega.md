@@ -2,16 +2,25 @@
 
 > Fonte da verdade de **como o trabalho vira commit, entrega e registro**.
 
-## Onde o trabalho roda — no branch principal [2026-08-16 v6]
+## Onde o trabalho roda — na branch principal [16/08/2026]
 
-**Tudo acontece no branch principal do repositório.** Sem worktree, sem branch
-por tarefa, sem checkout paralelo — a determinação anterior de worktree está
-**revogada**.
+O trabalho é feito **direto em `main`**, na árvore principal
+(`C:\Projetos\MonitorITCD`). Não há worktree nem branch por tarefa.
 
-Na prática: o orquestrador commita direto no branch principal, sempre com
-**pathspecs específicos** (nunca `git add .`); mudanças de outra frente que
-estejam na árvore **não são tocadas**; e trabalho não commitado de terceiro
-nunca é limpo, sobrescrito ou revertido.
+O que substitui o isolamento por sistema de arquivos:
+
+- **Commit com pathspecs específicos**, sempre — nunca `git add .`. A árvore
+  tem trabalho de outras frentes, e ele não se toca.
+- **Arquivo alterado que você não editou é de outro agente**: não reverta, não
+  "conserte", registre uma linha no ESTADO (`30`).
+- **Gates (`70`) rodam na árvore principal**, no `.venv` dela — o pacote é
+  instalado em modo editável e resolve para o `src/` de onde foi instalado
+  (`70`).
+
+> **Estado atual do working tree principal:** há ~275 arquivos marcados como
+> modificados que são apenas conversão CRLF↔LF
+> (`git diff --ignore-cr-at-eol --stat` volta vazio). Não misturar esse ruído em
+> commit de tarefa — mais um motivo para commitar sempre por pathspecs.
 
 ## Git — exclusivo do coordenador
 
@@ -62,5 +71,5 @@ módulo `regras/` correspondente (e, se crítica, resumir no hub).
 Concluir = **reportar ao dono com evidência verificável**: saída dos gates,
 SHA do commit, o que foi conferido empiricamente e o que ficou pendente.
 Critério de aceite: matriz de validação (`70`) + documentação durável vinculadas
-ao mesmo SHA. Depois de reportar, **prosseguir imediatamente à próxima tarefa
-da fila — Gauntlet Loop** (`10`).
+ao mesmo SHA. Depois de reportar, **aguardar determinação do dono** para a
+próxima tarefa (`10`) — não encadear por conta própria.

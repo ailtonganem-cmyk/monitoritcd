@@ -1,75 +1,114 @@
-# 20 — Papéis e agentes [dono 2026-08-16 v6]
+# 20 — Orquestração e modelos por papel [determinação do dono 2026-08-13]
 
-> Fonte da verdade de **quem faz o quê e com qual agente**. Três papéis apenas —
-> orquestrador, executor, revisor (`10`). Esta versão **substitui integralmente**
-> as tabelas e ritos anteriores (cinco papéis, titulares/substitutos cruzados,
-> roteamento por limiar, colegiados, rito 2+1, despacho por SPEC formal).
+> Fonte da verdade de **quem pensa, quem codifica, com que modelo e esforço**.
+> A regra é escrita por **PAPEL**; a tabela de mapeamento nome↔papel é o único
+> lugar a atualizar quando um modelo novo é lançado.
 
-## Orquestrador
+## Papéis
 
-**Pensamento, planejamento e gerência.** Entende o problema, escreve o **plano
-de trabalho** com a spec e o **nível da tarefa**, **escolhe executor e revisor**
-e o **esforço** de cada um, despacha, acompanha, integra no branch principal,
-reporta e segue para a próxima tarefa.
+### Orquestrador (modelo de pensamento)
 
-- É o **único que usa git para escrever** (commit, merge).
-- Não codifica: fechado o plano, delega. Exceção: autorização expressa do
-  dono ou tarefa de documentação/regra que ele mesmo conduz.
+Responsável por **todo** o planejamento, revisão, validação e **supervisão** dos
+demais agentes: conduz P+R, escreve a SPEC de Execução, **lança os
+agentes/subagentes executores**, acompanha o estado compartilhado (`30`),
+valida com olhar independente e confirma. Também é o **único que usa git para
+escrever** e o único que integra o trabalho (`80`).
 
-## Executor — escolhido pelo nível e pela qualificação
+- **Modelo:** o **mais forte disponível** do fornecedor escolhido, em esforço
+  **máximo ou extra alto (xhigh)**.
+- **Fornecedores habilitados como orquestrador:** Claude e ChatGPT.
 
-| Nível da tarefa | Executores preferenciais |
-| --- | --- |
-| **Simples** | **Grok** · **opencode — DeepSeek v4 Pro** · Claude **Sonnet 5** · ChatGPT **Luna** |
-| **Média** | **Grok** · Claude **Sonnet 5** · ChatGPT **Terra** · **opencode — DeepSeek v4 Pro** |
-| **Complexa** | **Grok** · Claude **Opus 5** · ChatGPT **Terra** |
+### Executor complexo
 
-- **O Grok está habilitado para os três níveis** — simples, média e complexa.
-- A escolha considera a **qualificação do agente para aquele tipo de trabalho**
-  (linguagem, stack, natureza da mudança), não só o nível.
-- O **esforço** (alto, extra alto, máximo) é definido pelo orquestrador no plano.
-- Executor **não usa git para escrever**; leitura (`diff`, `log`, `status`,
-  `show`) é livre.
-- Executor sem plano ou sem critério de aceite **pergunta antes de improvisar**.
+Refactor amplo, arquitetura, segurança, regra de negócio crítica (`40`), parser
+novo de fonte, mudança multi-arquivo com risco de regressão.
 
-## Revisor
+- **Modelo:** família de topo do fornecedor, esforço **extra alto ou alto**.
 
-**Claude Code Opus 5** ou **ChatGPT Terra (ou superior)**, escolhido pelo
-orquestrador. Verifica e valida se **o que foi planejado foi efetivamente
-realizado e está correto**: roda os gates (`70`), confere o resultado contra o
-plano e devolve com o que faltou ou aprova. **Nunca é o agente que executou.**
+### Executor simples
 
-## Despacho
+Mudança local, texto/mensagem, ajuste de YAML de fonte, spec isolada, poda
+mecânica.
 
-1. O despacho carrega **o plano** — objetivo, spec, arquivos, critério de aceite
-   e como validar.
-2. Ao lançar subagente Claude, passar `model` **explicitamente** (`opus`,
-   `sonnet`) — sem o parâmetro ele herda o modelo da sessão.
-3. Agentes de outros fornecedores (ChatGPT/Codex, Grok, opencode) rodam em
-   terminal próprio; o retorno é o **relatório com a evidência dos gates**.
-4. Paralelizar só quando houver ganho real e arquivos disjuntos.
-5. **Proibido o tool `Workflow`/ultracode.**
-6. **Tudo roda no branch principal** — sem worktree (`80`).
+- **Modelo:** família intermediária/rápida, no **maior esforço disponível**.
 
-## Comunicação e registro entre agentes [dono 2026-08-16]
+## Tabela de mapeamento nome↔papel (atualizável — editar SÓ aqui)
 
-**Toda etapa concluída é comunicada a quem depende dela, e tudo fica
-documentado.** Nenhum agente encerra em silêncio e nenhum handoff fica sem
-resposta.
+| Papel | Fornecedor | Modelo | Esforço |
+| --- | --- | --- | --- |
+| Orquestrador | Claude | **Fable 5** (`fable`) quando disponível; fallback **Opus 5** (`opus`) | máximo / xhigh |
+| Orquestrador | ChatGPT | o mais forte disponível na conta | máximo / xhigh |
+| Executor complexo | Claude | família **Opus** (`model: opus`) | xhigh / high |
+| Executor complexo | ChatGPT | família de topo disponível | xhigh / high |
+| Executor simples | Claude | família **Sonnet** (`model: sonnet`) | high / xhigh / max |
+| Executor simples | ChatGPT | família intermediária/rápida | max |
+| Executor simples | Grok / Gemini / opencode | o mais forte disponível | o mais alto disponível |
 
-- **Executor → orquestrador:** ao terminar, relata o que fez, os arquivos
-  tocados, a **saída literal dos gates** e o que ficou pendente.
-- **Revisor → orquestrador:** relata o veredito — aprovado, ou o que faltou —
-  com a evidência que o sustenta.
-- **Orquestrador → executor/revisor:** confirma o recebimento e informa a
-  decisão (integrado · devolvido para ajuste · escalado), **fechando o ciclo**.
-- **Orquestrador → dono:** reporta a conclusão com a evidência e o
-  **roteamento real** — quem executou, quem revisou, com que modelo e esforço.
-- **Registro:** cada relatório fica documentado no canal da tarefa e, quando
-  gerar conhecimento durável, no repositório (`80`). **Handoff sem registro não
-  conta como concluído.**
+*Valores de `model` aceitos pela CLI do Claude Code: `fable`, `opus`, `sonnet`,
+`haiku`. Nome de modelo de outro fornecedor é conferido no próprio fornecedor
+antes de ser escrito aqui — esta tabela não registra modelo não verificado.*
+
+*Fallback do orquestrador: indisponível o mais forte, cai para o intermediário
+do mesmo fornecedor. A disciplina de papéis não muda no fallback.*
+
+### Subagentes definidos neste repositório
+
+| Arquivo | Papel | `model` |
+| --- | --- | --- |
+| `.claude/agents/executor-complexo.md` | Executor complexo | `opus` |
+| `.claude/agents/executor-simples.md` | Executor simples | `sonnet` |
+
+## Regras de despacho
+
+1. **Proibido despachar executor sem SPEC ratificada** referenciada no prompt
+   (`10`). Executor que receber despacho sem SPEC, ou com seção material vazia,
+   **devolve ao orquestrador** — não improvisa.
+2. **A escolha entre executor complexo e simples é do orquestrador**, caso a
+   caso. Na dúvida, suba para o complexo: o custo de um refactor malfeito supera
+   a diferença de modelo.
+3. Ao delegar codificação por ferramenta de subagente, passar o **modelo
+   explicitamente** — agente lançado sem o parâmetro herda o modelo da sessão e
+   viola esta regra.
+4. Agentes de **investigação, revisão e colegiado** (read-only) rodam no mais
+   forte, herdando o modelo da sessão de pensamento.
+5. **Divisão por frente** (coleta / classificação / notificação / testes) é **a
+   critério do orquestrador**: frentes com arquivos disjuntos rodam em paralelo;
+   frentes que tocam os mesmos arquivos ou exigem sequência cirúrgica rodam em
+   série.
+6. **Executores de outros fornecedores** (ChatGPT/Codex, Grok, Gemini, opencode)
+   rodam em **janela/CLI/instância própria**, fora da sessão do orquestrador. A
+   supervisão se dá **por arquivos**: SPEC na ida, estado compartilhado (`30`)
+   durante, relatório na volta. Integração, validação e git permanecem
+   exclusivos do orquestrador.
+7. Paralelizar só quando houver ganho real; tarefa trivial não justifica agente.
+8. **MCPs indicados na SPEC** [dono 2026-08-13]: o orquestrador verifica na fase
+   P se há MCP aplicável e a SPEC indica os MCPs/CLIs a utilizar (`10`,
+   princípio 7). Executor que encontrar MCP indicado porém **não vinculado** ao
+   seu agente devolve o bloqueio ao orquestrador, que conduz a vinculação com o
+   dono (guiando o login; credenciais nunca passam pelo agente).
+
 ## Limites que a orquestração não dissolve
 
-Nenhuma escolha de agente ou consenso autoriza violar as NUNCAs (`90`) nem
-produz fato normativo (`40`). Dinheiro, remoção de funcionalidade, ação
-destrutiva e dado real de terceiros são sempre do dono.
+Nenhum consenso de agentes autoriza violar as NUNCAs (`90`) nem produz fato
+normativo (`40`). Decisões de dinheiro, remoção de funcionalidade, ação
+destrutiva em dados ou operação sobre dado real de terceiros são sempre do dono.
+
+## Despacho pelo harness Orca ADE
+
+Quando o despacho correr pelo **Orca ADE** (harness principal), a mecânica é a
+do módulo `25-harness-orca.md` — ele **implementa** as regras acima, não as
+substitui:
+
+- O orquestrador é o **coordenador** do Run; cada executor é um **worker** com
+  Task e Dispatch próprios (`run-create` -> `task-create --spec` ->
+  `worker-start`). A SPEC vai no `--spec`: sem SPEC, não há despacho.
+- **`--worktree current`**: o trabalho roda na árvore principal (`80`).
+- Modelo e esforço deste módulo viajam em `--model` / `--effort` (o `--effort`
+  exige `--model`); conferir `launch.effective` no receipt.
+- Supervisão por `check --wait --types worker_done,escalation,question`;
+  pergunta de executor volta por `ask`/`reply`; ao fim, `worker-release`.
+- **Antes de rodar qualquer comando, carregar o guia versionado**
+  (`orca skills get orca-cli` / `orchestration`) — flags mudam entre releases e
+  o próprio Orca proíbe deduzi-las de memória.
+- O Orca **não afrouxa** as NUNCAs nem a tabela perguntar x agir (`90`), e não
+  autoriza o mesmo agente a revisar o que executou.

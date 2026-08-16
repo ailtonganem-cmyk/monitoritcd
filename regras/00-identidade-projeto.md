@@ -76,6 +76,7 @@ acesso físico a hardware, instalador com clique em popup) — que deve ser
 | Projeto Firebase | `monitoritcd` |
 | Região das Cloud Functions | `southamerica-east1` |
 | Working directory canônico | `C:\Projetos\MonitorITCD` |
+| Branch de trabalho | `main`, na árvore principal — sem worktree por tarefa (`80`) |
 
 GitHub Secrets em uso (nomes; valores nunca no repositório): `GEMINI_API_KEY`,
 `GROQ_API_KEY`, `GMAIL_USER`*, `GMAIL_APP_PASSWORD`*, `EMAIL_RECIPIENT`,

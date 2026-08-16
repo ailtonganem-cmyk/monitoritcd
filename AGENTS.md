@@ -17,8 +17,8 @@ e-mail e Telegram. Python ≥ 3.11 · Firebase · GitHub Actions. Escopo ativo:
 
 Identidade, pessoas, IDs, stack e a regra de execução autônoma:
 `regras/00-identidade-projeto.md` — **leia antes de qualquer tarefa**.
-Working directory canônico: `C:\Projetos\MonitorITCD` (mas o trabalho acontece
-no branch principal — ver Git, abaixo).
+Working directory canônico: `C:\Projetos\MonitorITCD` — o trabalho roda nele
+mesmo, na branch principal (ver Git, abaixo).
 
 ## Idioma
 
@@ -27,15 +27,38 @@ commits, relatórios, mensagens ao dono, conversa. Ortografia rigorosa.
 **Identificadores de código permanecem em inglês**, exceto termos jurídicos sem
 tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 
+## Método — PREVC e SPEC de Execução
 
+Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
+**C**onfirmação (`regras/10-metodo-trabalho.md`).
 
-## Git — escrita exclusiva do coordenador
+- **Se você planeja (orquestrador):** produza a **SPEC de Execução escrita**
+  antes de qualquer edição — em `specs/SPEC_<ID>_<slug>.md` para tarefa
+  média/grande — e só então despache, referenciando-a.
+- **Se você codifica (executor):** **sem SPEC, não comece** — despacho sem SPEC
+  ou com seção material vazia é devolvido ao orquestrador. Implemente com
+  fidelidade; ambiguidade → interpretação razoável + suposição registrada no
+  relatório. **Nunca invente fato normativo** (`regras/40-regras-negocio.md`).
 
-**Tudo roda no branch principal** — sem worktree, sem branch por tarefa.
-Executores **não usam git para escrever** (`add`, `commit`, `stash`,
-`checkout`, `restore`, `reset`, `clean`); leitura é livre. Mudança em
-arquivo que você não tocou é de outra frente: não reverta, não "conserte".
+Papéis e modelos: `regras/20-orquestracao-modelos.md`.
+
+## Memória de trabalho compartilhada
+
+Cada tarefa tem estado em `_trabalho/ESTADO_<id>.md`, que **todo agente lê ao
+iniciar e atualiza ao concluir etapa** — decisões, arquivos em edição, progresso,
+achados. **Declare o arquivo antes de editá-lo.** Protocolo:
+`regras/30-memoria-compartilhada.md`.
+
+## Git — trabalho na branch principal; escrita exclusiva do coordenador
+
+**Tudo roda em `main`, na árvore principal** — sem worktree nem branch por
+tarefa; commit com pathspecs específicos, nunca `git add .`. Existe um único
+`.venv`, o da árvore principal. Executores **não usam git para escrever**
+(`add`, `commit`, `stash`, `checkout`, `restore`, `reset`, `clean`); leitura
+(`diff`, `log`, `status`, `show`) é permitida. Mudança em arquivo que você não
+tocou é de outro agente — não reverta, não "conserte".
 Detalhe: `regras/80-git-e-entrega.md`.
+
 ## Regras invioláveis (resumo)
 
 - **NUNCA inventar** fato, número, lei, alíquota, prazo ou jurisprudência —
@@ -61,10 +84,9 @@ própria.
 
 ## MCPs e superfícies
 
-**Havendo possibilidade técnica, resolva a tarefa via MCP** — o **planejador**
-indica na SPEC qual utilizar (candidatos aqui: Firebase, Chrome DevTools); o
-**orquestrador** confere vinculação e limites antes do despacho. MCP indicado
-porém **não vinculado** ao seu agente → devolva o
+**Havendo possibilidade técnica, resolva a tarefa via MCP** — o orquestrador
+verifica e indica na SPEC qual utilizar (candidatos aqui: Firebase, Chrome
+DevTools). MCP indicado porém **não vinculado** ao seu agente → devolva o
 bloqueio ao orquestrador, que conduz a vinculação com o dono guiando o login
 (credenciais nunca passam pelo agente). Detalhe: `regras/10-metodo-trabalho.md`, princípio 7.
 
@@ -79,8 +101,10 @@ limiares e armadilhas conhecidas: `regras/70-testes-validacao.md`.
 | Assunto | Módulo |
 | --- | --- |
 | Identidade do projeto | `regras/00-identidade-projeto.md` |
-| Método PREVC, três papéis, níveis e plano | `regras/10-metodo-trabalho.md` |
-| Papéis e agentes (orquestrador · executor · revisor) | `regras/20-orquestracao-modelos.md` |
+| Método de trabalho (PREVC, SPEC, GSD) | `regras/10-metodo-trabalho.md` |
+| Orquestração e modelos | `regras/20-orquestracao-modelos.md` |
+| Harness Orca ADE — comandos e protocolo de despacho | `regras/25-harness-orca.md` |
+| Memória compartilhada | `regras/30-memoria-compartilhada.md` |
 | Regras de negócio (domínio, LLM, UFs) | `regras/40-regras-negocio.md` |
 | Saídas: e-mail, Telegram, bot | `regras/50-saidas-notificacoes.md` |
 | Backend: segurança, limites, secrets | `regras/60-backend.md` |

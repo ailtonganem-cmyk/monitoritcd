@@ -4,7 +4,7 @@
 > concluída. Proibido skip, baseline novo, threshold rebaixado ou supressão que
 > oculte falha.
 
-## Gates objetivos
+## Gates objetivos (rodar na árvore principal, antes do commit — `80`)
 
 ```bash
 ruff check .                                   # lint (regras S de segurança ativas)
@@ -62,10 +62,9 @@ prova nada — relate-o como falho em vez de entregá-lo.
 - **`--dry-run` usa `InMemoryStorage` sem seed** → não há `config/active_states`
   → **nenhuma UF estadual é coletada, só as federais.** Smoke com `--dry-run`
   jamais prova que a coleta de MG funciona.
-- **`pip install -e` aponta para outro worktree.** O pacote instalado em modo
-  editável resolve para o `src/` de onde foi instalado. Em worktree, ou recriar
-  o `.venv` (`80`), ou rodar com `PYTHONPATH=src`. `.venv` **nunca** é
-  symlinkado entre worktrees — um `pip install` contamina todos.
+- **`pip install -e` aponta para o `src/` de onde foi instalado.** Rodando de
+  outra cópia do repositório, o pacote editável resolve para a cópia antiga:
+  usar o `.venv` da árvore principal (`80`) ou rodar com `PYTHONPATH=src`.
 - **Runner do GitHub Actions é US-based**; portais `.gov.br` bloqueiam. Sintoma:
   403/timeout no cron + sucesso local. Tratamento: `geo_restricted: true` no
   YAML → fallback automático para a Cloud Function `proxy_br`

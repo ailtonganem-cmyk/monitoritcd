@@ -27,37 +27,37 @@ aplica ao MonitorITCD**.
   prompts. O bypass não elimina o juízo do `90` — nessas hipóteses, parar e
   **perguntar no chat**.
 
-## §0 — Método PREVC, três papéis [v6]
+## §0 — Ciclo obrigatório PREVC (resumo)
 
-**Método único: PREVC.** **Orquestrador** (pensamento, planejamento, gerência) →
-**Executor** (codificação) → **Revisor** (verifica e valida se o planejado foi
-feito e está correto). O orquestrador apresenta o **plano de trabalho completo**
-— objetivo, escopo, arquivos, spec, critério de aceite, como validar — e
-classifica o **nível: simples · média · complexa**; com base nele escolhe
-**executor, revisor e esforço** (`regras/20`), despacha, integra e reporta. O
-**Gauntlet** só por escolha expressa do orquestrador.
+Toda tarefa: **P**lanejamento → **R**evisão do plano → **E**xecução →
+**V**alidação → **C**onfirmação. O Bloco 1 (P+R) termina em **SPEC de Execução
+escrita** — única entrada autorizada de agentes de codificação; tarefa
+média/grande tem SPEC versionada em `specs/`. V vermelho = tarefa não concluída;
+até 3 rodadas E↔V, depois escalar ao dono.
+**Detalhe integral:** `regras/10-metodo-trabalho.md`.
 
-**Piso:** gates verdes com saída literal · revisor ≠ executor · NUNCAs e
-perguntar×agir · fatos protegidos. Anti-loop: 3 idas e voltas → escalar.
-**Tudo roda no branch principal — sem worktree.**
+## Ritmo — autonomia dentro da tarefa, parada entre tarefas
 
-## Ritmo
+Conduzir a tarefa inteira sem interrupção (a regra de execução autônoma do
+projeto autoriza instalar, configurar, commitar, deployar e disparar workflow —
+`regras/00-identidade-projeto.md`). **Concluída a tarefa: reportar com evidência e aguardar
+determinação do dono.** Não há loop entre tarefas, não há wakeup reagendado, não
+se puxa o próximo item por conta própria [decisão do dono 2026-08-13].
 
-Autonomia **dentro** da tarefa; concluída, reportar e prosseguir à próxima.
+## Orquestração de modelos (resumo)
 
-## Papéis e agentes (resumo)
+Pensar no papel **Orquestrador** (modelo mais forte disponível, esforço máximo);
+codificar por complexidade em **Executor complexo** (`opus`) e **Executor
+simples** (`sonnet`), sempre com `model` explícito e SPEC referenciada.
+Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:
+`regras/30-memoria-compartilhada.md`.
 
-**Orquestrador** planeja e gerencia · **Executor** codifica (simples → Grok ·
-opencode DeepSeek v4 Pro · Sonnet 5 · Luna; média → Grok · Sonnet 5 · Terra ·
-opencode; complexa → Grok · Opus 5 · Terra) · **Revisor** valida (Opus 5 ou
-Terra ou superior, nunca quem executou). Escolha e esforço são do orquestrador.
-Ao fim de cada etapa **há comunicação entre os agentes, documentada**.
-Detalhe: `regras/20-orquestracao-modelos.md`.
+## Onde o trabalho roda (resumo)
 
-## Onde o trabalho roda
-
-**Tudo no branch principal** — sem worktree, sem branch por tarefa
-(`regras/80-git-e-entrega.md`).
+**Tudo na branch principal** (`main`, árvore principal) — sem worktree nem
+branch por tarefa. Commit com pathspecs específicos; trabalho de outra frente na
+árvore não se toca. Fluxo: `regras/80-git-e-entrega.md`. Correndo pelo harness
+Orca, valem os comandos de `regras/25-harness-orca.md`.
 
 ## §4.5 — NUNCAs (resumo inegociável)
 
@@ -85,13 +85,15 @@ Tabela completa: `regras/90-seguranca-limites.md`.
 | Assunto | Módulo |
 | --- | --- |
 | Identidade, pessoas, IDs, stack, execução autônoma | `regras/00-identidade-projeto.md` |
-| Método PREVC, três papéis, níveis e plano | `regras/10-metodo-trabalho.md` |
-| Papéis e agentes (orquestrador · executor · revisor) | `regras/20-orquestracao-modelos.md` |
+| Método de trabalho (PREVC, SPEC, verificação, GSD) | `regras/10-metodo-trabalho.md` |
+| Orquestração e modelos por papel | `regras/20-orquestracao-modelos.md` |
+| Harness Orca ADE — comandos e protocolo de despacho | `regras/25-harness-orca.md` |
+| Memória compartilhada entre agentes | `regras/30-memoria-compartilhada.md` |
 | Regras de negócio: domínio, fatos protegidos, LLM, UFs | `regras/40-regras-negocio.md` |
 | Saídas: e-mail, Telegram, bot | `regras/50-saidas-notificacoes.md` |
 | Backend: segurança, limites, secrets, persistência | `regras/60-backend.md` |
 | Testes, gates e armadilhas conhecidas | `regras/70-testes-validacao.md` |
-| Git (tudo na main) e entrega | `regras/80-git-e-entrega.md` |
+| Git, worktree, entrega e documentação (DoD) | `regras/80-git-e-entrega.md` |
 | Segurança, NUNCAs e limites | `regras/90-seguranca-limites.md` |
 
 **Consulte o módulo ANTES de agir no assunto correspondente** — o hub resume; o

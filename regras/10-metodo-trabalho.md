@@ -1,94 +1,118 @@
-# 10 — Método de trabalho: PREVC [dono 2026-08-16 v6]
+# 10 — Método de trabalho: PREVC, SPEC de Execução, verificação, GSD
 
-> **Método único: PREVC.** Três papéis: **orquestrador**, **executor**,
-> **revisor**. Esta versão **substitui integralmente** as regras de método
-> anteriores — ficam revogadas trilhas, camadas do Gauntlet, gate de fila, barra
-> mínima de ciclo, memória compartilhada em arquivo, papéis de planejador e
-> validador separados e a obrigatoriedade de worktree.
+> Fonte da verdade do **como se trabalha**. Vale para todo agente, de qualquer
+> fornecedor.
 
-## Os três papéis
+## Ciclo obrigatório — PREVC
 
-| Papel | Faz |
-| --- | --- |
-| **Orquestrador** | Pensamento, planejamento e gerência: entende o problema, escreve o plano de trabalho, classifica o nível, escolhe executor e revisor, despacha, integra e reporta. |
-| **Executor** | Codificação, conforme o plano recebido. |
-| **Revisor** | Verifica e valida se o que foi planejado foi **efetivamente realizado e está correto**. |
+Toda tarefa passa por **P**lanejamento → **R**evisão do plano → **E**xecução →
+**V**alidação → **C**onfirmação, em dois blocos:
 
-## O ciclo PREVC
+### Bloco 1 — Especificação (P + R), ANTES de tocar em código
 
-1. **P — Planejamento.** O orquestrador entende o problema, mapeia arquivos e
-   escreve o **plano de trabalho** (abaixo).
-2. **R — Revisão do plano.** O próprio orquestrador confere o plano antes de
-   despachar: furos, riscos, conflito com `40`/`90`, alternativa melhor.
-3. **E — Execução.** O executor escolhido implementa conforme o plano.
-4. **V — Validação.** O **revisor** roda os gates (`70`) e confere o resultado
-   contra o plano; devolve com o que faltou ou aprova.
-5. **C — Confirmação.** O orquestrador integra, reporta com evidência e segue
-   para a próxima tarefa.
+1. **P — Planejamento:** entender o problema, mapear arquivos/dependências,
+   levantar opções, definir **critério de aceite** e **plano de validação**.
+2. **R — Revisão do PLANO (não do código):** ataque adversarial ao plano —
+   furos, riscos, conflito com as NUNCAs (`90`), alternativa melhor.
+   **Saída obrigatória: a SPEC de Execução ratificada, por escrito.**
 
-**Anti-loop:** até 3 idas e voltas entre executor e revisor; persistindo, o
-orquestrador escala ao dono com o que ficou em aberto.
+### SPEC de Execução — o Bloco 1 termina em DOCUMENTO, não em raciocínio
 
-## O plano de trabalho
+O agente que **pensa** é o que **documenta**: arquitetura, system design,
+métodos e melhores práticas do caso concreto são registrados por escrito ANTES
+de qualquer edição. A SPEC é a **única entrada autorizada** de um agente de
+codificação (regra de despacho no módulo `20`).
 
-O orquestrador **apresenta o plano completo** antes de despachar, contendo:
+- Tarefa **trivial** (1 linha, typo) → SPEC condensada no próprio despacho, sem
+  arquivo, mas com escopo, arquivo alvo, critério de aceite e comando de validação.
+- Tarefa **média ou grande** → arquivo `specs/SPEC_<ID>_<slug>.md` com as seções:
+  identificação · problema e objetivo · escopo (dentro/fora) · mapa de arquivos ·
+  system design · decisões e alternativas descartadas · métodos e melhores
+  práticas obrigatórias · plano de execução · riscos e armadilhas · critério de
+  aceite · plano de validação · evidência exigida · registro do R.
+  Modelo pronto: `specs/_TEMPLATE_SPEC.md`.
+- **A SPEC é versionada no git** [decisão do dono 2026-08-13] e entra no commit
+  da tarefa — é o registro durável do *porquê*, que o `git log` não captura.
+- **Limite duro:** a SPEC não cria fato — nenhuma seção autoriza arbitrar dado
+  normativo (`40`/`90`); diante de lacuna, aponta a fonte a consultar.
 
-- **objetivo** e **escopo** (o que entra e o que fica fora);
-- **arquivos** que serão tocados;
-- **spec do que fazer** — o desenho da solução, no detalhe que a tarefa exigir;
-- **critério de aceite** e **como validar** (quais gates);
-- **nível da tarefa: simples · média · complexa**;
-- **executor e revisor escolhidos**, com o **esforço** definido.
+### Bloco 2 — Realização (E → V → correção → C), em loop até apto
 
-Tarefa pequena tem plano curto; tarefa complexa tem plano detalhado. O plano
-vira arquivo em `specs/` quando o orquestrador julgar útil.
+3. **E — Execução:** implementar conforme a SPEC (GSD, segurança, convenções do
+   repositório; sem over-engineering). Executor não replaneja nem expande escopo.
+4. **V — Validação:** rodar os gates objetivos do módulo `70` + julgamento de
+   qualidade. **V vermelho = tarefa não concluída.** Falhou → diagnosticar
+   causa-raiz: bug de execução volta a E; erro de concepção volta ao Bloco 1.
+   **Anti-loop: até 3 rodadas E↔V; persistindo → reavaliar a SPEC; falhando
+   ainda → escalar ao dono.**
+5. **C — Confirmação:** só com V plenamente verde. Deploy quando aplicável +
+   smoke + evidência anexada + persistir só o durável (`80`).
 
-## Níveis e escolha do executor
+## Escala por risco/tamanho (GSD — anti-over-engineering)
 
-O **nível** é definido pelo orquestrador no plano e determina quem executa —
-preferindo sempre a **qualificação do agente para aquele tipo de trabalho**:
+- **Trivial:** P+R condensados (auto-revisão dupla); SPEC no despacho; V mínimo.
+- **Média (5–10 arquivos):** PREVC pleno; SPEC em arquivo; olhar independente na V.
+- **Grande (arquitetura, produção, segurança, dados):** PREVC formal; SPEC +
+  ADR em `docs/adr/` quando a decisão for arquitetural; V reforçada.
 
-| Nível | Executores preferenciais |
-| --- | --- |
-| **Simples** — mudança local, texto, rótulo, ajuste isolado | Grok · opencode (DeepSeek v4 Pro) · Claude **Sonnet 5** · ChatGPT **Luna** |
-| **Média** — feature pequena, refactor localizado | **Grok** · Claude **Sonnet 5** · ChatGPT **Terra** · opencode (DeepSeek v4 Pro) |
-| **Complexa** — arquitetura, segurança, cálculo, multi-arquivo com risco | **Grok** · Claude **Opus 5** · ChatGPT **Terra** |
+## Ritmo — autonomia dentro da tarefa, parada entre tarefas
 
-**Nível de esforço:** decidido pelo orquestrador, caso a caso.
+[decisão do dono 2026-08-13 — **supersede** o modo `/loop` autônomo contínuo]
 
-## Escolha do revisor
+- **Autonomia vale DENTRO da tarefa:** conduzir sem interrupção até a conclusão
+  (PREVC completo); não pausar por bloqueio percebido — fazer o preparatório
+  possível e explicitar a pendência no chat. A "regra de execução autônoma" do
+  projeto (`00`) opera aqui: instalar, configurar, commitar, deployar e disparar
+  workflow são livres dentro da tarefa, com gates verdes.
+- **Entre tarefas NÃO há loop:** concluída a tarefa, **reportar com evidência e
+  aguardar** determinação expressa do dono. Encadear tarefas exige ordem
+  explícita — não reagendar wakeup nem puxar o próximo item por conta própria.
+- Questionamento técnico razoável sem resposta em **60 s** → considerar
+  autorizado e prosseguir (anunciar). Não vale para itens da tabela
+  perguntar × agir (`90`) nem para informação exclusiva do dono.
 
-Também pelo orquestrador, entre **Claude Code Opus 5** ou **ChatGPT Terra (ou
-superior)**. O revisor **nunca é o agente que executou**.
+## Princípios de trabalho
 
-## Gauntlet
+1. **Investigue antes de assumir.** Escolha material/arriscada ou informação
+   exclusiva do dono → pergunte; caso contrário, escolha a interpretação
+   razoável, prossiga e **registre a suposição**.
+2. **Solução proporcional ao problema.** Regra de 3 antes de abstrair; sem
+   flexibilidade ainda não necessária; sem half-finished.
+3. **Não mexa em código não relacionado.** Problema descoberto fora do escopo é
+   **questão separada** relatada, nunca correção silenciosa.
+4. **Marque a incerteza explicitamente.** Confiança sem certeza causa mais dano
+   que admitir lacuna.
+5. **Aberto a ideias melhores** — sugira a abordagem de impacto duradouro.
+6. **Opções para o dono = formato de seleção** (ferramenta de pergunta com
+   opções marcáveis; recomendação em 1º com "(Recomendado)"), nunca prosa que o
+   obrigue a redigir resposta.
+7. **MCP primeiro, havendo possibilidade técnica** [dono 2026-08-13]: em toda
+   tarefa, inventariar as CLIs/MCPs/superfícies aplicáveis; **existindo MCP
+   tecnicamente capaz de resolver a tarefa, ele DEVE ser utilizado** — o
+   orquestrador verifica na fase P e **indica na SPEC qual MCP usar**. Se a
+   ferramenta MCP existir mas ainda não estiver **vinculada/autenticada**,
+   **solicitar a vinculação ao dono, guiando-o passo a passo no login** — a
+   autenticação é sempre dele (credenciais, códigos e tokens nunca passam pelo
+   agente). Enquanto não vinculado, usar a alternativa canônica segura e
+   registrar o bloqueio. Neste projeto, MCPs mais prováveis: Firebase (Firestore,
+   rules, functions, logs) e Chrome DevTools (diagnóstico de fonte que quebrou).
 
-O método **Gauntlet** (barra concreta + builder × crítico em rodadas) só é usado
-**por escolha expressa do orquestrador**, declarada no plano. Fora disso, vale
-o PREVC.
+## Verificação — "como você me confirma que isso está correto?"
 
-## Onde o trabalho roda
+Toda tarefa carrega essa pergunta implícita do dono. Antes de executar,
+**descreva como vai executar**; depois, **verifique ativamente** (gates + prova
+empírica: reproduzir, medir, rodar `--dry-run`, conferir o documento gravado) e
+**relate a evidência** — saída literal —, não apenas a conclusão.
 
-**Tudo no branch principal do repositório.** Sem worktree, sem branch por
-tarefa, sem checkout paralelo.
+## Código auto-documentado
 
-## Piso inegociável
+Zero comentários por padrão; comentário só para o **porquê** não-óbvio, em uma
+linha — com uma exceção do domínio: **decisão de domínio vira comentário**
+(ex.: "esta UF publica alíquota progressiva em anexo separado, exige parsing
+próprio"). Jamais comentário WHAT, sobre callers, ou docstring multi-parágrafo.
+Espelhe o padrão existente do repositório antes de inventar desenho novo.
 
-1. **Gates verdes com a saída literal** anexada (`70`) — vermelho é tarefa não
-   concluída.
-2. **O revisor não é quem executou.**
-3. **NUNCAs e perguntar × agir** (`90`).
-4. **Fatos protegidos** (`40`): nada de inventar fato, número, lei, alíquota ou
-   índice — diante de lacuna, apontar a fonte.
-
-## Princípios
-
-- **Investigue antes de assumir.** Informação exclusiva do dono → pergunte;
-  o resto → interpretação razoável, com a suposição registrada.
-- **Solução proporcional ao problema**, sem over-engineering.
-- **Não mexa em código não relacionado** — vira questão separada relatada.
-- **Verificação com evidência:** relate a saída do gate, não a conclusão de que
-  passou. Correção de defeito exige teste que reprova sem a correção.
-- **Ritmo:** autonomia dentro da tarefa; concluída, reportar e puxar a próxima.
-- Zero comentários por padrão no código; comentário só para o **porquê**
-  não-óbvio, em uma linha.
+**Idioma no código** (`AGENTS.md`/`CLAUDE.md`): comentários e docstrings em
+pt-BR; **identificadores em inglês** (variáveis, funções, classes, módulos),
+exceto termos jurídicos sem tradução fiel — `causa_mortis`, `espolio`,
+`inventario`, `doacao`.
