@@ -19,7 +19,7 @@ checkouts principais e o pool) — atingido, reconciliar antes de abrir outra.
 **Worktree NOVA só por motivo técnico declarado:** há **paralelismo real** (2+
 agentes editando ao mesmo tempo); **refactor amplo** ou mudança multi-arquivo com
 risco de regressão; **base branch diferente** da frente em curso; **experimento
-descartável**; ou a tarefa é de trilha **Gauntlet** (`10`) de alto risco.
+descartável**; ou **o plano de trabalho pediu** (`10`).
 
 **Encerrar o worker não remove a worktree:** fechar o terminal / liberar o
 dispatch arquiva a execução, mas o checkout persiste até `orca worktree rm`.
@@ -28,7 +28,7 @@ commit integrado · nenhuma evidência exclusiva); parcial, bloqueada ou com pat
 não integrado **mantém-se com comentário de estado** (`25`).
 
 **Dispensada quando:** tarefa **sequencial, de um único agente e baixo risco**
-(trilha Direta) — trabalha-se em **branch curto** na árvore principal, com
+— trabalha-se em **branch curto** na árvore principal, com
 commit atômico e merge imediato. A árvore principal nunca fica com trabalho
 pendente entre tarefas.
 

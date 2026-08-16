@@ -20,8 +20,7 @@ escrever SPEC, criar ou revisar código.** Ele confere que os gates rodaram e
 que a evidência foi reportada — o julgamento técnico é do planejador/crítico.
 
 - **Modelo:** Codex/ChatGPT **GPT-5.6 Sol**, em **esforço máximo**.
-- **Escolhe a trilha da tarefa** (Direta | Padrão | Gauntlet — `10`) ao receber
-  a demanda, e a registra em uma linha no despacho.
+- **Despacha o planejador**, que escolhe o **método** (PREVC ou Gauntlet) e o tamanho do esforço no plano (`10`); o orquestrador não arbitra método.
 - **Opera pela camada nativa do harness** (`25`): `run-create` → `task-create`
   (DAG) → `worker-start --agent --model --effort` → `check --wait` → gates →
   integração. Protocolo manual só para agente fora do harness.
@@ -102,16 +101,15 @@ orquestrador vale como delegação: o agente acionado orquestra aquela demanda
 interinamente, respeitando os papéis nos despachos. A disciplina de papéis não
 muda em nenhum fallback.*
 
-## Fluxo da tarefa — por trilha [dono 2026-08-14 v3]
+## Fluxo da tarefa — o plano decide o tamanho [v5]
 
-A trilha (`10`) define quantos saltos a tarefa dá. **A separação de papéis é
-estrita em todas elas** — o orquestrador nunca planeja nem codifica; o que muda
-é quantos agentes a tarefa atravessa.
+**A separação de papéis é estrita** — o orquestrador nunca planeja nem codifica —
+mas **quantos agentes a tarefa atravessa é decisão do plano** (`10`).
 
-### Trilha Direta (padrão — o volume do dia a dia): 4 etapas
+### Caso comum: um agente conduz a tarefa
 
 1. Dono encaminha a demanda ao **orquestrador**.
-2. Orquestrador classifica a trilha e despacha **UM único agente** com o pedido
+2. Orquestrador despacha **UM único agente** com o pedido
    e o **critério de aceite** — sem SPEC em arquivo.
 3. Esse agente conduz **P + E + V** da tarefa inteira e devolve o resultado com
    a **saída literal dos gates**.
@@ -121,7 +119,7 @@ estrita em todas elas** — o orquestrador nunca planeja nem codifica; o que mud
 *Sem cadeia planejador→executor→crítico: ela existe para isolar contexto e dar
 perspectiva fresca — numa mudança local não há o que isolar.*
 
-### Trilhas Padrão e Gauntlet (pipeline completo)
+### Quando o plano pede papéis separados
 
 1. Dono encaminha a demanda ao **orquestrador** (Codex — GPT-5.6 Sol, esforço
    máximo).

@@ -1,39 +1,60 @@
-# 10 — Método de trabalho: PREVC, SPEC de Execução, verificação, GSD
+# 10 — Método de trabalho [v5 — o plano manda]
 
 > Fonte da verdade do **como se trabalha**. Vale para todo agente, de qualquer
 > fornecedor.
 
-## Trilhas de trabalho — o esforço é proporcional ao risco [dono 2026-08-14 v3]
+## ★ Regra de ouro — o PLANO manda ★ [2026-08-16 v5]
 
-> **Correção de rumo:** exigir o pipeline completo em toda tarefa trava o
-> processo. A régua é **risco × reversibilidade**, não formalidade uniforme.
-> Fundamento: a própria Anthropic documenta a cadeia
-> `planejador → executor → testador` como anti-padrão ("telefone sem fio") fora
-> dos casos em que isolamento de contexto, paralelismo ou perspectiva fresca
-> realmente compensam.
+**O que não estiver no plano não é exigido.** Este módulo define o **piso**
+(curto e inegociável) e o **cardápio** de que o planejador dispõe; fora do piso,
+cerimônia entra quando o plano a coloca, e só então.
 
-| Trilha | Quando | Como roda |
+> **v5 revoga** a taxonomia de trilhas (Direta/Padrão/Gauntlet), as três camadas
+> do Gauntlet, o gate de fila formal e a SPEC de 13 seções obrigatória — viraram
+> classificações sobrepostas que travaram a entrega.
+
+### O plano de trabalho — cinco campos
+
+Objetivo · arquivos prováveis · **critério de aceite** · como validar · **método**.
+
+Cabe **no próprio despacho**; vira arquivo só quando o planejador julgar útil
+(risco alto, várias frentes, retomada futura). Pode declarar explicitamente o
+que **não** será feito ("sem crítico separado", "sem worktree", "sem ADR").
+Gatilho para detalhar mais: *escreveria mais se ficasse insatisfeito com o
+agente interpretando o pedido de outro jeito*.
+
+### Os dois métodos — escolha do planejador
+
+| Método | Como funciona | Quando escolher |
 | --- | --- | --- |
-| **Direta** (**padrão**) | Mudança local, texto/mensagem, ajuste de YAML de fonte, doc, poda mecânica, bugfix pequeno com teste | O orquestrador despacha **UM único agente**, que conduz **P + E + V da tarefa inteira** — sem subdividir em planejador/executor/crítico. Validação = **gates objetivos + evidência**. Sem SPEC em arquivo, sem crítico separado. |
-| **Padrão** | Feature pequena/média, refactor localizado, decisão técnica reversível | P+R pelo planejador (**SPEC-lite**, 5 campos), execução por executor, **crítico separado na entrega**. |
-| **Gauntlet** | Alto risco: arquitetura, segurança, regra de negócio crítica (`40`), parser novo de fonte, dado de produção | Pipeline completo — decomposição em partes julgáveis, **builder × crítico de contexto limpo** por parte, barra concreta com exemplar, SPEC formal, worktree. |
+| **PREVC** (padrão) | Planejar → Revisar o plano → Executar → Validar → Confirmar. Linear, uma passada. | O alvo é claro e o certo se conhece de antemão: correção, refactor, regra objetiva, infraestrutura. |
+| **Gauntlet** | Barra concreta declarada **antes** (critérios + exemplar) → builder produz → **crítico de contexto limpo** julga → repete apontando o **maior gap** até passar. | Qualidade subjetiva ou comparativa: UI, microcopy, texto institucional, acabamento — quando a primeira versão não tem como estar certa. |
 
-- **Quem escolhe:** o orquestrador, ao receber a demanda; o dono pode fixar a
-  trilha a qualquer momento.
-- **Subir de trilha é livre e esperado:** qualquer agente que encontre risco não
-  previsto **para e sobe a tarefa de trilha**, registrando o motivo. **Descer de
-  trilha exige ordem do dono.**
-- **Limiar de fan-out:** só vale dividir entre agentes quando há **3+ frentes
-  independentes** de porte relevante. Abaixo disso, um agente só é mais rápido
-  fim a fim — cada handoff custa contexto duplicado e perda de sinal.
-- **Lote de triviais:** tarefas triviais correlatas podem ser agrupadas em **um
-  único lote** que percorre o ciclo uma vez, com evidência por item.
+**São alternativas, não camadas:** o Gauntlet **substitui** o PREVC quando o
+planejador entender que rende mais, e a escolha fica registrada no plano. Podem
+ser combinados por parte da tarefa. A **revisão do plano** só é obrigatória
+quando o plano toca segurança, dado real, cálculo ou produção; fora disso o
+planejador auto-revisa e segue.
+
+### Piso inegociável — vale mesmo no plano mais enxuto
+
+1. **Gates objetivos verdes**, com **saída literal** anexada. Vermelho é tarefa
+   não concluída.
+2. **Quem escreveu não valida a própria entrega** — contexto limpo, cruzado de
+   fornecedor quando houver folga.
+3. **NUNCAs e perguntar × agir** (`90`); **fatos protegidos** (`40`).
+4. **Anti-loop:** 3 rodadas sem convergir → escalar com o gap nomeado.
+
+**Tarefa pequena não paga pedágio:** plano, execução e gates cabem num **único
+agente**; dividir entre agentes só compensa com **três ou mais frentes
+independentes**.
+
 
 ## Ciclo obrigatório — PREVC
 
 Toda tarefa passa por **P**lanejamento → **R**evisão do plano → **E**xecução →
 **V**alidação → **C**onfirmação, em dois blocos. **O ciclo é universal; o que
-escala com a trilha é a formalidade de cada etapa.**
+escala é a formalidade de cada etapa, conforme o plano.**
 
 ### Bloco 1 — Especificação (P + R), ANTES de tocar em código
 
@@ -41,54 +62,19 @@ escala com a trilha é a formalidade de cada etapa.**
    levantar opções, definir **critério de aceite** e **plano de validação**.
 2. **R — Revisão do PLANO (não do código):** ataque adversarial ao plano —
    furos, riscos, conflito com as NUNCAs (`90`), alternativa melhor.
-   **Saída obrigatória: a SPEC de Execução ratificada, por escrito.**
-
-### SPEC de Execução — o Bloco 1 termina em DOCUMENTO, não em raciocínio
-
-O agente que **pensa** é o que **documenta**: arquitetura, system design,
-métodos e melhores práticas do caso concreto são registrados por escrito ANTES
-de qualquer edição. A SPEC é a **única entrada autorizada** de um agente de
-codificação (regra de despacho no módulo `20`).
-
-- Trilha **Direta** → **sem SPEC**: o pedido + o critério de aceite em uma linha
-  bastam. Gatilho: *escreva a SPEC se você ficaria insatisfeito com o agente
-  interpretando o pedido de outro jeito; se um follow-up rápido corrigiria o
-  resultado, não escreva.*
-- Trilha **Padrão** → **SPEC-lite** no próprio despacho, **5 campos**: objetivo ·
-  arquivos · critério de aceite · plano de validação · riscos e limites.
-- Trilha **Gauntlet** → arquivo `specs/SPEC_<ID>_<slug>.md` com as seções:
-  identificação · problema e objetivo · escopo (dentro/fora) · mapa de arquivos ·
-  system design · decisões e alternativas descartadas · métodos e melhores
-  práticas obrigatórias · plano de execução · riscos e armadilhas · critério de
-  aceite · plano de validação · evidência exigida · registro do R.
-  Modelo pronto: `specs/_TEMPLATE_SPEC.md`.
-- **A SPEC é versionada no git** [decisão do dono 2026-08-13] e entra no commit
-  da tarefa — é o registro durável do *porquê*, que o `git log` não captura.
-- A SPEC **classifica a complexidade** (trivial | média | grande) — campo
-  obrigatório que vincula a escolha do executor pelo orquestrador (`20`).
-- **Limite duro:** a SPEC não cria fato — nenhuma seção autoriza arbitrar dado
-  normativo (`40`/`90`); diante de lacuna, aponta a fonte a consultar.
+   **Saída: o plano de trabalho de 5 campos.** Revisão do plano só é obrigatória em risco — segurança, dado real, cálculo ou produção.
 
 ### Bloco 2 — Realização (E → V → correção → C), em loop até apto
 
-3. **E — Execução:** implementar conforme a SPEC (GSD, segurança, convenções do
+3. **E — Execução:** implementar conforme o plano (GSD, segurança, convenções do
    repositório; sem over-engineering). Executor não replaneja nem expande escopo.
 4. **V — Validação:** rodar os gates objetivos do módulo `70` + julgamento de
    qualidade. **V vermelho = tarefa não concluída.** Falhou → diagnosticar
    causa-raiz: bug de execução volta a E; erro de concepção volta ao Bloco 1.
-   **Anti-loop: até 3 rodadas E↔V; persistindo → reavaliar a SPEC; falhando
+   **Anti-loop: até 3 rodadas E↔V; persistindo → reavaliar o plano; falhando
    ainda → escalar ao dono.**
 5. **C — Confirmação:** só com V plenamente verde. Deploy quando aplicável +
    smoke + evidência anexada + persistir só o durável (`80`).
-
-## Escala por risco/tamanho (GSD) — equivale às trilhas
-
-- **Trivial → trilha Direta:** um agente conduz P+E+V; validação por gate focal
-  do que foi tocado + evidência; sem SPEC em arquivo, sem crítico separado.
-- **Média (5–10 arquivos) → trilha Padrão:** SPEC-lite; crítico separado na
-  entrega; olhar independente na V.
-- **Grande (arquitetura, produção, segurança, dados) → trilha Gauntlet:** SPEC
-  formal + ADR em `docs/adr/` quando a decisão for arquitetural; V reforçada.
 
 ## Ritmo — autonomia dentro da tarefa, loop contínuo entre tarefas
 
@@ -106,64 +92,6 @@ tarefas" de 2026-08-13]
 - Questionamento técnico razoável sem resposta em **60 s** → considerar
   autorizado e prosseguir (anunciar). Não vale para itens da tabela
   perguntar × agir (`90`) nem para informação exclusiva do dono.
-
-## Gauntlet Loop — método do ritmo contínuo [dono 2026-08-14]
-
-Método de iteração multi-agente **builder × crítico** (popularizado por Matt
-Shumer), aplicado em duas camadas:
-
-1. **Entre tarefas — loop contínuo:** a fila é percorrida em loop; cada tarefa
-   atravessa o PREVC completo e, confirmada, o orquestrador **reporta e inicia
-   imediatamente a próxima**, na ordem da fila.
-2. **Dentro da tarefa — estrutura do E↔V:**
-   - o **planejador** decompõe o objetivo nas **menores partes julgáveis
-     separadamente** (o orquestrador despacha e acompanha — `20`);
-   - cada parte tem um **builder** (executor) e um **crítico separado, com
-     contexto limpo** — quem implementa **nunca** julga o próprio trabalho;
-   - a **barra de qualidade é definida ANTES e é concreta**: critérios
-     objetivos + **exemplar de referência** comparado **lado a lado** com o
-     resultado — nunca "faça excelente";
-   - reprovado → o crítico aponta **o maior gap remanescente** e devolve ao
-     builder; **crítico que viu rascunho anterior não julga o retry** — crítico
-     de contexto novo a cada rodada;
-   - aprovado na barra → segue para a Confirmação do PREVC.
-
-### 3. Camada de FILA — ciclo da tasklist com barra mínima [v4]
-
-**A tasklist inteira roda em ciclos** até atingir um mínimo aceitável declarado.
-
-1. **Abrir o ciclo** (`run-create`, `25`) declarando **objetivo** e **barra
-   mínima** verificável: 100% dos gates verdes (`70`) com saída literal · zero
-   regressão · zero item crítico aberto entre os do ciclo · doc durável
-   atualizada (`80`) · evidência do roteamento de papéis (`25`).
-2. **Decompor a fila em tasks com dependências** (`task-create --deps`).
-3. **Rodar a rodada:** independentes em paralelo, espera por evento, validação
-   item a item por validador de contexto limpo.
-4. **Gate de fila** (`gate-create`/`gate-resolve`): atingiu → fecha; não atingiu
-   → o validador nomeia **o maior gap remanescente**, que vira a rodada seguinte
-   — **validador novo** a cada rodada.
-5. **Anti-loop:** 3 rodadas sem convergir → escalar ao dono com o gap nomeado.
-
-**A barra é declarada ANTES da primeira rodada.**
-
-### Quando o loop builder × crítico vale a pena [v3]
-
-- **A camada 1 (loop entre tarefas) vale em TODAS as trilhas; a camada 2
-  (builder × crítico) é da trilha Gauntlet** — opcional na Padrão, dispensada na
-  Direta.
-- **Gauntlet é segunda passada, não primeiro rascunho** — assim é no método
-  original: a primeira versão sai pela trilha Direta ou Padrão e o loop entra
-  para **afinar** contra a referência concreta. Usá-lo para produzir rascunho é
-  o uso mais caro e menos eficaz da técnica.
-- **Crítico dosado:** obrigatório onde o julgamento é **subjetivo** (UI,
-  microcopy, arquitetura, regra de negócio); onde a evidência é **objetiva**
-  (tipos, lint, testes, build, smoke), o **gate verde com saída literal É a
-  validação** — crítico adicional ali é cerimônia sem ganho.
-- **Stopping condition definida ANTES do run:** máximo de **3 rodadas** E↔V e,
-  em execuções longas, também um teto de tempo.
-
-O anti-loop do PREVC permanece (3 rodadas E↔V sem convergir → escalar ao dono)
-e o loop **não dissolve** as NUNCAs nem a tabela perguntar × agir (`90`).
 
 ## Princípios de trabalho
 

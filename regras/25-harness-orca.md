@@ -105,8 +105,7 @@ Cada provedor traz `session` (janela curta) e/ou `weekly` com `usedPercent` e
    tarefas Diretas do dia.
 4. **Só então worktree nova**, e apenas por motivo técnico declarado:
    paralelismo real com risco de conflito nos mesmos arquivos · refactor amplo ·
-   **base branch diferente** · experimento descartável · trilha Gauntlet de alto
-   risco.
+   **base branch diferente** · experimento descartável · pedido do plano de trabalho (`10`).
 
 Complementos:
 

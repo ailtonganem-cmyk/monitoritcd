@@ -27,15 +27,14 @@ commits, relatórios, mensagens ao dono, conversa. Ortografia rigorosa.
 **Identificadores de código permanecem em inglês**, exceto termos jurídicos sem
 tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 
-## Método — PREVC e SPEC de Execução
+## Método — o plano manda
 
 Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
-**C**onfirmação (`regras/10-metodo-trabalho.md`). **A formalidade escala com a
-trilha** [v3]: **Direta** (padrão — um único agente conduz P+E+V, validação por
-gates objetivos, sem SPEC em arquivo nem crítico separado) · **Padrão**
-(SPEC-lite de 5 campos + crítico separado na entrega) · **Gauntlet** (pipeline
-completo, alto risco e acabamento). Quem encontrar risco não previsto **sobe a
-tarefa de trilha** e registra o motivo.
+**C**onfirmação (`regras/10-metodo-trabalho.md`). **Regra de ouro: o PLANO manda** [v5] — o planejador escreve um plano de 5
+campos (objetivo · arquivos · critério de aceite · como validar · **método**) e
+escolhe o método: **PREVC** (linear) ou **Gauntlet** (iterativo, barra concreta
++ builder×crítico), que **substitui** o PREVC quando render mais. Tarefa
+pequena: um único agente faz tudo. O que não estiver no plano não é exigido.
 
 - **Se você orquestra (Codex — GPT-5.6 Sol, esforço máximo — techlead):**
   gerencie e distribua — pense sempre nos limites de uso de cada agente,

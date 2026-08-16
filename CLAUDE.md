@@ -58,13 +58,13 @@ referenciada. Acesso direto do dono a um agente = orquestração interina.
 Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:
 `regras/30-memoria-compartilhada.md`.
 
-## Trilhas e worktree (resumo)
+## Método e worktree (resumo)
 
-**A formalidade escala com o risco** [v3]: trilha **Direta** (padrão — um agente
-conduz P+E+V, validação por gates, sem SPEC em arquivo nem crítico separado) ·
-**Padrão** (SPEC-lite + crítico na entrega) · **Gauntlet** (pipeline completo).
+**O plano manda** [v5]: o planejador escreve um plano de 5 campos e escolhe o
+método — **PREVC** (linear) ou **Gauntlet** (iterativo, barra concreta +
+builder×crítico), que o substitui quando render mais.
 **Worktree por risco** (`../MonitorITCD-worktrees/<id>`) — paralelismo, refactor
-amplo, experimento ou trilha Gauntlet —, reutilizada de um **pool pré-aquecido**
+amplo, experimento ou pedido do plano —, reutilizada de um **pool pré-aquecido**
 com `.venv` já criado; tarefa sequencial de um agente vai em branch curto.
 Worktree nova não herda `.venv` nem gitignorados — recriar o venv e copiar o que
 está em `.worktreeinclude`. Detalhes: `regras/10-metodo-trabalho.md` e
