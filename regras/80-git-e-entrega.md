@@ -16,7 +16,7 @@ nunca é limpo, sobrescrito ou revertido.
 ## Git — exclusivo do coordenador
 
 - **Agentes executores não usam git para escrever.** Nada de `add`, `commit`,
-  `stash`, `checkout`, `restore`, `reset`, `clean` — a worktree é compartilhada
+  `stash`, `checkout`, `restore`, `reset`, `clean` — a árvore é compartilhada
   entre executores paralelos e um `stash/pop` já reverteu o trabalho alheio.
   Leitura (`diff`, `log`, `show`, `status`) é permitida.
 - Modificação em arquivo que você não tocou é de outro agente: não reverta, não

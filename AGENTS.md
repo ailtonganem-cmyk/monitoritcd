@@ -18,7 +18,7 @@ e-mail e Telegram. Python ≥ 3.11 · Firebase · GitHub Actions. Escopo ativo:
 Identidade, pessoas, IDs, stack e a regra de execução autônoma:
 `regras/00-identidade-projeto.md` — **leia antes de qualquer tarefa**.
 Working directory canônico: `C:\Projetos\MonitorITCD` (mas o trabalho acontece
-na worktree da tarefa — ver Git, abaixo).
+no branch principal — ver Git, abaixo).
 
 ## Idioma
 
@@ -29,16 +29,13 @@ tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 
 
 
-## Git — worktree por tarefa; escrita exclusiva do coordenador
+## Git — escrita exclusiva do coordenador
 
-**Toda tarefa roda em worktree git própria** (`../MonitorITCD-worktrees/<id>`),
-criada pelo orquestrador — nunca edite a árvore principal. A worktree tem
-`.venv` próprio (nunca symlinkado). Executores **não usam git para escrever**
-(`add`, `commit`, `stash`, `checkout`, `restore`, `reset`, `clean`); leitura
-(`diff`, `log`, `status`, `show`) é permitida. Mudança em arquivo que você não
-tocou é de outro agente — não reverta, não "conserte".
+**Tudo roda no branch principal** — sem worktree, sem branch por tarefa.
+Executores **não usam git para escrever** (`add`, `commit`, `stash`,
+`checkout`, `restore`, `reset`, `clean`); leitura é livre. Mudança em
+arquivo que você não tocou é de outra frente: não reverta, não "conserte".
 Detalhe: `regras/80-git-e-entrega.md`.
-
 ## Regras invioláveis (resumo)
 
 - **NUNCA inventar** fato, número, lei, alíquota, prazo ou jurisprudência —

@@ -4,7 +4,7 @@
 > concluída. Proibido skip, baseline novo, threshold rebaixado ou supressão que
 > oculte falha.
 
-## Gates objetivos (rodar dentro da worktree da tarefa — `80`)
+## Gates objetivos
 
 ```bash
 ruff check .                                   # lint (regras S de segurança ativas)

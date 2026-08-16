@@ -30,7 +30,7 @@ Estrutura **hub-and-spoke**, portátil entre projetos e neutra a fornecedor
 | `50-saidas-notificacoes.md` | E-mail, Telegram, bot, severity tiers | **Sim** (substitui o `50-frontend` do template — projeto headless) |
 | `60-backend.md` | Segurança server-side, `input_limits`, secrets, persistência, deploy | **Sim** |
 | `70-testes-validacao.md` | Gates objetivos, prova por mutação, armadilhas conhecidas | **Sim** |
-| `80-git-e-entrega.md` | Worktree por tarefa, commits, DoD, documentação durável | Não |
+| `80-git-e-entrega.md` | Tudo na main, commits, DoD, documentação durável | Não |
 | `90-seguranca-limites.md` | NUNCAs, tabela perguntar × agir, autorização durável | Não |
 
 Conhecimento técnico durável (arquitetura C4, STRIDE, runbooks, ADRs, situação
