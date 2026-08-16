@@ -84,15 +84,78 @@ Cada provedor traz `session` (janela curta) e/ou `weekly` com `usedPercent` e
 - O **roteamento efetivo** (quem realmente rodou cada papel) entra no relatório
   final — nunca afirmar ter usado um modelo que não estava disponível.
 
-## Placement e worktree
+## Onde a tarefa roda — worktree por FRENTE, não por tarefa [founder 2026-08-16]
 
+> **Problema que esta regra resolve:** uma worktree por tarefa polui o Orca —
+> chegamos a 36 workspaces, a maioria sem terminal vivo. A worktree passa a ser
+> a **frente de trabalho** (assunto/área), que acumula as tarefas daquele
+> assunto; tarefa nova só ganha checkout novo quando há motivo técnico.
+
+**Árvore de decisão — o orquestrador para na primeira que se aplicar:**
+
+1. **É continuação, correção ou complemento** de algo que está numa worktree
+   ativa (fix do que acabou de sair, teste que faltou, ajuste pedido na revisão)
+   → **roda NELA**:
+   `orca orchestration worker-start --task <id> --worktree current --agent <id> --json`
+   ou, sem tracking, `orca terminal create --worktree active --command "<agente>" --json`.
+2. **É da mesma frente** — mesmos arquivos, módulo ou feature de uma worktree
+   ativa — e **não** há paralelismo conflitante → **roda NELA, em sequência**.
+3. **É pequena e independente**, do dia corrente → vai para a **worktree do dia**
+   (`dia-AAAA-MM-DD`) ou para o **pool** (`w1`…`w3`), reaproveitada por todas as
+   tarefas Diretas do dia.
+4. **Só então worktree nova**, e apenas por motivo técnico declarado:
+   paralelismo real com risco de conflito nos mesmos arquivos · refactor amplo ·
+   **base branch diferente** · experimento descartável · trilha Gauntlet de alto
+   risco.
+
+Complementos:
+
+- **Nome por frente, não por tarefa** (`aud27`, `fdr-rural`, `dia-2026-08-16`).
+  O comentário do card lista as tarefas que a frente acumulou.
+- **Teto de worktrees de tarefa por repositório: 6** (fora os checkouts
+  principais e o pool). Atingido o teto, **reconciliar antes de abrir outra**.
 - `--worktree current` → terminal novo no checkout atual, sem rodar setup.
 - `--worktree new-child` / `new-top-level --name <slug>` → checkout novo
   (`--setup run` quando os gates precisarem de dependências).
 - **Antes de reutilizar worktree do pool, confirme que está livre**
-  (`git status --short` vazio): worktree de pool pode ter sido ocupada por outra
-  frente, e **trabalho não commitado de terceiro nunca é limpo nem sobrescrito**
-  (`80`, `90`).
+  (`git status --short` vazio): pool pode ter sido ocupado por outra frente, e
+  **trabalho não commitado de terceiro nunca é limpo nem sobrescrito** (`80`, `90`).
+
+## Ciclo de vida da worktree — liberar ≠ remover [founder 2026-08-16]
+
+**No Orca, encerrar/liberar o worker fecha o terminal e arquiva a execução, mas
+a worktree continua existindo até um `orca worktree rm`.** Sem esse passo, o
+workspace acumula.
+
+| Situação da worktree | Ação |
+| --- | --- |
+| Tarefa **integrada e validada**, árvore limpa, sem valor de diagnóstico | **Remover** (`orca worktree rm`) |
+| Tarefa **parcial, bloqueada** ou com **patch ainda não integrado** | **Manter**, com **nome e comentário de estado** dizendo o porquê e o que falta |
+| **Pool pré-aquecido** (`w1`…`w3`) | **Manter** apenas o conjunto pequeno previsto nas regras — nunca crescer o pool por conveniência |
+| Worktree **de outro operador/agente** ou com processo vivo | **Não tocar** — nem remover, nem trocar de branch (`90`) |
+
+**Checklist obrigatório antes de remover — as quatro confirmações:**
+
+```bash
+orca worktree show --worktree <selector> --json   # 1) liveTerminalCount == 0 e status inativo
+git -C <path> status --short                      # 2) árvore limpa (saída vazia)
+git -C <path> log --oneline -1                    # 3) commit integrado no branch principal
+                                                  #    (git branch --contains <sha> confirma)
+                                                  # 4) nenhuma evidência exclusiva ali (SPEC,
+                                                  #    relatório, log de validação) — se houver,
+                                                  #    mover para o repositório antes
+orca worktree rm --worktree <selector> --json
+```
+
+Falhou qualquer uma das quatro → **não remove**; registra o motivo no comentário
+e mantém.
+
+**Reconciliação:** ao fechar um ciclo/promoção, varrer `orca worktree ps --json`,
+classificar cada workspace pela tabela acima e **remover somente as finalizadas
+com segurança**. Worktree antiga **não é** sinônimo de tarefa ativa — várias são
+preservadas de propósito por patch parcial ou bloqueio; a classificação é
+individual, nunca em lote por idade.
+
 
 ## Visibilidade — status do card
 

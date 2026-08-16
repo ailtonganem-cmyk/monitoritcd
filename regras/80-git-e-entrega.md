@@ -8,10 +8,24 @@
 > do primeiro commit — minutos de espera para mudar uma mensagem. O isolamento
 > fica onde protege; o pedágio sai de onde não protegia nada.
 
-**Worktree obrigatória quando:** há **paralelismo real** (2+ agentes editando ao
-mesmo tempo); **refactor amplo** ou mudança multi-arquivo com risco de
-regressão; **experimento descartável**; ou a tarefa é de trilha **Gauntlet**
-(`10`).
+**A worktree é a FRENTE de trabalho, não a tarefa** [founder 2026-08-16]: tarefa
+que **continua, corrige ou complementa** trabalho de uma worktree ativa, ou que é
+da **mesma frente** (mesmos arquivos/módulo/feature), **roda dentro dela**;
+tarefas pequenas e independentes do dia vão para a **worktree do dia**
+(`dia-AAAA-MM-DD`) ou para o **pool**. Roteamento e ciclo de vida completos:
+`25-harness-orca.md`. **Teto: 6 worktrees de tarefa por repositório** (fora os
+checkouts principais e o pool) — atingido, reconciliar antes de abrir outra.
+
+**Worktree NOVA só por motivo técnico declarado:** há **paralelismo real** (2+
+agentes editando ao mesmo tempo); **refactor amplo** ou mudança multi-arquivo com
+risco de regressão; **base branch diferente** da frente em curso; **experimento
+descartável**; ou a tarefa é de trilha **Gauntlet** (`10`) de alto risco.
+
+**Encerrar o worker não remove a worktree:** fechar o terminal / liberar o
+dispatch arquiva a execução, mas o checkout persiste até `orca worktree rm`.
+Remover só com as **quatro confirmações** (sem terminal vivo · árvore limpa ·
+commit integrado · nenhuma evidência exclusiva); parcial, bloqueada ou com patch
+não integrado **mantém-se com comentário de estado** (`25`).
 
 **Dispensada quando:** tarefa **sequencial, de um único agente e baixo risco**
 (trilha Direta) — trabalha-se em **branch curto** na árvore principal, com
@@ -48,8 +62,11 @@ Fluxo canônico **quando a worktree é criada do zero**, executado pelo
 5. **Integrar:** com V verde, o orquestrador commita em `tarefa/<id>`, volta ao
    `main`, faz o merge, remove a worktree (`git worktree remove`) e o branch
    (`git branch -d` — nunca `-D`).
-6. Worktree é **descartável**: tarefa abortada → remover sem merge; nunca
-   reaproveitar worktree de uma tarefa em outra.
+6. **Encerrar ≠ remover** [founder 2026-08-16]: integrada e validada, árvore
+   limpa e sem valor de diagnóstico → descartar o checkout; **parcial, bloqueada
+   ou com patch não integrado → manter, com nome e comentário de estado**.
+   Tarefas da **mesma frente** reaproveitam a worktree em vez de abrir outra
+   (`25`).
 
 Subagentes com isolamento nativo por worktree (`isolation: "worktree"` no Claude
 Code) podem usá-lo para frentes paralelas **dentro** da tarefa; a worktree da
