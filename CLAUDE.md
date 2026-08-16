@@ -27,48 +27,37 @@ aplica ao MonitorITCD**.
   prompts. O bypass não elimina o juízo do `90` — nessas hipóteses, parar e
   **perguntar no chat**.
 
-## §0 — Ciclo obrigatório PREVC (resumo)
+## §0 — Método PREVC, três papéis [v6]
 
-Toda tarefa: **P**lanejamento → **R**evisão do plano → **E**xecução →
-**V**alidação → **C**onfirmação. O Bloco 1 (P+R) termina em **SPEC de Execução
-escrita** — única entrada autorizada de agentes de codificação; tarefa
-média/grande tem SPEC versionada em `specs/`. V vermelho = tarefa não concluída;
-até 3 rodadas E↔V, depois escalar ao dono.
-**Detalhe integral:** `regras/10-metodo-trabalho.md`.
+**Método único: PREVC.** **Orquestrador** (pensamento, planejamento, gerência) →
+**Executor** (codificação) → **Revisor** (verifica e valida se o planejado foi
+feito e está correto). O orquestrador apresenta o **plano de trabalho completo**
+— objetivo, escopo, arquivos, spec, critério de aceite, como validar — e
+classifica o **nível: simples · média · complexa**; com base nele escolhe
+**executor, revisor e esforço** (`regras/20`), despacha, integra e reporta. O
+**Gauntlet** só por escolha expressa do orquestrador.
 
-## Ritmo — autonomia dentro da tarefa, loop contínuo entre tarefas
+**Piso:** gates verdes com saída literal · revisor ≠ executor · NUNCAs e
+perguntar×agir · fatos protegidos. Anti-loop: 3 idas e voltas → escalar.
+**Tudo roda no branch principal — sem worktree.**
 
-Conduzir a tarefa inteira sem interrupção (a regra de execução autônoma do
-projeto autoriza instalar, configurar, commitar, deployar e disparar workflow —
-`regras/00-identidade-projeto.md`). **Concluída a tarefa: reportar com evidência
-e prosseguir imediatamente à próxima da fila — Gauntlet Loop** (builder×crítico
-de contexto limpo contra barra concreta; `regras/10`) [decisão do dono
-2026-08-14 — substitui a parada entre tarefas de 2026-08-13].
+## Ritmo
 
-## Orquestração de modelos (resumo)
+Autonomia **dentro** da tarefa; concluída, reportar e prosseguir à próxima.
 
-**Orquestrador fixo = Codex, GPT-5.6 Sol, esforço máximo** (techlead —
-gerencia, distribui, supervisiona e pensa permanentemente nos limites de uso de
-cada agente; não produz SPEC, código nem review; Sol indisponível → Fable 5
-orquestra interinamente). **Planejador/Crítico = Fable 5** (máximo/xhigh;
-fallback Opus 5 ou o próprio Sol) conduz P+R, escreve a SPEC com complexidade
-classificada e valida em instância de contexto limpo. Codificar por complexidade em **Executor complexo** (`opus`)
-e **Executor simples** (`sonnet`), sempre com `model` explícito e SPEC
-referenciada. Acesso direto do dono a um agente = orquestração interina.
-Detalhe: `regras/20-orquestracao-modelos.md`. Estado compartilhado entre agentes:
-`regras/30-memoria-compartilhada.md`.
+## Papéis e agentes (resumo)
 
-## Método e worktree (resumo)
+**Orquestrador** planeja e gerencia · **Executor** codifica (simples → Grok ·
+opencode DeepSeek v4 Pro · Sonnet 5 · Luna; média → Grok · Sonnet 5 · Terra ·
+opencode; complexa → Grok · Opus 5 · Terra) · **Revisor** valida (Opus 5 ou
+Terra ou superior, nunca quem executou). Escolha e esforço são do orquestrador.
+Ao fim de cada etapa **há comunicação entre os agentes, documentada**.
+Detalhe: `regras/20-orquestracao-modelos.md`.
 
-**O plano manda** [v5]: o planejador escreve um plano de 5 campos e escolhe o
-método — **PREVC** (linear) ou **Gauntlet** (iterativo, barra concreta +
-builder×crítico), que o substitui quando render mais.
-**Worktree por risco** (`../MonitorITCD-worktrees/<id>`) — paralelismo, refactor
-amplo, experimento ou pedido do plano —, reutilizada de um **pool pré-aquecido**
-com `.venv` já criado; tarefa sequencial de um agente vai em branch curto.
-Worktree nova não herda `.venv` nem gitignorados — recriar o venv e copiar o que
-está em `.worktreeinclude`. Detalhes: `regras/10-metodo-trabalho.md` e
-`regras/80-git-e-entrega.md`.
+## Onde o trabalho roda
+
+**Tudo no branch principal** — sem worktree, sem branch por tarefa
+(`regras/80-git-e-entrega.md`).
 
 ## §4.5 — NUNCAs (resumo inegociável)
 
@@ -96,15 +85,13 @@ Tabela completa: `regras/90-seguranca-limites.md`.
 | Assunto | Módulo |
 | --- | --- |
 | Identidade, pessoas, IDs, stack, execução autônoma | `regras/00-identidade-projeto.md` |
-| Método de trabalho (PREVC, SPEC, verificação, GSD) | `regras/10-metodo-trabalho.md` |
-| Orquestração e modelos por papel | `regras/20-orquestracao-modelos.md` |
-| **Harness: comandos, DAG, gates, limites de uso** | `regras/25-harness-orca.md` |
-| Memória compartilhada entre agentes | `regras/30-memoria-compartilhada.md` |
+| Método PREVC, três papéis, níveis e plano | `regras/10-metodo-trabalho.md` |
+| Papéis e agentes (orquestrador · executor · revisor) | `regras/20-orquestracao-modelos.md` |
 | Regras de negócio: domínio, fatos protegidos, LLM, UFs | `regras/40-regras-negocio.md` |
 | Saídas: e-mail, Telegram, bot | `regras/50-saidas-notificacoes.md` |
 | Backend: segurança, limites, secrets, persistência | `regras/60-backend.md` |
 | Testes, gates e armadilhas conhecidas | `regras/70-testes-validacao.md` |
-| Git, worktree, entrega e documentação (DoD) | `regras/80-git-e-entrega.md` |
+| Git (tudo na main) e entrega | `regras/80-git-e-entrega.md` |
 | Segurança, NUNCAs e limites | `regras/90-seguranca-limites.md` |
 
 **Consulte o módulo ANTES de agir no assunto correspondente** — o hub resume; o

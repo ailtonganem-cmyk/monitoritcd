@@ -27,36 +27,7 @@ commits, relatórios, mensagens ao dono, conversa. Ortografia rigorosa.
 **Identificadores de código permanecem em inglês**, exceto termos jurídicos sem
 tradução fiel (`causa_mortis`, `espolio`, `inventario`, `doacao`).
 
-## Método — o plano manda
 
-Toda tarefa segue **P**lanejamento → **R**evisão → **E**xecução → **V**alidação →
-**C**onfirmação (`regras/10-metodo-trabalho.md`). **Regra de ouro: o PLANO manda** [v5] — o planejador escreve um plano de 5
-campos (objetivo · arquivos · critério de aceite · como validar · **método**) e
-escolhe o método: **PREVC** (linear) ou **Gauntlet** (iterativo, barra concreta
-+ builder×crítico), que **substitui** o PREVC quando render mais. Tarefa
-pequena: um único agente faz tudo. O que não estiver no plano não é exigido.
-
-- **Se você orquestra (Codex — GPT-5.6 Sol, esforço máximo — techlead):**
-  gerencie e distribua — pense sempre nos limites de uso de cada agente,
-  despache o planejador, dispare executores e críticos conforme a SPEC, integre
-  e reporte. **Não escreva SPEC, não crie nem revise código** (`regras/20`).
-- **Se você planeja (planejador — por despacho do orquestrador):** produza a
-  **SPEC de Execução escrita** com a **complexidade classificada** antes de
-  qualquer edição — em `specs/SPEC_<ID>_<slug>.md` para tarefa média/grande — e
-  devolva ao orquestrador, que despacha os executores.
-- **Se você codifica (executor):** **sem SPEC, não comece** — despacho sem SPEC
-  ou com seção material vazia é devolvido ao orquestrador. Implemente com
-  fidelidade; ambiguidade → interpretação razoável + suposição registrada no
-  relatório. **Nunca invente fato normativo** (`regras/40-regras-negocio.md`).
-
-Papéis e modelos: `regras/20-orquestracao-modelos.md`.
-
-## Memória de trabalho compartilhada
-
-Cada tarefa tem estado em `_trabalho/ESTADO_<id>.md`, que **todo agente lê ao
-iniciar e atualiza ao concluir etapa** — decisões, arquivos em edição, progresso,
-achados. **Declare o arquivo antes de editá-lo.** Protocolo:
-`regras/30-memoria-compartilhada.md`.
 
 ## Git — worktree por tarefa; escrita exclusiva do coordenador
 
@@ -111,10 +82,8 @@ limiares e armadilhas conhecidas: `regras/70-testes-validacao.md`.
 | Assunto | Módulo |
 | --- | --- |
 | Identidade do projeto | `regras/00-identidade-projeto.md` |
-| Método de trabalho (PREVC, SPEC, GSD) | `regras/10-metodo-trabalho.md` |
-| Orquestração e modelos | `regras/20-orquestracao-modelos.md` |
-| **Harness: comandos, DAG, gates, limites de uso** | `regras/25-harness-orca.md` |
-| Memória compartilhada | `regras/30-memoria-compartilhada.md` |
+| Método PREVC, três papéis, níveis e plano | `regras/10-metodo-trabalho.md` |
+| Papéis e agentes (orquestrador · executor · revisor) | `regras/20-orquestracao-modelos.md` |
 | Regras de negócio (domínio, LLM, UFs) | `regras/40-regras-negocio.md` |
 | Saídas: e-mail, Telegram, bot | `regras/50-saidas-notificacoes.md` |
 | Backend: segurança, limites, secrets | `regras/60-backend.md` |
