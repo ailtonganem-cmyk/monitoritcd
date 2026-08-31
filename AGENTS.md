@@ -41,3 +41,14 @@ Fonte: `pyproject.toml` e `.github/workflows/`. Verde = exit 0 e saída literal.
 - `.github/workflows/deploy-functions.yml` existe e publica Cloud Functions — **não executar**.
 
 Não há entrypoint local de release. Produção só via workflow remoto, e mesmo assim exige pedido expresso.
+
+## Release rotineiro
+
+O risco é o **conteúdo do diff**, não o ato de `release.sh`, commit ou HML de candidato já checkado.
+
+- Não abrir spec, PREVC, orquestrar P/R/E/V/C, tdd-guard, debug-reset, wiki, retro nem ciclo-de-vida só para publicar.
+- Evidência de HML/prod = o comando canônico já mapeado neste arquivo, uma vez, no SHA, exit 0.
+- Depois de correção: a classe que falhou + a regressão mapeada — não a suíte ritual.
+- Achado editorial → observação, não nova rodada.
+- Árvore: `release.sh` pode recusar dirty tree. O coordenador commita pathspec **antes** do entrypoint. Arquivos só de `.orq`/SPEC/handoff não justificam loop de review.
+- Precedência: este `AGENTS.md` > `Skill/AGENTS.md` > `ATIVACAO` > skill. Skill **não** manda sobre este arquivo.
