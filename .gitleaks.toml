@@ -20,6 +20,7 @@ paths = [
     '''IDEAS\.md''',
     '''\.pre-commit-config\.yaml''',             # patterns no hook
     '''\.gitleaks\.toml''',                      # esta própria config
+    '''^\.secrets\.baseline$''',                 # hashes do baseline detect-secrets, não credenciais
 ]
 # Strings literais que aparecem em docs ou testes — incluindo tokens de
 # honeytokens DESATIVADOS (T8 SECURITY.md). Esses tokens existem no histórico
