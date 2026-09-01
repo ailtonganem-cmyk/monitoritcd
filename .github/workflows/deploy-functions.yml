@@ -1,14 +1,16 @@
 name: Deploy Cloud Functions
+run-name: Deploy Cloud Functions · ${{ inputs.sha }} · @${{ github.actor }}
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'functions/**'
-      - '.github/workflows/deploy-functions.yml'
   workflow_dispatch:
+    inputs:
+      sha:
+        description: SHA completo de main, já aprovado por Tests e Security
+        required: true
+        type: string
 
 permissions:
+  actions: read
   contents: read
 
 concurrency:
@@ -21,15 +23,63 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Configurar credenciais GCP
+      - name: Validar CI verde do SHA candidato
         env:
-          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          CANDIDATE_SHA: ${{ inputs.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          echo "$SA_JSON" > "$RUNNER_TEMP/sa.json"
-          chmod 600 "$RUNNER_TEMP/sa.json"
-          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+          set -euo pipefail
+
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "O workflow de produção deve ser executado a partir de main."
+            exit 1
+          fi
+          if [[ ! "$CANDIDATE_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Informe o SHA completo de 40 caracteres."
+            exit 1
+          fi
+
+          main_sha="$(gh api "repos/$REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          if [[ "$CANDIDATE_SHA" != "$main_sha" ]]; then
+            echo "Candidato $CANDIDATE_SHA não é o HEAD atual de main ($main_sha)."
+            exit 1
+          fi
+
+          for workflow in tests.yml security.yml; do
+            run_record="$(
+              gh api --method GET \
+                "repos/$REPOSITORY/actions/workflows/$workflow/runs" \
+                -f branch=main \
+                -f event=push \
+                -f head_sha="$CANDIDATE_SHA" \
+                -F per_page=100 \
+                --jq '.workflow_runs | sort_by(.updated_at) | last |
+                  [.status, .conclusion, (.id // ""), (.html_url // "")] | @tsv'
+            )"
+            IFS=$'\t' read -r status conclusion run_id run_url <<< "$run_record"
+            if [[ "$status" != "completed" || "$conclusion" != "success" ]]; then
+              echo "Gate recusado: $workflow no SHA $CANDIDATE_SHA está ${status:-ausente}/${conclusion:-sem conclusão}."
+              exit 1
+            fi
+            echo "$workflow aprovado no run $run_id: $run_url"
+          done
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+          persist-credentials: false
+
+      - name: Confirmar checkout do candidato
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          checked_out_sha="$(git rev-parse HEAD)"
+          if [[ "$checked_out_sha" != "$CANDIDATE_SHA" ]]; then
+            echo "Checkout divergente: esperado $CANDIDATE_SHA, obtido $checked_out_sha."
+            exit 1
+          fi
 
       - name: Setup gcloud
         uses: google-github-actions/auth@v2
@@ -43,6 +93,8 @@ jobs:
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
+          set -euo pipefail
+
           # Cloud Functions Gen2 = Cloud Run subjacente + Artifact Registry
           gcloud services enable \
             cloudfunctions.googleapis.com \
@@ -50,10 +102,10 @@ jobs:
             artifactregistry.googleapis.com \
             run.googleapis.com \
             eventarc.googleapis.com \
-            --project=$PROJECT_ID 2>&1 | tee /tmp/enable.log
+            --project="$PROJECT_ID" 2>&1 | tee "$RUNNER_TEMP/enable.log"
 
           # Detecta se erro foi por falta de billing (requer plano Blaze)
-          if grep -q "BILLING_DISABLED\|requires billing" /tmp/enable.log; then
+          if grep -q "BILLING_DISABLED\|requires billing" "$RUNNER_TEMP/enable.log"; then
             echo ""
             echo "===================================================="
             echo "BILLING REQUIRED: este projeto Firebase precisa estar"
@@ -74,6 +126,8 @@ jobs:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           PROXY_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
         run: |
+          set -euo pipefail
+
           gcloud functions deploy proxy_br \
             --gen2 \
             --runtime=python311 \
@@ -85,8 +139,8 @@ jobs:
             --memory=256MB \
             --timeout=60s \
             --max-instances=10 \
-            --set-env-vars=PROXY_TOKEN=$PROXY_TOKEN \
-            --project=$PROJECT_ID
+            --set-env-vars="PROXY_TOKEN=$PROXY_TOKEN" \
+            --project="$PROJECT_ID"
 
       - name: Deploy canary_filter
         env:
@@ -95,6 +149,8 @@ jobs:
           TG_BOT: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TG_CHAT: ${{ secrets.TELEGRAM_OWNER_CHAT_ID }}
         run: |
+          set -euo pipefail
+
           gcloud functions deploy canary_filter \
             --gen2 \
             --runtime=python311 \
@@ -106,8 +162,17 @@ jobs:
             --memory=256MB \
             --timeout=30s \
             --max-instances=5 \
-            --set-env-vars=FILTER_TOKEN=$FILTER_TOKEN,TELEGRAM_BOT_TOKEN=$TG_BOT,TELEGRAM_OWNER_CHAT_ID=$TG_CHAT \
-            --project=$PROJECT_ID
+            --set-env-vars="FILTER_TOKEN=$FILTER_TOKEN,TELEGRAM_BOT_TOKEN=$TG_BOT,TELEGRAM_OWNER_CHAT_ID=$TG_CHAT" \
+            --project="$PROJECT_ID"
+
+      - name: Preparar fonte imutável do bot_webhook
+        env:
+          CANDIDATE_SHA: ${{ inputs.sha }}
+        run: |
+          set -euo pipefail
+          python scripts/prepare_bot_webhook_source.py \
+            --sha "$CANDIDATE_SHA" \
+            --output "$RUNNER_TEMP/bot-webhook-source"
 
       - name: Deploy bot_webhook
         env:
@@ -122,11 +187,21 @@ jobs:
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
         run: |
-          # Bot webhook reusa todo o pacote monitoritcd (instalado via git+https)
+          set -euo pipefail
+
+          # O staging incorpora o pacote monitoritcd do checkout exato aprovado.
           # Em Cloud Function: usa Application Default Credentials (metadata),
           # sem precisar de FIREBASE_SERVICE_ACCOUNT_JSON multilinhas.
           # Usar --env-vars-file pra evitar problemas com chars especiais nos values
-          cat > /tmp/env.yaml <<EOY
+          env_file="$RUNNER_TEMP/bot-webhook-env.yaml"
+          cleanup_env_file() {
+            if [[ -f "$env_file" ]]; then
+              shred -u "$env_file" 2>/dev/null || rm -f "$env_file"
+            fi
+          }
+          trap cleanup_env_file EXIT
+
+          cat > "$env_file" <<EOY
           OWNER_ID: "$OWNER_ID"
           OWNER_EMAIL: "$OWNER_EMAIL"
           GEMINI_API_KEY: "$GEMINI_API_KEY"
@@ -143,28 +218,32 @@ jobs:
             --gen2 \
             --runtime=python311 \
             --region=southamerica-east1 \
-            --source=functions/bot_webhook \
+            --source="$RUNNER_TEMP/bot-webhook-source" \
             --entry-point=bot_webhook \
             --trigger-http \
             --allow-unauthenticated \
             --memory=512MB \
             --timeout=60s \
             --max-instances=3 \
-            --env-vars-file=/tmp/env.yaml \
-            --project=$PROJECT_ID
+            --env-vars-file="$env_file" \
+            --project="$PROJECT_ID"
 
-          # V9 (Pentest): apaga env.yaml com secrets do runner imediatamente
-          # após deploy. Defense-in-depth contra runner comprometido /
-          # leak via cache. `shred -u` sobrescreve antes de unlink.
-          shred -u /tmp/env.yaml 2>/dev/null || rm -f /tmp/env.yaml
-
-      - name: Print URLs
+      - name: Verificar Functions publicadas
         env:
           PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
         run: |
+          set -euo pipefail
           for fn in proxy_br canary_filter bot_webhook; do
-            echo "$fn:"
-            gcloud functions describe $fn \
-              --gen2 --region=southamerica-east1 --project=$PROJECT_ID \
-              --format='value(serviceConfig.uri)' 2>/dev/null || echo "  (not deployed)"
+            uri="$(
+              gcloud functions describe "$fn" \
+                --gen2 \
+                --region=southamerica-east1 \
+                --project="$PROJECT_ID" \
+                --format='value(serviceConfig.uri)'
+            )"
+            if [[ -z "$uri" ]]; then
+              echo "Function $fn sem URI publicada."
+              exit 1
+            fi
+            echo "$fn: $uri"
           done

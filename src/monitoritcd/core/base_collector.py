@@ -295,6 +295,7 @@ class BaseCollector(ABC):
         self,
         titulo: str,
         url: str,
+        *,
         texto: str | None = None,
         data_pub: datetime | None = None,
         content_for_hash: str | None = None,

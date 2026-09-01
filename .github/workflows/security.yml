@@ -30,11 +30,12 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install
         run: |
           python -m pip install --upgrade pip
-          pip install "bandit[toml]>=1.7.8" "ruff>=0.4.0"
+          python -m pip install "bandit[toml]>=1.7.8" "ruff==0.16.5"
 
       - name: Bandit (HIGH/MEDIUM bloqueia)
         run: bandit -c pyproject.toml -r src/ -ll
@@ -63,18 +64,19 @@ jobs:
           python-version: '3.11'
 
       - name: Install detect-secrets
-        run: pip install "detect-secrets>=1.5.0"
+        run: pip install "detect-secrets==1.5.0"
 
       - name: Detect-secrets vs baseline
         run: |
-          detect-secrets scan --baseline .secrets.baseline
-          # Se houver diff vs baseline, falha
-          detect-secrets audit --report --fail-on-unaudited .secrets.baseline || true
+          # O hook compara todos os arquivos rastreados com o baseline e falha
+          # diante de qualquer achado novo. `audit` serve para classificação
+          # interativa do baseline e não é um gate de CI.
+          git ls-files -z | xargs -0 -- detect-secrets-hook --baseline .secrets.baseline
 
       - name: Block known secret literals
         run: |
           # Princípio canônico 3: literais conhecidos = commit rejeitado
-          python scripts/check_secret_literals.py $(git ls-files)
+          git ls-files -z | xargs -0 -- python scripts/check_secret_literals.py
 
   # ───────────────────────────────────────────────────────────────────────
   # DEPENDENCIES — vulnerabilidades em deps
@@ -89,12 +91,13 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install pip-audit + project
         run: |
-          python -m pip install --upgrade pip
-          pip install "pip-audit>=2.7.0"
-          pip install -e ".[dev]"
+          python -m pip install --upgrade pip "setuptools>=83"
+          python -m pip install "pip-audit>=2.7.0"
+          python -m pip install -e ".[dev]"
 
       - name: pip-audit (HIGH/CRITICAL bloqueia)
         # Vulns ignoradas (todas em deps transitivas fora do nosso controle):
@@ -120,10 +123,11 @@ jobs:
         with:
           python-version: '3.11'
           cache: pip
+          cache-dependency-path: pyproject.toml
       - name: Install
         run: |
-          pip install --upgrade pip
-          pip install -e .
+          python -m pip install --upgrade pip
+          python -m pip install -e .
       - name: Lint sources/*.yaml
         run: python scripts/lint_sources_yaml.py
 

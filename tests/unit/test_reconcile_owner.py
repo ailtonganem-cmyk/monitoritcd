@@ -98,7 +98,9 @@ class TestReconcileDryRun:
         import google.cloud.firestore as gcf  # noqa: PLC0415
 
         monkeypatch.setattr(
-            gcf, "Client", lambda **kw: FakeClient(doc_ids, updates, **kw)  # type: ignore[arg-type]
+            gcf,
+            "Client",
+            lambda **kw: FakeClient(doc_ids, updates, **kw),  # type: ignore[arg-type]
         )
 
         count = ro.reconcile(
@@ -124,7 +126,9 @@ class TestReconcileDryRun:
         import google.cloud.firestore as gcf  # noqa: PLC0415
 
         monkeypatch.setattr(
-            gcf, "Client", lambda **kw: TrackingClient([], updates, **kw)  # type: ignore[arg-type]
+            gcf,
+            "Client",
+            lambda **kw: TrackingClient([], updates, **kw),  # type: ignore[arg-type]
         )
 
         ro.reconcile(
@@ -134,9 +138,7 @@ class TestReconcileDryRun:
             apply=False,
         )
 
-        assert queries[0].wheres == [
-            ("owner_id", "==", "sefworkstation-monitor-homolog")
-        ]
+        assert queries[0].wheres == [("owner_id", "==", "sefworkstation-monitor-homolog")]
 
 
 @pytest.mark.unit
@@ -148,7 +150,9 @@ class TestReconcileApply:
         import google.cloud.firestore as gcf  # noqa: PLC0415
 
         monkeypatch.setattr(
-            gcf, "Client", lambda **kw: FakeClient(doc_ids, updates, **kw)  # type: ignore[arg-type]
+            gcf,
+            "Client",
+            lambda **kw: FakeClient(doc_ids, updates, **kw),  # type: ignore[arg-type]
         )
 
         count = ro.reconcile(
@@ -169,7 +173,9 @@ class TestReconcileApply:
         import google.cloud.firestore as gcf  # noqa: PLC0415
 
         monkeypatch.setattr(
-            gcf, "Client", lambda **kw: FakeClient([], updates, **kw)  # type: ignore[arg-type]
+            gcf,
+            "Client",
+            lambda **kw: FakeClient([], updates, **kw),  # type: ignore[arg-type]
         )
 
         count = ro.reconcile(
@@ -220,7 +226,9 @@ class TestMainCli:
         import google.cloud.firestore as gcf  # noqa: PLC0415
 
         monkeypatch.setattr(
-            gcf, "Client", lambda **kw: FakeClient([], updates, **kw)  # type: ignore[arg-type]
+            gcf,
+            "Client",
+            lambda **kw: FakeClient([], updates, **kw),  # type: ignore[arg-type]
         )
         monkeypatch.setattr(
             sys,
