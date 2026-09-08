@@ -1,0 +1,15 @@
+---
+description: Classifica complexidade no início de toda tarefa e escolhe TRACK_A, TRACK_C ou TRACK_B sem substituir o método atual do repo.
+alwaysApply: true
+---
+
+Antes de editar código, rode o roteador EAW.
+
+1. Leia AGENTS.md do projeto. A precedência de lá vence este arquivo.
+2. Classifique R0/R1/R2 conforme o Skill/AGENTS.md se existir.
+3. Escolha a trilha com a tabela do playbook EAW. Default TRACK_A.
+4. Anuncie a rota em YAML no primeiro turno.
+5. TRACK_A: SPEC + executor-simples/complexo já existentes.
+6. TRACK_C: o mesmo + eval mínimo + review por outro modelo.
+7. TRACK_B: não gere código de produto antes de Implementation readiness.
+8. Não invente fato normativo. Não faça git de escrita se o AGENTS.md reservar isso ao coordenador.
