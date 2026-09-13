@@ -1,0 +1,13 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Parâmetros Extras</mat-card-title>
+    <mat-card-subtitle>Um por linha</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <mat-form-field class="full-width">
+      <mat-label>Palavras-chave extras</mat-label>
+      <textarea matInput [(ngModel)]="extrasTexto" rows="10" placeholder="ex: ITCD&#10;ITCMD"></textarea>
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="salvar()">Salvar</button>
+  </mat-card-content>
+</mat-card>

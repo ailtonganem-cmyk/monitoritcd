@@ -1,0 +1,30 @@
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Configuração de IA</mat-card-title>
+    <mat-card-subtitle>Cadeia de processamento</mat-card-subtitle>
+  </mat-card-header>
+  <mat-card-content>
+    <div *ngFor="let item of itens" class="ia-item">
+      <h3>{{item.nome || item.id}}</h3>
+      <div class="ia-controls">
+        <mat-checkbox [(ngModel)]="item.habilitado">Habilitado</mat-checkbox>
+        
+        <mat-form-field>
+          <mat-label>Modelo</mat-label>
+          <input matInput [(ngModel)]="item.modelo">
+        </mat-form-field>
+
+        <mat-form-field>
+          <mat-label>Esforço</mat-label>
+          <mat-select [(ngModel)]="item.esforco">
+            <mat-option value="baixo">Baixo</mat-option>
+            <mat-option value="medio">Médio</mat-option>
+            <mat-option value="alto">Alto</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </div>
+
+    <button mat-raised-button color="primary" (click)="salvar()">Salvar</button>
+  </mat-card-content>
+</mat-card>

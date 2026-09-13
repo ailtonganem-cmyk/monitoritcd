@@ -1,0 +1,18 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: calc(100vh - 100px);
+}
+
+mat-card {
+  width: 400px;
+  text-align: center;
+  padding: 20px;
+}
+
+#google-btn {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+}

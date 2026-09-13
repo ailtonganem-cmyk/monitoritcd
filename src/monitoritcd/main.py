@@ -75,13 +75,20 @@ def _make_backends(
         # do Gemini (20 req/dia/modelo) volta a ser suficiente. Gemini retorna a
         # ser o provedor primário; Groq permanece como fallback para absorver
         # oscilações de rede ou 429 momentâneo. Sem GROQ_API_KEY, mantém Gemini-only.
-        gemini = GeminiProvider(settings.GEMINI_API_KEY)
-        if settings.GROQ_API_KEY:
-            llm: Any = FallbackLLMProvider(
-                primary=gemini, fallback=GroqProvider(settings.GROQ_API_KEY)
-            )
+        from monitoritcd.llm.cadeia import montar_cadeia  # noqa: PLC0415
+
+        cadeia = montar_cadeia(settings)
+        llm: Any
+        if cadeia is not None:
+            llm = cadeia
         else:
-            llm = gemini
+            gemini = GeminiProvider(settings.GEMINI_API_KEY)
+            if settings.GROQ_API_KEY:
+                llm = FallbackLLMProvider(
+                    primary=gemini, fallback=GroqProvider(settings.GROQ_API_KEY)
+                )
+            else:
+                llm = gemini
     except (ImportError, RuntimeError) as e:
         # Defesa: se ambiente real não disponível, cai pro fake e loga
         log = structlog.get_logger("main")
@@ -375,10 +382,22 @@ def cli(argv: list[str] | None = None) -> int:
         help="Valida credenciais essenciais e reporta canais de notificação ativos",
     )
 
+    painel_p = sub.add_parser(
+        "painel",
+        help="Painel local (fontes, parâmetros, IA) — só ailtonganem@gmail.com",
+    )
+    painel_p.add_argument("--host", default="127.0.0.1")
+    painel_p.add_argument("--port", type=int, default=8765)
+
     args = parser.parse_args(argv)
 
     if args.cmd == "check-config":
         return cmd_check_config(args)
+    if args.cmd == "painel":
+        from monitoritcd.painel.http import servir  # noqa: PLC0415
+
+        servir(args.host, args.port)
+        return 0
 
     subcomandos = {
         "run": cmd_run,

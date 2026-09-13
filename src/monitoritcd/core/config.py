@@ -36,6 +36,10 @@ CAMPOS_OPCIONAIS_EM_BRANCO = (
     "GMAIL_USER",
     "GMAIL_APP_PASSWORD",
     "GROQ_API_KEY",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "XAI_API_KEY",
+    "OLLAMA_BASE_URL",
     "TELEGRAM_GROUP_CHAT_ID",
     "FIREBASE_SERVICE_ACCOUNT_JSON",
     "HEALTHCHECKS_URL",
@@ -69,6 +73,10 @@ class Settings(BaseSettings):
     # ─────────────────────────────────────────────────────────────────────
     GEMINI_API_KEY: SecretStr
     GROQ_API_KEY: SecretStr | None = None
+    OPENAI_API_KEY: SecretStr | None = None
+    ANTHROPIC_API_KEY: SecretStr | None = None
+    XAI_API_KEY: SecretStr | None = None
+    OLLAMA_BASE_URL: str | None = None
 
     # ─────────────────────────────────────────────────────────────────────
     # E-mail — canal OPCIONAL: sem credencial o pipeline roda e notifica só

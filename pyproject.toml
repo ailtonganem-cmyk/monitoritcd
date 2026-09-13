@@ -69,7 +69,7 @@ where = ["src"]
 include = ["monitoritcd*"]
 
 [tool.setuptools.package-data]
-monitoritcd = ["notifiers/templates/*.j2", "py.typed"]
+monitoritcd = ["notifiers/templates/*.j2", "painel/templates/*.html", "py.typed"]
 
 # ---------------------------------------------------------------------------
 # Ruff (lint + format)

@@ -55,10 +55,47 @@ def _is_quota_error(exc: Exception) -> bool:
     return any(marker.lower() in msg for marker in _QUOTA_MARKERS)
 
 
+class CadeiaLLMProvider:
+    """Tenta provedores em ordem; 429/5xx de quota passa ao seguinte."""
+
+    def __init__(self, provedores: list[LLMProvider]) -> None:
+        if not provedores:
+            msg = "cadeia LLM vazia"
+            raise ValueError(msg)
+        self._provedores = list(provedores)
+
+    @property
+    def name(self) -> str:
+        return "+".join(p.name for p in self._provedores)
+
+    async def classify_batch(
+        self,
+        items_text: list[str],
+        *,
+        system_prompt: str | None = None,
+    ) -> list[dict[str, Any]]:
+        ultimo_quota: Exception | None = None
+        for provedor in self._provedores:
+            try:
+                return await provedor.classify_batch(items_text, system_prompt=system_prompt)
+            except Exception as exc:
+                if not _is_quota_error(exc):
+                    raise
+                logger.warning(
+                    "llm.cadeia_quota_proximo",
+                    provedor=provedor.name,
+                    error=type(exc).__name__,
+                )
+                ultimo_quota = exc
+        nomes = ",".join(p.name for p in self._provedores)
+        raise LLMProvidersExhaustedError(f"Cadeia esgotada: {nomes}") from ultimo_quota
+
+
 class FallbackLLMProvider:
     """Wrapper que tenta primary, fallback em quota error."""
 
     def __init__(self, primary: LLMProvider, fallback: LLMProvider) -> None:
+        self._cadeia = CadeiaLLMProvider([primary, fallback])
         self._primary = primary
         self._fallback = fallback
 
@@ -74,33 +111,4 @@ class FallbackLLMProvider:
         *,
         system_prompt: str | None = None,
     ) -> list[dict[str, Any]]:
-        try:
-            return await self._primary.classify_batch(items_text, system_prompt=system_prompt)
-        except Exception as primary_exc:
-            if not _is_quota_error(primary_exc):
-                raise
-            logger.warning(
-                "llm.primary_quota_exceeded_falling_back",
-                primary=self._primary.name,
-                fallback=self._fallback.name,
-                error=type(primary_exc).__name__,
-            )
-            try:
-                return await self._fallback.classify_batch(items_text, system_prompt=system_prompt)
-            except Exception as fallback_exc:
-                if not _is_quota_error(fallback_exc):
-                    raise
-                # Tier 3: ambos quota — deferir em vez de derrubar pipeline
-                logger.warning(
-                    "llm.both_providers_exhausted_deferring",
-                    primary=self._primary.name,
-                    fallback=self._fallback.name,
-                    primary_error=type(primary_exc).__name__,
-                    fallback_error=type(fallback_exc).__name__,
-                )
-                msg = (
-                    f"Both LLM providers exhausted: "
-                    f"{self._primary.name} ({type(primary_exc).__name__}), "
-                    f"{self._fallback.name} ({type(fallback_exc).__name__})"
-                )
-                raise LLMProvidersExhaustedError(msg) from fallback_exc
+        return await self._cadeia.classify_batch(items_text, system_prompt=system_prompt)

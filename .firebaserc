@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "monitoritcd"
+    "default": "demo-monitoritcd",
+    "hml": "demo-monitoritcd",
+    "remoto-nao-usar": "monitoritcd"
   }
 }
