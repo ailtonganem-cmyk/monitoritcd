@@ -2,11 +2,13 @@ name: Monitor (cron diário)
 
 on:
   schedule:
-    # 10:13 UTC = 07:13 BRT — fora dos minutos "redondos" para evitar atrasos
+    # Três crons espalhados: GitHub Actions pode pular schedule em alta carga.
+    # Pipeline idempotente (content_hash) — run extra não duplica notificação.
+    # 02:33 UTC = 23:33 BRT — janela de baixa carga global.
+    - cron: '33 2 * * *'
+    # 10:13 UTC = 07:13 BRT — manhã; minuto não-redondo.
     - cron: '13 10 * * *'
-    # 14:47 UTC = 11:47 BRT — backup. GitHub Actions cron pode ser pulado em
-    # períodos de alta carga; pipeline é idempotente (Firestore dedup por
-    # content_hash), então segundo run cobre o primeiro sem duplicar.
+    # 14:47 UTC = 11:47 BRT — meio-dia.
     - cron: '47 14 * * *'
   workflow_dispatch:
     inputs:
@@ -111,6 +113,13 @@ jobs:
             ARGS="$ARGS --uf ${{ github.event.inputs.uf }}"
           fi
           python -m monitoritcd.main $ARGS
+
+      - name: Healthcheck — success ping (se job passou)
+        if: success() && env.HEALTHCHECKS_URL != ''
+        env:
+          HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
+        run: |
+          curl -fsS -m 10 "${HEALTHCHECKS_URL}" || true
 
       - name: Healthcheck — fail ping (se job falhou)
         if: failure() && env.HEALTHCHECKS_URL != ''
