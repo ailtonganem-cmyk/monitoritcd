@@ -84,10 +84,20 @@ TOPIC_SECAO_LABEL: Final[dict[str, str]] = {
 
 
 def build_jinja_env() -> Environment:
-    """Constrói Jinja2 com autoescape obrigatório (anti-XSS)."""
+    """Constrói Jinja2 com autoescape HTML só nos templates HTML.
+
+    Não incluir o sufixo genérico `j2`: isso HTML-escapava `telegram.md.j2` e
+    transformava aspas em `&#34;`/`&#39;`, cujo `#` o Telegram rejeita (#46).
+    `email.html.j2` termina em `.j2`, não em `.html` — por isso o sufixo
+    composto entra na lista (XSS do e-mail permanece coberto).
+    """
     return Environment(
         loader=PackageLoader("monitoritcd.notifiers", "templates"),
-        autoescape=select_autoescape(["html", "j2"]),
+        autoescape=select_autoescape(
+            enabled_extensions=("html", "htm", "xml", "html.j2", "htm.j2", "xml.j2"),
+            default_for_string=True,
+            default=False,
+        ),
         trim_blocks=True,
         lstrip_blocks=True,
     )

@@ -23,6 +23,7 @@ from monitoritcd.core.models import (
     TipoAto,
     TipoFonte,
 )
+from monitoritcd.notifiers.email_notifier import build_jinja_env
 from monitoritcd.notifiers.telegram_notifier import render_telegram
 from monitoritcd.security.markdown_escape import split_for_telegram
 
@@ -39,11 +40,12 @@ def _doc(
     contexto: str = "",
     tier: SeverityTier = SeverityTier.ALTA,
     uf: str = "SP",
+    url: str = "https://www.example.gov.br/pl-1234",
 ) -> Documento:
     raw = RawItem(
         source_id="src",
         titulo_raw=titulo,
-        url="https://www.example.gov.br/pl-1234",
+        url=url,
         fetched_at=FIXED_NOW,
         data_publicacao=FIXED_NOW,
         content_hash="a" * 64,
@@ -81,6 +83,14 @@ def _doc(
 
 @pytest.mark.templates
 class TestTelegramRender:
+    def test_autoescape_html_nao_aplica_em_markdown(self) -> None:
+        env = build_jinja_env()
+        assert callable(env.autoescape)
+        assert env.autoescape("email.html.j2") is True
+        assert env.autoescape("email_compacto.html.j2") is True
+        assert env.autoescape("telegram.md.j2") is False
+        assert env.autoescape("digest.md.j2") is False
+
     def test_renders_basic_digest(self) -> None:
         text = render_telegram([_doc()], digest_label="Diário", data_geracao=FIXED_NOW)
         assert "MonitorITCD" in text
@@ -188,6 +198,44 @@ class TestTelegramRender:
             data_geracao=FIXED_NOW,
         )
         assert "Contexto \\(IA\\)" not in text
+
+    def test_aspas_nao_viram_entidade_html_com_hash_nu(self) -> None:
+        # #46 — autoescape HTML em telegram.md.j2 gerava &#34;/&#39; e o
+        # Telegram rejeitava o `#` das entidades (400 MarkdownV2).
+        text = render_telegram(
+            [
+                _doc(
+                    titulo='PL 1234/2026 — "ITCMD" progressivo',
+                    resumo="Altera a 'base de cálculo' do imposto.",
+                )
+            ],
+            digest_label="Semanal",
+            data_geracao=FIXED_NOW,
+        )
+        assert "&#" not in text
+        assert "&amp;" not in text
+        assert '"ITCMD"' in text
+        assert "'base de cálculo'" in text
+
+    def test_hash_literal_no_titulo_e_resumo_continua_escapado(self) -> None:
+        text = render_telegram(
+            [_doc(titulo="PL 1234 #tema", resumo="Ver #ITCMD na ementa.")],
+            digest_label="Semanal",
+            data_geracao=FIXED_NOW,
+        )
+        assert r"\#tema" in text
+        assert r"\#ITCMD" in text
+        assert "#tema" not in text.replace(r"\#tema", "")
+        assert "#ITCMD" not in text.replace(r"\#ITCMD", "")
+
+    def test_ampersand_e_fragmento_na_url_nao_viram_html(self) -> None:
+        text = render_telegram(
+            [_doc(url="https://www.example.gov.br/pl?a=1&b=2#secao")],
+            digest_label="Semanal",
+            data_geracao=FIXED_NOW,
+        )
+        assert "https://www.example.gov.br/pl?a=1&b=2#secao" in text
+        assert "&amp;" not in text
 
 
 @pytest.mark.templates
