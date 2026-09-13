@@ -52,6 +52,26 @@ def _gravar_selecao(raiz: Path, mapa: dict[str, bool]) -> None:
     )
 
 
+def _slug_fonte(fonte_id: str) -> str:
+    """Slug canônico; rejeita path traversal e id fora do padrão."""
+    matched = _ID_RE.fullmatch(fonte_id.strip().lower())
+    if matched is None:
+        raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
+    sid = matched.group(0)
+    seguro = "".join(ch for ch in sid if ch.isalnum() or ch == "-")
+    if seguro != sid:
+        raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
+    return seguro
+
+
+def _yaml_operador(root: Path, fonte_id: str) -> Path:
+    sid = _slug_fonte(fonte_id)
+    pasta = (dir_sources(root) / OPERADOR_DIR).resolve()
+    destino = (pasta / f"{sid}.yaml").resolve()
+    destino.relative_to(pasta)
+    return destino
+
+
 def listar_fontes(raiz: Path | None = None) -> list[dict[str, Any]]:
     """Catálogo YAML + flag `selecionada` (overlay local, como no Coletor)."""
     root = raiz or _repo_root()
@@ -104,8 +124,8 @@ def incluir_fonte(
 ) -> dict[str, Any]:
     """Grava YAML em `sources/_operador/` e marca selecionada."""
     root = raiz or _repo_root()
-    sid = fonte_id.strip().lower()
-    if not _ID_RE.match(sid) or len(sid) > MAX_SOURCE_ID_LENGTH:
+    sid = _slug_fonte(fonte_id)
+    if len(sid) > MAX_SOURCE_ID_LENGTH:
         raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
     uf_n = uf.strip()
     if not re.match(UF_REGEX, uf_n):
@@ -130,9 +150,9 @@ def incluir_fonte(
         "notas": "Incluída pelo painel local (operador).",
     }
     Source.model_validate(payload)
-    pasta = dir_sources(root) / OPERADOR_DIR
+    pasta = (dir_sources(root) / OPERADOR_DIR).resolve()
     pasta.mkdir(parents=True, exist_ok=True)
-    destino = pasta / f"{sid}.yaml"
+    destino = _yaml_operador(root, sid)
     destino.write_text(
         yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8"
     )
@@ -143,12 +163,13 @@ def incluir_fonte(
 def excluir_fonte(fonte_id: str, *, raiz: Path | None = None) -> None:
     """Remove só YAML do operador; catálogo versionado não apaga."""
     root = raiz or _repo_root()
-    destino = dir_sources(root) / OPERADOR_DIR / f"{fonte_id}.yaml"
+    sid = _slug_fonte(fonte_id)
+    destino = _yaml_operador(root, sid)
     if not destino.is_file():
         raise SourceConfigError("só fontes incluídas pelo painel podem ser excluídas")
     destino.unlink()
     mapa = _ler_selecao(root)
-    mapa.pop(fonte_id, None)
+    mapa.pop(sid, None)
     _gravar_selecao(root, mapa)
 
 

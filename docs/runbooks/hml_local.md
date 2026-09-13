@@ -24,6 +24,7 @@ Regra permanente 2026-09-12: **HML = localhost**. Sem projeto Firebase de HML.
 | Pipeline de coleta/classificação | `pytest` + `python -m monitoritcd.main run --dry-run` |
 | Firestore (metadados, watches, audit) | Emulador `127.0.0.1:18080` (`demo-monitoritcd`) |
 | Firebase Storage (HTML/PDF) | Emulador `127.0.0.1:18199` |
+| Firebase Auth (HML) | Emulador `127.0.0.1:19099` — não colidir com o Auth do SEF na `9099` |
 | Cloud Function `bot_webhook` | `python -m monitoritcd.bot.poller` e `functions/bot_webhook/test_main.py` |
 | Cloud Function `proxy_br` | `functions/proxy_br/` + testes locais |
 | Cloud Function `canary_filter` | `functions/canary_filter/` + testes locais |
@@ -32,7 +33,8 @@ Regra permanente 2026-09-12: **HML = localhost**. Sem projeto Firebase de HML.
 ## Subir HML
 
 ```bash
-firebase emulators:start --project demo-monitoritcd --only firestore,storage,auth,ui
+firebase emulators:start --project demo-monitoritcd --only firestore,storage,auth,ui \
+  --import=.emulator-data --export-on-exit=.emulator-data
 python -m monitoritcd.main painel
 # UI do painel (mesma origem da API): http://127.0.0.1:8765
 # NÃO use http://127.0.0.1:4200 — neste host isso é o SEFWorkStation, não o MonitorITCD.

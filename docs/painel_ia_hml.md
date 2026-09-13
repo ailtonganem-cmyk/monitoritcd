@@ -51,8 +51,9 @@ Chaves previstas (todas opcionais, `.env` / GitHub Secrets):
 ## Como subir HML
 
 ```bash
-# 1) emuladores (Firestore/Storage)
-firebase emulators:start --project demo-monitoritcd --only firestore,storage,ui
+# 1) emuladores (Firestore/Storage/Auth) — prefixo demo-, sem projeto remoto
+firebase emulators:start --project demo-monitoritcd --only firestore,storage,auth,ui \
+  --import=.emulator-data --export-on-exit=.emulator-data
 
 # 2) painel (API + Angular dist)
 python -m monitoritcd.main painel

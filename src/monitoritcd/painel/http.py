@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import posixpath
+import re
 import secrets
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -32,6 +34,7 @@ from monitoritcd.painel.ia_provedores import listar as listar_ia
 from monitoritcd.painel.parametros import gravar_extras, listar_parametros
 
 COOKIE = "monitoritcd_painel"
+_REL_ESTATICO = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 _TIPOS_ESTATICOS = {
     ".js": "text/javascript; charset=utf-8",
     ".css": "text/css; charset=utf-8",
@@ -46,24 +49,31 @@ def _dir_angular() -> Path:
 
 
 def _arquivo_angular(path: str) -> tuple[bytes, str] | None:
+    """Serve só arquivos que já existem no dist; o path do cliente nunca entra em join."""
     if path.startswith("/api"):
         return None
     raiz = _dir_angular()
     if not raiz.is_dir():
         return None
-    rel = path.lstrip("/") or "index.html"
-    alvo = (raiz / rel).resolve()
-    try:
-        alvo.relative_to(raiz.resolve())
-    except ValueError:
+    pedido = posixpath.normpath(path.split("?", 1)[0].lstrip("/"))
+    if pedido in {".", "/", ""}:
+        pedido = "index.html"
+    if pedido.startswith("..") or pedido.startswith("/") or not _REL_ESTATICO.fullmatch(pedido):
         return None
-    if not alvo.is_file():
-        index = raiz / "index.html"
-        if index.is_file() and "." not in Path(rel).name:
+    raiz_r = raiz.resolve()
+    for dirpath, dirnames, filenames in os.walk(raiz_r):
+        dirnames[:] = [d for d in dirnames if d not in {".", ".."}]
+        for nome in filenames:
+            candidato = Path(dirpath) / nome
+            rel = candidato.relative_to(raiz_r).as_posix()
+            if rel == pedido:
+                tipo = _TIPOS_ESTATICOS.get(candidato.suffix, "application/octet-stream")
+                return candidato.read_bytes(), tipo
+    if "." not in Path(pedido).name:
+        index = raiz_r / "index.html"
+        if index.is_file():
             return index.read_bytes(), "text/html; charset=utf-8"
-        return None
-    tipo = _TIPOS_ESTATICOS.get(alvo.suffix, "application/octet-stream")
-    return alvo.read_bytes(), tipo
+    return None
 
 
 def _raiz() -> Path:
