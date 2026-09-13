@@ -5,6 +5,26 @@ Todas as mudanças notáveis ao MonitorITCD são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Painel HML, cadeia de IA e Functions (2026-09-13)
+
+### Adicionado
+
+- Painel local Angular em `apps/painel`, servido em `127.0.0.1:8765` (`python -m monitoritcd.main painel`). Login HML `POST /api/auth/hml` só em loopback e `ENV≠production`; allowlist `ailtonganem@gmail.com`.
+- Cadeia de LLM lida de `config/painel/ia-provedores.json` (metadado); chaves só no ambiente.
+- Emuladores Firebase HML: Firestore `18080`, Storage `18199`, Auth `19099`, UI `14000`, projeto `demo-monitoritcd`.
+
+### Publicação
+
+- SHA `9c706fe` na `main`. Dashboard Pages atualizado.
+- Cloud Functions `proxy_br`, `canary_filter` e `bot_webhook` republicadas no GCP **`monitoritcd`** (`southamerica-east1`).
+- Runbook: `docs/runbooks/publicacao_2026-09-13.md`.
+
+### Notas operacionais
+
+- O workflow GitHub `deploy-functions.yml` **não** foi o canal que publicou: o secret `FIREBASE_PROJECT_ID` apontava para o projeto do SEF. Não reutilizar esse dispatch até SA + projeto coincidirem com `monitoritcd`.
+- Webhook Telegram **não** apontado para o `bot_webhook` novo (token local inválido).
+- `proxy_br` permanece com `follow_redirects=True` (recusa de edição da Function).
+
 ## [Unreleased] — Honeytoken AWS desativado (2026-04-26)
 
 ### Removido / Desativado
