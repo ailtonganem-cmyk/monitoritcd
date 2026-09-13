@@ -53,6 +53,7 @@ Para deixar rodando 24/7 num server pessoal:
 4. Criar bot Telegram via [@BotFather](https://t.me/BotFather), obter token.
 5. Mandar `/start` ao bot e capturar seu `chat_id` (loga no servidor).
 6. Configurar Gmail App Password: https://myaccount.google.com/apppasswords
+   (sem domínio próprio: `GMAIL_USER` e `OWNER_EMAIL` são Gmail; não há Resend).
 7. Obter Gemini API key: https://aistudio.google.com/apikey
 8. (Opcional) Healthchecks.io — criar check, copiar URL.
 9. Configurar GitHub Secrets (todos os listados em `.env.example`).
