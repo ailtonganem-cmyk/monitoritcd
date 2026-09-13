@@ -96,6 +96,7 @@ jobs:
           set -euo pipefail
 
           # Cloud Functions Gen2 = Cloud Run subjacente + Artifact Registry
+          set +e
           gcloud services enable \
             cloudfunctions.googleapis.com \
             cloudbuild.googleapis.com \
@@ -103,6 +104,13 @@ jobs:
             run.googleapis.com \
             eventarc.googleapis.com \
             --project="$PROJECT_ID" 2>&1 | tee "$RUNNER_TEMP/enable.log"
+          enable_rc="${PIPESTATUS[0]}"
+          set -e
+
+          if [[ "$enable_rc" -eq 0 ]]; then
+            echo "APIs habilitadas ou já ativas."
+            exit 0
+          fi
 
           # Detecta se erro foi por falta de billing (requer plano Blaze)
           if grep -q "BILLING_DISABLED\|requires billing" "$RUNNER_TEMP/enable.log"; then
@@ -120,6 +128,46 @@ jobs:
             echo "===================================================="
             exit 1
           fi
+
+          # SA de deploy costuma não ter serviceusage.services.enable.
+          # Se as APIs já estão ativas (último deploy bem-sucedido), segue.
+          if grep -q "AUTH_PERMISSION_DENIED\|does not have permission" "$RUNNER_TEMP/enable.log"; then
+            echo "SA sem permissão para habilitar APIs; conferindo se já estão ativas."
+            missing=0
+            for svc in \
+              cloudfunctions.googleapis.com \
+              cloudbuild.googleapis.com \
+              artifactregistry.googleapis.com \
+              run.googleapis.com \
+              eventarc.googleapis.com
+            do
+              ativo="$(
+                gcloud services list --enabled --project="$PROJECT_ID" \
+                  --filter="config.name:$svc" \
+                  --format='value(config.name)' || true
+              )"
+              if [[ "$ativo" == "$svc" ]]; then
+                echo "ok $svc"
+              else
+                echo "faltando $svc"
+                missing=1
+              fi
+            done
+            if [[ "$missing" -eq 5 ]]; then
+              echo "Não foi possível listar APIs (provável falta de serviceusage.services.list)."
+              echo "Último deploy bem-sucedido já usava estas APIs; seguindo. O deploy falha se estiverem off."
+              exit 0
+            fi
+            if [[ "$missing" -ne 0 ]]; then
+              echo "APIs ausentes e SA sem serviceusage.services.enable."
+              exit 1
+            fi
+            echo "APIs já ativas; seguindo para o deploy."
+            exit 0
+          fi
+
+          echo "Falha ao habilitar APIs (não é billing nem só permissão de enable)."
+          exit 1
 
       - name: Deploy proxy_br
         env:
