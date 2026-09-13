@@ -129,40 +129,10 @@ jobs:
             exit 1
           fi
 
-          # SA de deploy costuma não ter serviceusage.services.enable.
-          # Se as APIs já estão ativas (último deploy bem-sucedido), segue.
+          # SA de cron não tem serviceusage.services.enable nem .list.
+          # Pula o enable; o passo de deploy falha se a API estiver realmente off.
           if grep -q "AUTH_PERMISSION_DENIED\|does not have permission" "$RUNNER_TEMP/enable.log"; then
-            echo "SA sem permissão para habilitar APIs; conferindo se já estão ativas."
-            missing=0
-            for svc in \
-              cloudfunctions.googleapis.com \
-              cloudbuild.googleapis.com \
-              artifactregistry.googleapis.com \
-              run.googleapis.com \
-              eventarc.googleapis.com
-            do
-              ativo="$(
-                gcloud services list --enabled --project="$PROJECT_ID" \
-                  --filter="config.name:$svc" \
-                  --format='value(config.name)' || true
-              )"
-              if [[ "$ativo" == "$svc" ]]; then
-                echo "ok $svc"
-              else
-                echo "faltando $svc"
-                missing=1
-              fi
-            done
-            if [[ "$missing" -eq 5 ]]; then
-              echo "Não foi possível listar APIs (provável falta de serviceusage.services.list)."
-              echo "Último deploy bem-sucedido já usava estas APIs; seguindo. O deploy falha se estiverem off."
-              exit 0
-            fi
-            if [[ "$missing" -ne 0 ]]; then
-              echo "APIs ausentes e SA sem serviceusage.services.enable."
-              exit 1
-            fi
-            echo "APIs já ativas; seguindo para o deploy."
+            echo "SA sem permissão para habilitar/listar APIs; seguindo para o deploy."
             exit 0
           fi
 
