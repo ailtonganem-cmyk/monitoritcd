@@ -57,7 +57,7 @@ def _slug_fonte(fonte_id: str) -> str:
     matched = _ID_RE.fullmatch(fonte_id.strip().lower())
     if matched is None:
         raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
-    sid = os.path.basename(matched.group(0))
+    sid = os.path.basename(matched.group(0))  # noqa: PTH119 — sanitizer CodeQL
     if not _ID_RE.fullmatch(sid) or ".." in sid or "/" in sid or "\\" in sid:
         raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
     return sid
