@@ -57,18 +57,28 @@ def _slug_fonte(fonte_id: str) -> str:
     matched = _ID_RE.fullmatch(fonte_id.strip().lower())
     if matched is None:
         raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
-    sid = matched.group(0)
-    seguro = "".join(ch for ch in sid if ch.isalnum() or ch == "-")
-    if seguro != sid:
+    sid = os.path.basename(matched.group(0))
+    if not _ID_RE.fullmatch(sid) or ".." in sid or "/" in sid or "\\" in sid:
         raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
-    return seguro
+    return sid
+
+
+def _pasta_operador(root: Path) -> Path:
+    pasta = (dir_sources(root) / OPERADOR_DIR).resolve()
+    pasta.mkdir(parents=True, exist_ok=True)
+    return pasta
 
 
 def _yaml_operador(root: Path, fonte_id: str) -> Path:
     sid = _slug_fonte(fonte_id)
-    pasta = (dir_sources(root) / OPERADOR_DIR).resolve()
-    destino = (pasta / f"{sid}.yaml").resolve()
-    destino.relative_to(pasta)
+    pasta = _pasta_operador(root)
+    for candidato in pasta.iterdir():
+        if candidato.suffix == ".yaml" and candidato.stem == sid:
+            return candidato.resolve()
+    nome = os.path.basename(sid + ".yaml")
+    destino = (pasta / nome).resolve()
+    if destino.parent != pasta:
+        raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
     return destino
 
 
@@ -150,8 +160,6 @@ def incluir_fonte(
         "notas": "Incluída pelo painel local (operador).",
     }
     Source.model_validate(payload)
-    pasta = (dir_sources(root) / OPERADOR_DIR).resolve()
-    pasta.mkdir(parents=True, exist_ok=True)
     destino = _yaml_operador(root, sid)
     destino.write_text(
         yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8"
@@ -164,10 +172,15 @@ def excluir_fonte(fonte_id: str, *, raiz: Path | None = None) -> None:
     """Remove só YAML do operador; catálogo versionado não apaga."""
     root = raiz or _repo_root()
     sid = _slug_fonte(fonte_id)
-    destino = _yaml_operador(root, sid)
-    if not destino.is_file():
+    pasta = _pasta_operador(root)
+    alvo: Path | None = None
+    for candidato in pasta.iterdir():
+        if candidato.suffix == ".yaml" and candidato.stem == sid:
+            alvo = candidato
+            break
+    if alvo is None or not alvo.is_file():
         raise SourceConfigError("só fontes incluídas pelo painel podem ser excluídas")
-    destino.unlink()
+    alvo.unlink()
     mapa = _ler_selecao(root)
     mapa.pop(sid, None)
     _gravar_selecao(root, mapa)
