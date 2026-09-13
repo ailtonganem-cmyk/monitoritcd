@@ -43,7 +43,7 @@ import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
-from pathlib import Path  # noqa: TC003 — usado em runtime
+from pathlib import Path
 from typing import TYPE_CHECKING, Final
 
 import httpx
@@ -886,7 +886,7 @@ async def _update_source_run_health(
         await _notify_zero_run_alerts(settings, alerts, report, bound)
 
 
-async def run_pipeline(  # noqa: PLR0915
+async def run_pipeline(  # noqa: PLR0912,PLR0915
     settings: Settings,
     *,
     storage: StorageProtocol,
@@ -965,8 +965,8 @@ async def run_pipeline(  # noqa: PLR0915
         from monitoritcd.painel.parametros import listar_parametros  # noqa: PLC0415
 
         arquivo_extras = listar_parametros(
-            Path(__file__).resolve().parents[2]
-        )["extras"]  # noqa: ASYNC240
+            Path(__file__).resolve().parents[2]  # noqa: ASYNC240
+        )["extras"]
         if arquivo_extras:
             extras = list(dict.fromkeys([*(extras or []), *arquivo_extras]))
             bound.info("run.painel_extras_loaded", count=len(arquivo_extras))
