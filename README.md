@@ -68,6 +68,9 @@ source .venv/bin/activate     # Linux/macOS
 pip install -e ".[dev]"
 
 pre-commit install
+
+# Painel HML: http://127.0.0.1:8765  (não use :4200 — é o SEFWorkStation)
+python -m monitoritcd.main painel
 cp .env.example .env
 # Edite .env com seus secrets
 

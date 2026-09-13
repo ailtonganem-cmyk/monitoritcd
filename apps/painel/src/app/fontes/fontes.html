@@ -1,0 +1,80 @@
+<mat-card class="mb-4">
+  <mat-card-header>
+    <mat-card-title>Nova Fonte</mat-card-title>
+  </mat-card-header>
+  <mat-card-content class="form-row">
+    <mat-form-field>
+      <mat-label>ID</mat-label>
+      <input matInput [(ngModel)]="novaFonte.id" placeholder="ex: mg_iof">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>UF</mat-label>
+      <input matInput [(ngModel)]="novaFonte.uf" placeholder="ex: MG">
+    </mat-form-field>
+    <mat-form-field>
+      <mat-label>Nome</mat-label>
+      <input matInput [(ngModel)]="novaFonte.nome" placeholder="Nome da fonte">
+    </mat-form-field>
+    <mat-form-field class="full-width">
+      <mat-label>URL</mat-label>
+      <input matInput [(ngModel)]="novaFonte.url" placeholder="https://...">
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="incluir()">Incluir</button>
+  </mat-card-content>
+</mat-card>
+
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>Fontes</mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <mat-form-field class="full-width mb-2">
+      <mat-label>Buscar</mat-label>
+      <input matInput [(ngModel)]="busca" (ngModelChange)="filtrar()">
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <table mat-table [dataSource]="filteredFontes" class="mat-elevation-z8">
+      <ng-container matColumnDef="selecionada">
+        <th mat-header-cell *matHeaderCellDef> Sel </th>
+        <td mat-cell *matCellDef="let f">
+          <mat-checkbox [checked]="f.selecionada" (change)="toggle(f)"></mat-checkbox>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="id">
+        <th mat-header-cell *matHeaderCellDef> ID </th>
+        <td mat-cell *matCellDef="let f"> {{f.id}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="uf">
+        <th mat-header-cell *matHeaderCellDef> UF </th>
+        <td mat-cell *matCellDef="let f"> {{f.uf}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="nome">
+        <th mat-header-cell *matHeaderCellDef> Nome </th>
+        <td mat-cell *matCellDef="let f"> {{f.nome}} </td>
+      </ng-container>
+
+      <ng-container matColumnDef="url">
+        <th mat-header-cell *matHeaderCellDef> URL </th>
+        <td mat-cell *matCellDef="let f">
+          <a [href]="f.url" target="_blank">{{f.url}}</a>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acoes">
+        <th mat-header-cell *matHeaderCellDef> Ações </th>
+        <td mat-cell *matCellDef="let f">
+          <button mat-icon-button color="warn" (click)="excluir(f.id)">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+    </table>
+  </mat-card-content>
+</mat-card>

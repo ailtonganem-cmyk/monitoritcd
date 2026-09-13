@@ -39,6 +39,7 @@ Princípios canônicos aplicados:
 from __future__ import annotations
 
 import asyncio
+import json
 import uuid
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
@@ -742,13 +743,25 @@ async def _select_sources(
     only_geo_restricted: bool = False,
 ) -> list[Source]:
     """Filtra fontes ativas por active_states + flags de execução."""
-    all_sources = load_all_sources(sources_dir, ativo_only=True)
+    all_sources = load_all_sources(sources_dir, ativo_only=False)
+    overlay: dict[str, bool] = {}
+    overlay_path = sources_dir.parent / "config" / "painel" / "fontes_selecao.json"
+    if overlay_path.is_file():
+        try:
+            bruto = json.loads(overlay_path.read_text(encoding="utf-8"))
+            if isinstance(bruto, dict):
+                overlay = {str(k): bool(v) for k, v in bruto.items()}
+        except (OSError, json.JSONDecodeError, TypeError, ValueError):
+            overlay = {}
     active = await storage.get_active_states()
     active_ufs = set(active.active_uf) if active else set()
     federal_active = active.federal_active if active else True
 
     sources_to_run: list[Source] = []
     for s in all_sources:
+        habilitada = overlay.get(s.id, s.ativo)
+        if not habilitada:
+            continue
         if only_source_id and s.id != only_source_id:
             continue
         if only_uf and s.uf != only_uf:
@@ -947,6 +960,17 @@ async def run_pipeline(  # noqa: PLR0915
             if extras:
                 bound.info("run.extra_keywords_loaded", count=len(extras))
     except (AttributeError, NotImplementedError):  # pragma: no cover - back-compat defensivo
+        pass
+    try:
+        from monitoritcd.painel.parametros import listar_parametros  # noqa: PLC0415
+
+        arquivo_extras = listar_parametros(
+            Path(__file__).resolve().parents[2]
+        )["extras"]  # noqa: ASYNC240
+        if arquivo_extras:
+            extras = list(dict.fromkeys([*(extras or []), *arquivo_extras]))
+            bound.info("run.painel_extras_loaded", count=len(arquivo_extras))
+    except (OSError, ValueError, TypeError):  # pragma: no cover - overlay ausente
         pass
     after_kw = filter_by_keywords(raw_items, extra_keywords=extras)
     report.items_after_keywords = len(after_kw)

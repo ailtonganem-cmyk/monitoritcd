@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MonitorITCD — painel</title>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <style>
+    :root { --fg:#1a1a1a; --bg:#f6f3ee; --card:#fff; --ac:#0b5fff; --err:#9b1c1c; }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.45 system-ui,sans-serif; color:var(--fg); background:var(--bg); }
+    header, main { max-width: 960px; margin: 0 auto; padding: 1.25rem; }
+    nav { display:flex; gap:.5rem; flex-wrap:wrap; margin:1rem 0; }
+    nav button, .btn { border:1px solid #ccc; background:#fff; padding:.4rem .8rem; cursor:pointer; }
+    nav button.ativo { border-color:var(--ac); color:var(--ac); }
+    .card { background:var(--card); padding:1rem; margin:.75rem 0; border:1px solid #ddd; }
+    .erro { color:var(--err); }
+    label { display:block; margin:.4rem 0 .2rem; }
+    input, select, textarea { width:100%; padding:.4rem; }
+    .linha { display:flex; gap:.5rem; align-items:center; padding:.35rem 0; border-bottom:1px solid #eee; }
+    .linha input[type=checkbox] { width:auto; }
+    .oculto { display:none; }
+    .olho { text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; color:#555; }
+  </style>
+</head>
+<body>
+  <header>
+    <p class="olho">HML local · só {{EMAIL}}</p>
+    <h1>MonitorITCD</h1>
+    <p>Fontes, parâmetros de busca e agentes de IA — adaptado do ColetorImoveisMG. Sem Functions, sem domínio próprio.</p>
+  </header>
+  <main>
+    <section id="login" class="card">
+      <h2>Entrar com Google</h2>
+      <p>Acesso exclusivo de <strong>{{EMAIL}}</strong>.</p>
+      <div id="g_id_onload"
+           data-client_id="{{CLIENT_ID}}"
+           data-callback="onGoogle"
+           data-auto_prompt="false"></div>
+      <div class="g_id_signin" data-type="standard"></div>
+      <p id="login-msg" class="erro"></p>
+      <p id="sem-client" class="oculto">Defina <code>GOOGLE_OAUTH_CLIENT_ID</code> no <code>.env</code> (OAuth Web, origem <code>http://127.0.0.1:8765</code>).</p>
+      <p><button class="btn" type="button" onclick="entrarHml()">Entrar local (HML, 127.0.0.1)</button></p>
+    </section>
+    <section id="app" class="oculto">
+      <p>Sessão: <span id="quem"></span> <button class="btn" type="button" onclick="sair()">Sair</button></p>
+      <nav>
+        <button type="button" class="ativo" data-aba="fontes" onclick="aba('fontes')">Fontes</button>
+        <button type="button" data-aba="parametros" onclick="aba('parametros')">Parâmetros</button>
+        <button type="button" data-aba="coleta" onclick="aba('coleta')">Coleta</button>
+        <button type="button" data-aba="ia" onclick="aba('ia')">Inteligência</button>
+      </nav>
+      <section id="aba-fontes">
+        <div class="card">
+          <h2>Catálogo</h2>
+          <p>Marcar habilita a fonte nesta estação (YAML do git não é apagado). Incluir grava em <code>sources/_operador/</code>.</p>
+          <input id="busca" placeholder="Buscar id, UF ou URL" oninput="desenharFontes()" />
+          <div id="lista-fontes"></div>
+        </div>
+        <div class="card">
+          <h2>Incluir fonte</h2>
+          <label>id <input id="n-id" placeholder="ex: portal-sefaz-xx" /></label>
+          <label>UF <select id="n-uf"></select></label>
+          <label>nome <input id="n-nome" /></label>
+          <label>url https <input id="n-url" /></label>
+          <button class="btn" type="button" onclick="incluir()">Incluir</button>
+          <p id="msg-fonte" class="erro"></p>
+        </div>
+      </section>
+      <section id="aba-parametros" class="oculto">
+        <div class="card">
+          <h2>Parâmetros de pesquisa</h2>
+          <p>Defaults do código não saem. Extras entram no filtro de keywords (ITCD / sucessões / regime de bens).</p>
+          <textarea id="extras" rows="8"></textarea>
+          <button class="btn" type="button" onclick="salvarParams()">Salvar extras (um por linha)</button>
+          <p id="msg-par"></p>
+        </div>
+      </section>
+      <section id="aba-coleta" class="oculto">
+        <div class="card">
+          <h2>Disparar busca</h2>
+          <label>fonte (vazio = todas selecionadas) <input id="c-sid" /></label>
+          <label><input type="checkbox" id="c-dry" checked /> dry-run (não persiste)</label>
+          <button class="btn" type="button" onclick="coletar()">Preparar comando</button>
+          <pre id="c-out"></pre>
+        </div>
+      </section>
+      <section id="aba-ia" class="oculto">
+        <div class="card">
+          <h2>Agentes de IA</h2>
+          <p>Ordem = preferência (Gemini → Groq no padrão). Chaves continuam no <code>.env</code>, nunca nesta tela.</p>
+          <div id="lista-ia"></div>
+          <button class="btn" type="button" onclick="salvarIa()">Salvar cadeia</button>
+          <p id="msg-ia"></p>
+        </div>
+      </section>
+    </section>
+  </main>
+  <script>
+    const CLIENT = "{{CLIENT_ID}}";
+    if (!CLIENT) document.getElementById("sem-client").classList.remove("oculto");
+    let fontes = [];
+    let ufs = [];
+    let iaItens = [];
+    let catalogoIa = {};
+
+    async function api(path, body) {
+      const opt = body === undefined ? {} : { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
+      const r = await fetch(path, opt);
+      return r.json();
+    }
+    async function entrarHml() {
+      const out = await api("/api/auth/hml", {});
+      if (!out.ok) { document.getElementById("login-msg").textContent = out.erro || "falha HML"; return; }
+      await entrar();
+    }
+    async function onGoogle(resp) {
+      const out = await api("/api/auth/google", { id_token: resp.credential });
+      const msg = document.getElementById("login-msg");
+      if (!out.ok) { msg.textContent = out.erro || "falha"; return; }
+      await entrar();
+    }
+    async function entrar() {
+      const me = await api("/api/me");
+      if (!me.ok) return;
+      document.getElementById("login").classList.add("oculto");
+      document.getElementById("app").classList.remove("oculto");
+      document.getElementById("quem").textContent = me.email;
+      await carregar();
+    }
+    async function sair() { await api("/api/auth/sair", {}); location.reload(); }
+    function aba(nome) {
+      document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("ativo", b.dataset.aba === nome));
+      ["fontes","parametros","coleta","ia"].forEach((n) => {
+        document.getElementById("aba-" + n).classList.toggle("oculto", n !== nome);
+      });
+    }
+    async function carregar() {
+      const f = await api("/api/fontes");
+      fontes = f.itens || [];
+      ufs = f.ufs || [];
+      const sel = document.getElementById("n-uf");
+      sel.innerHTML = ufs.map((u) => `<option>${u}</option>`).join("");
+      desenharFontes();
+      const p = await api("/api/parametros");
+      document.getElementById("extras").value = (p.extras || []).join("\n");
+      const ia = await api("/api/ia");
+      iaItens = ia.itens || [];
+      catalogoIa = ia.catalogo || {};
+      desenharIa();
+    }
+    function desenharFontes() {
+      const q = (document.getElementById("busca").value || "").toLowerCase();
+      const box = document.getElementById("lista-fontes");
+      const vis = fontes.filter((x) => !q || x.id.includes(q) || x.uf.toLowerCase().includes(q) || (x.url||"").toLowerCase().includes(q));
+      box.innerHTML = vis.map((x) => `
+        <div class="linha">
+          <input type="checkbox" ${x.selecionada ? "checked" : ""} onchange="sel('${x.id}', this.checked)" />
+          <div><strong>${x.id}</strong> · ${x.uf} · ${x.parser}<br /><small>${x.url}</small></div>
+          ${x.operador ? `<button class="btn" type="button" onclick="excluir('${x.id}')">Excluir</button>` : ""}
+        </div>`).join("") || "<p>Nenhuma fonte neste filtro.</p>";
+    }
+    async function sel(id, selecionada) {
+      await api("/api/fontes/selecionar", { id, selecionada });
+      await carregar();
+    }
+    async function incluir() {
+      const out = await api("/api/fontes/incluir", {
+        id: document.getElementById("n-id").value,
+        uf: document.getElementById("n-uf").value,
+        nome: document.getElementById("n-nome").value,
+        url: document.getElementById("n-url").value,
+      });
+      document.getElementById("msg-fonte").textContent = out.ok ? "incluída" : (out.erro || "erro");
+      if (out.ok) await carregar();
+    }
+    async function excluir(id) {
+      await api("/api/fontes/excluir", { id });
+      await carregar();
+    }
+    async function salvarParams() {
+      const extras = document.getElementById("extras").value.split("\n");
+      const out = await api("/api/parametros", { extras });
+      document.getElementById("msg-par").textContent = out.ok ? ("efetivos: " + out.efetivos.length) : out.erro;
+    }
+    async function coletar() {
+      const out = await api("/api/coleta", {
+        source_id: document.getElementById("c-sid").value,
+        dry_run: document.getElementById("c-dry").checked,
+      });
+      document.getElementById("c-out").textContent = out.comando || JSON.stringify(out, null, 2);
+    }
+    function desenharIa() {
+      const modelos = catalogoIa.modelos || {};
+      const esforcos = catalogoIa.esforcos || [];
+      document.getElementById("lista-ia").innerHTML = iaItens.map((p, i) => `
+        <div class="linha">
+          <strong>${i+1}º ${p.id}</strong> (${p.familia})
+          <label><input type="checkbox" ${p.habilitado ? "checked" : ""} onchange="iaItens[${i}].habilitado=this.checked" /> ativo</label>
+          <select onchange="iaItens[${i}].modelo=this.value">${(modelos[p.familia]||[p.modelo]).map((m)=>`<option ${m===p.modelo?"selected":""}>${m}</option>`).join("")}</select>
+          <select onchange="iaItens[${i}].esforco=this.value">${esforcos.map((e)=>`<option ${e===p.esforco?"selected":""}>${e}</option>`).join("")}</select>
+        </div>`).join("");
+    }
+    async function salvarIa() {
+      const out = await api("/api/ia", { itens: iaItens });
+      document.getElementById("msg-ia").textContent = out.ok ? "cadeia gravada" : out.erro;
+      if (out.ok) { iaItens = out.itens; desenharIa(); }
+    }
+    window.onGoogle = onGoogle;
+    entrar();
+  </script>
+</body>
+</html>
