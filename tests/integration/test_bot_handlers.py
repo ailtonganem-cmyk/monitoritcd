@@ -6,7 +6,7 @@ Cada handler é testado com `BotContext` real (InMemoryStorage) e
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import SecretStr
@@ -78,12 +78,13 @@ def _doc(
     uf: str = "SP",
     status: StatusDocumento = StatusDocumento.CLASSIFIED,
     content_hash: str = "a" * 64,
+    fetched_at: datetime = NOW,
 ) -> Documento:
     raw = RawItem(
         source_id="s",
         titulo_raw=titulo,
         url="https://x.gov.br/",
-        fetched_at=NOW,
+        fetched_at=fetched_at,
         content_hash=content_hash,
     )
     src = Source(
@@ -130,6 +131,7 @@ class TestStatus:
         ctx = await _ctx()
         result = await handle_status(ctx, ParsedCommand(name="status", args=[]))
         assert "0 total" in result.text or "Documentos: 0" in result.text
+        assert "nenhum documento" in result.text
 
     @pytest.mark.asyncio
     async def test_status_with_docs(self) -> None:
@@ -137,6 +139,47 @@ class TestStatus:
         await ctx.storage.save_documento(_doc())
         result = await handle_status(ctx, ParsedCommand(name="status", args=[]))
         assert "1 total" in result.text or "Documentos: 1" in result.text
+
+    @pytest.mark.asyncio
+    async def test_status_docs_fora_da_janela(self) -> None:
+        ctx = await _ctx()
+        await ctx.storage.save_documento(_doc(fetched_at=datetime.now(UTC) - timedelta(days=30)))
+        result = await handle_status(ctx, ParsedCommand(name="status", args=[]))
+        assert "Documentos: 1" in result.text
+        assert "nenhum documento" in result.text
+
+    @pytest.mark.asyncio
+    async def test_status_agrupa_por_uf_ordenado(self) -> None:
+        ctx = await _ctx()
+        agora = datetime.now(UTC)
+        await ctx.storage.save_documento(
+            _doc(doc_id="sp1", uf="SP", fetched_at=agora - timedelta(days=1))
+        )
+        await ctx.storage.save_documento(
+            _doc(doc_id="sp2", uf="SP", fetched_at=agora - timedelta(days=2))
+        )
+        await ctx.storage.save_documento(
+            _doc(doc_id="mg1", uf="MG", fetched_at=agora - timedelta(days=3))
+        )
+        result = await handle_status(ctx, ParsedCommand(name="status", args=[]))
+        assert "MG: 1" in result.text
+        assert "SP: 2" in result.text
+        assert result.text.index("MG: 1") < result.text.index("SP: 2")
+
+    @pytest.mark.asyncio
+    async def test_status_federal_por_ultimo(self) -> None:
+        ctx = await _ctx()
+        agora = datetime.now(UTC)
+        await ctx.storage.save_documento(
+            _doc(doc_id="sp1", uf="SP", fetched_at=agora - timedelta(days=1))
+        )
+        await ctx.storage.save_documento(
+            _doc(doc_id="fed", uf="_federal", fetched_at=agora - timedelta(days=2))
+        )
+        result = await handle_status(ctx, ParsedCommand(name="status", args=[]))
+        assert "SP: 1" in result.text
+        assert "_federal: 1" in result.text
+        assert result.text.index("SP: 1") < result.text.index("_federal: 1")
 
 
 @pytest.mark.integration

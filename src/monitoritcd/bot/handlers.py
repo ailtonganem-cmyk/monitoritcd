@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from monitoritcd.bot.audit import log_bot_action
@@ -160,16 +160,27 @@ async def handle_status(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
     active = await ctx.storage.get_active_states()
     active_count = len(active.active_uf) if active else 0
 
-    return HandlerResult(
-        text=(
-            f"📊 *Status*\n"
-            f"• Documentos: {len(docs)} total\n"
-            f"  - pending: {pending}\n"
-            f"  - classified: {classified}\n"
-            f"  - notified: {notified}\n"
-            f"• UFs ativas: {active_count}\n"
-        ),
-    )
+    since = datetime.now(UTC) - timedelta(days=7)
+    recent = await ctx.storage.list_documentos(since=since, limit=1000)
+    por_uf: dict[str, int] = {}
+    for doc in recent:
+        por_uf[doc.source.uf] = por_uf.get(doc.source.uf, 0) + 1
+
+    lines = [
+        "📊 *Status*",
+        f"• Documentos: {len(docs)} total",
+        f"  - pending: {pending}",
+        f"  - classified: {classified}",
+        f"  - notified: {notified}",
+        f"• UFs ativas: {active_count}",
+    ]
+    if not por_uf:
+        lines.append("• Últimos 7 dias: nenhum documento")
+    else:
+        lines.append("• Últimos 7 dias por UF:")
+        lines.extend(f"  - {uf}: {por_uf[uf]}" for uf in sorted(por_uf))
+
+    return HandlerResult(text="\n".join(lines) + "\n")
 
 
 _BUSCAR_DEFAULT_LIMIT = 10
