@@ -14,35 +14,31 @@ permissions:
   contents: read
 
 jobs:
-  # ───────────────────────────────────────────────────────────────────────
-  # Lint & format
-  # ───────────────────────────────────────────────────────────────────────
   lint:
     name: Lint & format
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: pip
           cache-dependency-path: pyproject.toml
-      - name: Install ruff
-        run: python -m pip install "ruff==0.16.5"
+      - name: Install lint e testes de tooling
+        run: python -m pip install "ruff==0.16.5" "pytest>=8.2.0" "pytest-asyncio>=0.23.0"
       - name: Ruff check
         run: ruff check .
       - name: Ruff format check
         run: ruff format --check .
+      - name: Testes de tooling
+        run: pytest tests/unit/test_ci_test_shards.py
 
-  # ───────────────────────────────────────────────────────────────────────
-  # Type check
-  # ───────────────────────────────────────────────────────────────────────
   type-check:
     name: mypy --strict
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: pip
@@ -54,22 +50,18 @@ jobs:
       - name: Mypy
         run: mypy
 
-  # ───────────────────────────────────────────────────────────────────────
-  # Unit + Integration tests
-  # ───────────────────────────────────────────────────────────────────────
   test:
-    name: Pytest (unit + integration + security)
+    name: Pytest (Python ${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
-      # Sugestão #34: matrix testing em 3.11/3.12/3.13
       fail-fast: false
       matrix:
         python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # diff-cover precisa do histórico
-      - uses: actions/setup-python@v5
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -79,19 +71,59 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
           python -m pip install diff-cover
-      - name: Run tests with coverage
+      - name: Validar e preparar shards
+        env:
+          TOTAL_SHARDS: 3
         run: |
-          pytest \
-            --cov=src/monitoritcd \
-            --cov-branch \
-            --cov-report=xml \
-            --cov-report=term-missing \
-            --cov-fail-under=95
-      # Sugestão #11: diff coverage no PR. Gate inicial em 90% — gate global
-      # é 95% (cobertura total), aqui é só sinal complementar para a diff.
-      - name: Diff coverage (PR only)
+          python scripts/ci_test_shards.py --total "$TOTAL_SHARDS" --resumo
+          for indice in $(seq 1 "$TOTAL_SHARDS"); do
+            python scripts/ci_test_shards.py \
+              --total "$TOTAL_SHARDS" \
+              --indice "$indice" \
+              > "$RUNNER_TEMP/testes-shard-$indice.txt"
+          done
+      - name: Executar shards paralelos
+        run: |
+          mkdir -p "$RUNNER_TEMP/cobertura" "$RUNNER_TEMP/logs" "$RUNNER_TEMP/cache-pytest"
+          pids=()
+          for indice in 1 2 3; do
+            (
+              mapfile -t arquivos_teste < "$RUNNER_TEMP/testes-shard-$indice.txt"
+              export COVERAGE_FILE="$RUNNER_TEMP/cobertura/.coverage"
+              python -m coverage run --parallel-mode -m pytest \
+                -o "cache_dir=$RUNNER_TEMP/cache-pytest/shard-$indice" \
+                "${arquivos_teste[@]}" \
+                > "$RUNNER_TEMP/logs/shard-$indice.log" 2>&1
+            ) &
+            pids+=("$!")
+          done
+
+          resultado=0
+          for posicao in 0 1 2; do
+            indice=$((posicao + 1))
+            if wait "${pids[$posicao]}"; then
+              estado=0
+            else
+              estado=$?
+              resultado=1
+            fi
+            echo "Shard $indice: exit $estado"
+            tail -n 30 "$RUNNER_TEMP/logs/shard-$indice.log"
+            if [ "$estado" -ne 0 ]; then
+              cat "$RUNNER_TEMP/logs/shard-$indice.log"
+            fi
+          done
+          exit "$resultado"
+      - name: Piso de cobertura 95% desta versão
+        env:
+          COVERAGE_FILE: ${{ runner.temp }}/cobertura/.coverage
+        run: |
+          python -m coverage combine "$RUNNER_TEMP/cobertura"
+          python -m coverage report --fail-under=95
+          python -m coverage xml -o coverage.xml
+      - name: Diff coverage (PR, informativo)
         if: github.event_name == 'pull_request'
-        continue-on-error: true  # informativo no PR, não bloqueia
+        continue-on-error: true
         run: |
           diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --fail-under=90
       - name: Upload coverage
@@ -100,54 +132,5 @@ jobs:
         with:
           name: coverage-py${{ matrix.python-version }}
           path: coverage.xml
+          if-no-files-found: error
           retention-days: 30
-
-  # ───────────────────────────────────────────────────────────────────────
-  # Sugestão #3 + #5: Vulture (dead code) + Radon (complexidade)
-  # ───────────────────────────────────────────────────────────────────────
-  static-analysis:
-    name: Vulture + Radon (dead code & complexity)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: pip
-          cache-dependency-path: pyproject.toml
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install vulture radon xenon
-      - name: Vulture (dead code, min_confidence=80)
-        run: vulture src/monitoritcd --min-confidence 80 || true
-      - name: Radon (cyclomatic complexity)
-        run: |
-          radon cc src/monitoritcd -a -nb || true
-          # xenon falha se houver função com complexidade > B (10)
-          xenon --max-absolute B --max-modules B --max-average A src/monitoritcd || true
-
-  # ───────────────────────────────────────────────────────────────────────
-  # Sugestão #6: Interrogate docstring coverage
-  # interrogate >= 1.7 puxa cairosvg (lib externa C); pinamos em 1.5.0
-  # que não tem essa dependência forçada.
-  # ───────────────────────────────────────────────────────────────────────
-  docstring-coverage:
-    name: Interrogate (docstring coverage)
-    runs-on: ubuntu-latest
-    continue-on-error: true  # informativo, não bloqueia
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-      - name: Install system deps for cairosvg (interrogate badge)
-        run: sudo apt-get update && sudo apt-get install -y libcairo2
-      - name: Install
-        run: pip install "interrogate>=1.7.0"
-      - name: Interrogate
-        run: interrogate -c pyproject.toml src/monitoritcd
-        continue-on-error: true
-
-  # Mutation testing roda em workflow proprio (.github/workflows/mutation.yml)
-  # com cron semanal — caro demais (~60min) para PRs/push.
