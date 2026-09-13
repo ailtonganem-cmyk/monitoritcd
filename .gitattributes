@@ -1,0 +1,2 @@
+# Texto versionado em LF. Impede CRLF de cópia/checkout Windows.
+* text=auto eol=lf

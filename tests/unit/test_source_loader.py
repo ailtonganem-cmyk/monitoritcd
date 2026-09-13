@@ -199,6 +199,8 @@ class TestLoadAllSources:
         assert len(sources) >= 1
         ids = {s.id for s in sources}
         assert "lexml-portal" in ids
+        doe_mg = next(s for s in sources if s.id == "doe-mg")
+        assert doe_mg.expected_min_items_per_week == 1
 
     def test_real_tribunais_yamls_present(self) -> None:
         """Verifica que YAMLs de tribunais foram criados."""

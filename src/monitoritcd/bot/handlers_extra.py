@@ -376,7 +376,9 @@ async def handle_saude_fontes(ctx: BotContext, cmd: ParsedCommand) -> HandlerRes
     threshold = _limits.DEFAULT_ZERO_RUN_ALERT_THRESHOLD
     lines = ["🩺 *Saúde das fontes*"]
     for health in zeros[:_SAUDE_FONTES_MAX_LINES]:
-        sid = escape_markdown_v2(health.source_id)
+        # Dentro de code span MarkdownV2 só ` e \ precisam de escape.
+        # Escapar _/- aqui gerava 400 "can't parse entities".
+        sid = health.source_id.replace("\\", "\\\\").replace("`", "\\`")
         n = escape_markdown_v2(str(health.consecutive_zero_runs))
         marker = "🟠" if health.consecutive_zero_runs >= threshold else "•"
         lines.append(f"{marker} `{sid}` — {n} zeros seguidos")

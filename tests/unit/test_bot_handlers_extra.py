@@ -582,11 +582,13 @@ class TestSaudeFontes:
         ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
         r = await handle_saude_fontes(ctx, _cmd("saude_fontes"))
         assert r.pre_escaped is True
-        assert "doe\\_mg" in r.text
+        assert "`doe_mg`" in r.text
         assert "🟠" in r.text
-        assert "sefaz\\-sp" in r.text
+        assert "`sefaz-sp`" in r.text
+        assert "doe\\_mg" not in r.text
+        assert "sefaz\\-sp" not in r.text
         assert "ok-src" not in r.text
-        assert r.text.index("doe\\_mg") < r.text.index("sefaz\\-sp")
+        assert r.text.index("`doe_mg`") < r.text.index("`sefaz-sp`")
 
     @pytest.mark.asyncio
     async def test_rejeita_argumentos(self) -> None:

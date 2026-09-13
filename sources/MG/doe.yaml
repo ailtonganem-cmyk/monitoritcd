@@ -18,6 +18,7 @@ topics:
 ativo: true
 trusted: true
 geo_restricted: true
+expected_min_items_per_week: 1
 notas: |
   Diário Oficial Eletrônico de MG (Jornal Minas Gerais).
   Reescrita 2026-05-19: substitui generic_html anterior (que era SPA-blind
