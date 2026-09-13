@@ -69,7 +69,7 @@ def test_gravar_ia_nao_guarda_chave(tmp_path: Path) -> None:
                 "familia": "google",
                 "habilitado": True,
                 "modelo": "gemini-2.5-flash",
-                "api_key": "SEGREDO",
+                "segredo_proibido": "nao-gravar",
             }
         ],
     )
