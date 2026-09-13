@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -69,17 +70,33 @@ def _pasta_operador(root: Path) -> Path:
     return pasta
 
 
+def _achar_yaml_operador(pasta: Path, sid: str) -> Path | None:
+    """Localiza YAML já existente pelo stem ou pelo campo id — sem join do input."""
+    if not pasta.is_dir():
+        return None
+    for candidato in pasta.iterdir():
+        if candidato.suffix != ".yaml" or not candidato.is_file():
+            continue
+        if candidato.stem == sid:
+            return candidato.resolve()
+        try:
+            data = yaml.safe_load(candidato.read_text(encoding="utf-8"))
+        except (OSError, yaml.YAMLError):
+            continue
+        if isinstance(data, dict) and str(data.get("id") or "") == sid:
+            return candidato.resolve()
+    return None
+
+
 def _yaml_operador(root: Path, fonte_id: str) -> Path:
     sid = _slug_fonte(fonte_id)
     pasta = _pasta_operador(root)
-    for candidato in pasta.iterdir():
-        if candidato.suffix == ".yaml" and candidato.stem == sid:
-            return candidato.resolve()
-    nome = os.path.basename(sid + ".yaml")  # noqa: PTH119 — sanitizer CodeQL
-    destino = (pasta / nome).resolve()
-    if destino.parent != pasta:
-        raise SourceConfigError("id inválido (use slug a-z, 0-9, hífen)")
-    return destino
+    existente = _achar_yaml_operador(pasta, sid)
+    if existente is not None:
+        return existente
+    handle, tmp = tempfile.mkstemp(prefix="op_", suffix=".yaml", dir=str(pasta))
+    os.close(handle)
+    return Path(tmp).resolve()
 
 
 def listar_fontes(raiz: Path | None = None) -> list[dict[str, Any]]:
@@ -87,7 +104,10 @@ def listar_fontes(raiz: Path | None = None) -> list[dict[str, Any]]:
     root = raiz or _repo_root()
     fontes = load_all_sources(dir_sources(root), ativo_only=False)
     selecao = _ler_selecao(root)
-    op_ids = {p.stem for p in (dir_sources(root) / OPERADOR_DIR).glob("*.yaml")}
+    pasta_op = dir_sources(root) / OPERADOR_DIR
+    op_ids = {
+        s.id for s in (load_all_sources(pasta_op, ativo_only=False) if pasta_op.is_dir() else [])
+    }
     itens: list[dict[str, Any]] = []
     for src in fontes:
         selecionada = selecao.get(src.id, src.ativo)
@@ -172,12 +192,7 @@ def excluir_fonte(fonte_id: str, *, raiz: Path | None = None) -> None:
     """Remove só YAML do operador; catálogo versionado não apaga."""
     root = raiz or _repo_root()
     sid = _slug_fonte(fonte_id)
-    pasta = _pasta_operador(root)
-    alvo: Path | None = None
-    for candidato in pasta.iterdir():
-        if candidato.suffix == ".yaml" and candidato.stem == sid:
-            alvo = candidato
-            break
+    alvo = _achar_yaml_operador(_pasta_operador(root), sid)
     if alvo is None or not alvo.is_file():
         raise SourceConfigError("só fontes incluídas pelo painel podem ser excluídas")
     alvo.unlink()

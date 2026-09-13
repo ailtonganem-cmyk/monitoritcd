@@ -161,3 +161,6 @@ temp/
 node_modules/
 apps/painel/dist/
 config/painel/
+
+# Dump local dos emuladores Firebase (HML)
+.emulator-data/
