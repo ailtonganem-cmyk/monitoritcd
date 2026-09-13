@@ -35,6 +35,7 @@ COMMANDS: Final[list[dict[str, str]]] = [
     {"command": "silenciar", "description": "Mute UF/tipo por período"},
     {"command": "estados", "description": "Listar/ativar/desativar UFs"},
     {"command": "fontes", "description": "Status das fontes"},
+    {"command": "saude_fontes", "description": "Fontes com zero items recente"},
     {"command": "relatorio", "description": "Digest sob demanda"},
     {"command": "reprocessar", "description": "Reclassificar período"},
     {"command": "quota", "description": "Uso de cotas (LLM, Firestore, Storage)"},

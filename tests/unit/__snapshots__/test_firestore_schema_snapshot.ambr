@@ -53,6 +53,7 @@
     'search_index': 'NoneType',
     'source': dict({
       'ativo': 'bool',
+      'expected_min_items_per_week': 'NoneType',
       'fragile': 'bool',
       'geo_restricted': 'bool',
       'id': 'str',
@@ -71,6 +72,16 @@
     }),
     'status': 'str',
     'user_tags': 'list',
+  })
+# ---
+# name: test_source_run_health_schema_snapshot
+  dict({
+    'consecutive_zero_runs': 'int',
+    'last_items_count': 'int',
+    'last_nonzero_at': 'NoneType',
+    'last_run_at': 'str',
+    'owner_id': 'str',
+    'source_id': 'str',
   })
 # ---
 # name: test_watch_schema_snapshot

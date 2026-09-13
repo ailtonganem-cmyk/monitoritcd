@@ -63,6 +63,7 @@ from monitoritcd.collectors import (
     SefazSPCollector,
     SenadoCollector,
 )
+from monitoritcd.core import limits
 from monitoritcd.core.config import AVISO_EMAIL_DESABILITADO
 from monitoritcd.core.models import (
     Documento,
@@ -80,6 +81,12 @@ from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.severity import effective_severity
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
+from monitoritcd.observability.source_run_health import (
+    SourceRunHealth,
+    apply_run_counts,
+    effective_expected_min_items,
+)
+from monitoritcd.security.markdown_escape import escape_markdown_v2
 from monitoritcd.storage.audit_log import AuditChainError, AuditLog, OwnershipError
 
 if TYPE_CHECKING:
@@ -128,6 +135,7 @@ class RunReport:
     items_notified_email: int = 0
     items_notified_telegram: int = 0
     failed_sources: list[str] = field(default_factory=list)
+    items_per_source: dict[str, int] = field(default_factory=dict)
     errors: list[str] = field(default_factory=list)
 
     @property
@@ -777,6 +785,7 @@ async def _collect_all(
         if isinstance(result, BaseException):
             report.sources_failed += 1
             report.failed_sources.append(source.id)
+            report.items_per_source[source.id] = 0
             bound.warning(
                 "source.failed",
                 source=source.id,
@@ -784,9 +793,84 @@ async def _collect_all(
                 message=str(result),
             )
             continue
+        report.items_per_source[source.id] = len(result)
         raw_items.extend((source, item) for item in result)
     report.items_collected = len(raw_items)
     return raw_items
+
+
+def _format_zero_run_alert(health: SourceRunHealth) -> str:
+    """Texto operacional MarkdownV2 para cruzamento do limiar de zeros."""
+    last = (
+        health.last_nonzero_at.strftime("%Y-%m-%d")
+        if health.last_nonzero_at is not None
+        else "nunca"
+    )
+    raw = (
+        "🟠 ALTA (operacional)\n"
+        f"Fonte {health.source_id} produziu 0 items em "
+        f"{health.consecutive_zero_runs} execuções consecutivas.\n"
+        f"Último items > 0: {last}"
+    )
+    return escape_markdown_v2(raw)
+
+
+async def _notify_zero_run_alerts(
+    settings: Settings,
+    alerts: list[SourceRunHealth],
+    report: RunReport,
+    bound: structlog.BoundLogger,
+) -> None:
+    """Push operacional; falha não derruba a run."""
+    try:
+        async with TelegramNotifier(settings) as tg:
+            for health in alerts:
+                await tg.send_message(_format_zero_run_alert(health))
+    except Exception as e:  # noqa: BLE001 — notificação operacional é best-effort
+        bound.exception("source.zero_run_alert_failed", error=str(e))
+        report.errors.append(f"source_zero_run_alert: {e}")
+
+
+async def _update_source_run_health(
+    storage: StorageProtocol,
+    sources: list[Source],
+    report: RunReport,
+    bound: structlog.BoundLogger,
+    settings: Settings,
+    *,
+    notify: bool,
+) -> None:
+    """Persiste zeros por fonte consultada e alerta no cruzamento do limiar."""
+    now = datetime.now(UTC)
+    alerts: list[SourceRunHealth] = []
+    for source in sources:
+        try:
+            previous = await storage.get_source_run_health(source.id)
+            updated, alert_now = apply_run_counts(
+                previous,
+                source_id=source.id,
+                owner_id=storage.owner_id,
+                items_count=report.items_per_source.get(source.id, 0),
+                now=now,
+            )
+            await storage.upsert_source_run_health(updated)
+            expected = effective_expected_min_items(source)
+            if alert_now and expected is not None and expected > 0:
+                bound.warning(
+                    "source.zero_run_threshold",
+                    source=source.id,
+                    consecutive=updated.consecutive_zero_runs,
+                    threshold=limits.DEFAULT_ZERO_RUN_ALERT_THRESHOLD,
+                )
+                alerts.append(updated)
+        except AttributeError:
+            bound.debug("run.source_run_health_unavailable")
+            return
+        except Exception as e:  # noqa: BLE001 — persistência de saúde é best-effort
+            bound.exception("run.source_run_health_failed", source=source.id, error=str(e))
+            report.errors.append(f"source_run_health: {e}")
+    if notify and alerts:
+        await _notify_zero_run_alerts(settings, alerts, report, bound)
 
 
 async def run_pipeline(  # noqa: PLR0915
@@ -845,6 +929,14 @@ async def run_pipeline(  # noqa: PLR0915
         proxy_br_token=proxy_token,
     )
     bound.info("run.collected", count=len(raw_items))
+    await _update_source_run_health(
+        storage,
+        sources_to_run,
+        report,
+        bound,
+        settings,
+        notify=notify,
+    )
 
     # 3. Filtro 1: keywords (expande com extras dinâmicas se configuradas via /temas)
     extras: list[str] | None = None

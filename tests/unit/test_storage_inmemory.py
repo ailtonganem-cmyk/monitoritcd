@@ -492,3 +492,45 @@ class TestAppendAudit:
         )
         with pytest.raises(ValueError, match="hash chain quebrada"):
             await s.append_audit(bad)
+
+
+@pytest.mark.unit
+class TestSourceRunHealth:
+    @pytest.mark.asyncio
+    async def test_round_trip(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+        s = InMemoryStorage(OWNER)
+        health = SourceRunHealth(
+            owner_id=OWNER,
+            source_id="doe-mg",
+            last_nonzero_at=None,
+            consecutive_zero_runs=3,
+            last_run_at=NOW,
+            last_items_count=0,
+        )
+        await s.upsert_source_run_health(health)
+        got = await s.get_source_run_health("doe-mg")
+        assert got is not None
+        assert got.consecutive_zero_runs == 3
+        listed = await s.list_source_run_health()
+        assert len(listed) == 1
+        assert listed[0].source_id == "doe-mg"
+
+    @pytest.mark.asyncio
+    async def test_get_inexistente(self) -> None:
+        s = InMemoryStorage(OWNER)
+        assert await s.get_source_run_health("missing") is None
+
+    @pytest.mark.asyncio
+    async def test_upsert_owner_errado(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+        s = InMemoryStorage(OWNER)
+        health = SourceRunHealth(
+            owner_id="outro",
+            source_id="doe-mg",
+            last_run_at=NOW,
+        )
+        with pytest.raises(OwnershipError):
+            await s.upsert_source_run_health(health)

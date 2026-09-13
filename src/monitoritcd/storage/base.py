@@ -28,6 +28,7 @@ if TYPE_CHECKING:
         StatusDocumento,
         Watch,
     )
+    from monitoritcd.observability.source_run_health import SourceRunHealth
 
 
 class StorageProtocol(Protocol):
@@ -140,3 +141,10 @@ class StorageProtocol(Protocol):
     async def append_audit(self, entry: AuditLogEntry) -> None: ...
 
     async def get_last_audit_hash(self) -> str: ...
+
+    # ─── Saúde por execução de fonte (issue #38) ──────────────────────────
+    async def upsert_source_run_health(self, health: SourceRunHealth) -> None: ...
+
+    async def get_source_run_health(self, source_id: str) -> SourceRunHealth | None: ...
+
+    async def list_source_run_health(self) -> list[SourceRunHealth]: ...

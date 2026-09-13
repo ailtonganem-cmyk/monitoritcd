@@ -58,3 +58,10 @@ class TestLimitConstants:
             limits.RELEVANCIA_THRESHOLD_CRITICO,
         ]
         assert thresholds == sorted(thresholds)
+
+    def test_source_run_health_limits(self) -> None:
+        assert limits.DEFAULT_ZERO_RUN_ALERT_THRESHOLD == 7
+        assert limits.DEFAULT_FRAGILE_EXPECTED_MIN_ITEMS_PER_WEEK == 1
+        assert limits.MAX_EXPECTED_MIN_ITEMS_PER_WEEK >= 1
+        assert limits.MAX_CONSECUTIVE_ZERO_RUNS >= limits.DEFAULT_ZERO_RUN_ALERT_THRESHOLD
+        assert limits.MAX_LAST_ITEMS_COUNT >= 1

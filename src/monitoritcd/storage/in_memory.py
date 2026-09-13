@@ -32,6 +32,7 @@ if TYPE_CHECKING:
         StatusDocumento,
         Watch,
     )
+    from monitoritcd.observability.source_run_health import SourceRunHealth
 
 
 class DocumentNotFoundError(Exception):
@@ -53,6 +54,7 @@ class InMemoryStorage:
         self._watches: dict[str, Watch] = {}
         self._audit: list[AuditLogEntry] = []
         self._email_subscribers: list[str] = []
+        self._source_run_health: dict[str, SourceRunHealth] = {}
 
     @property
     def owner_id(self) -> str:
@@ -292,3 +294,19 @@ class InMemoryStorage:
     async def list_audit_recent(self, limit: int = 20) -> list[AuditLogEntry]:
         """Retorna últimas entries em ordem cronológica (Sugestão #25)."""
         return [deepcopy(e) for e in self._audit[-limit:]]
+
+    # ─── Saúde por execução de fonte ──────────────────────────────────────
+
+    async def upsert_source_run_health(self, health: SourceRunHealth) -> None:
+        self._assert_owner(health.owner_id)
+        self._source_run_health[health.source_id] = health.model_copy(deep=True)
+
+    async def get_source_run_health(self, source_id: str) -> SourceRunHealth | None:
+        found = self._source_run_health.get(source_id)
+        if found is None:
+            return None
+        self._assert_owner(found.owner_id)
+        return deepcopy(found)
+
+    async def list_source_run_health(self) -> list[SourceRunHealth]:
+        return [deepcopy(h) for h in self._source_run_health.values()]

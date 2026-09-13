@@ -99,6 +99,13 @@ MAX_METADATA_FIELDS: Final[int] = 30
 MIN_ORG_MENTION_LENGTH: Final[int] = 2  # 2 chars permite siglas curtas (UF, OS, AC)
 MAX_ORG_MENTION_LENGTH: Final[int] = 200
 MAX_ORG_MENTIONS: Final[int] = 10
+# Saúde por fonte (issue #38): teto do campo YAML e limiar de zeros consecutivos.
+MAX_EXPECTED_MIN_ITEMS_PER_WEEK: Final[int] = 10_000
+DEFAULT_FRAGILE_EXPECTED_MIN_ITEMS_PER_WEEK: Final[int] = 1
+DEFAULT_ZERO_RUN_ALERT_THRESHOLD: Final[int] = 7
+# Teto do contador persistido — ~27 anos de cron diário; evita int sem limite.
+MAX_CONSECUTIVE_ZERO_RUNS: Final[int] = 10_000
+MAX_LAST_ITEMS_COUNT: Final[int] = 1_000_000
 MAX_KEY_POINTS: Final[int] = 8
 MAX_KEY_POINT_LENGTH: Final[int] = 500
 MAX_RELATED_SUBJECTS: Final[int] = 12

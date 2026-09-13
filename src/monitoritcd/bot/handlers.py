@@ -142,6 +142,7 @@ async def handle_start(_ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
             "• /estados listar — UFs ativas\n"
             "• /estados ativar <UF>\n"
             "• /estados desativar <UF> (requer confirmação)\n"
+            "• /saude_fontes — fontes com zero items recente\n"
             "• /confirmar <token>\n"
         ),
     )

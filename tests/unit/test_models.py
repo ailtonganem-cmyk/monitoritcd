@@ -66,6 +66,43 @@ class TestSource:
         assert src.uf == "_federal"
         assert src.ativo is True
         assert src.fragile is False
+        assert src.expected_min_items_per_week is None
+
+    def test_expected_min_items_per_week_aceito(self) -> None:
+        src = Source(
+            id="x",
+            uf="MG",
+            nome="X",
+            tipo=TipoFonte.DOE,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+            expected_min_items_per_week=1,
+        )
+        assert src.expected_min_items_per_week == 1
+
+    def test_expected_min_items_per_week_rejeita_negativo(self) -> None:
+        with pytest.raises(ValidationError):
+            Source(
+                id="x",
+                uf="MG",
+                nome="X",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                expected_min_items_per_week=-1,
+            )
+
+    def test_expected_min_items_per_week_rejeita_acima_do_teto(self) -> None:
+        with pytest.raises(ValidationError):
+            Source(
+                id="x",
+                uf="MG",
+                nome="X",
+                tipo=TipoFonte.DOE,
+                parser=Parser.GENERIC_HTML,
+                url="https://x.gov.br/",
+                expected_min_items_per_week=limits.MAX_EXPECTED_MIN_ITEMS_PER_WEEK + 1,
+            )
 
     def test_uf_pattern_rejects_invalid(self) -> None:
         with pytest.raises(ValidationError):
@@ -215,6 +252,18 @@ class TestSource:
         assert src.keywords_bypass is True
         assert src.org_mentions is not None
         assert "SEFAZ" in src.org_mentions
+
+    def test_expected_min_items_zero_accepted(self) -> None:
+        src = Source(
+            id="x",
+            uf="MG",
+            nome="x",
+            tipo=TipoFonte.DOE,
+            parser=Parser.GENERIC_HTML,
+            url="https://x.gov.br/",
+            expected_min_items_per_week=0,
+        )
+        assert src.expected_min_items_per_week == 0
 
 
 @pytest.mark.unit
