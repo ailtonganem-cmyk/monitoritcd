@@ -221,6 +221,13 @@ class Source(StrictModel):
 
     notas: str | None = Field(default=None, max_length=1000)
     topics: list[TopicId] = Field(default_factory=lambda: [Topic.ITCD.value], max_length=10)
+    # Opt-in do alerta de zeros consecutivos (issue #38). None = herda 1 se
+    # fragile, senão não alerta. 0 explícito = opt-out mesmo com fragile.
+    expected_min_items_per_week: int | None = Field(
+        default=None,
+        ge=0,
+        le=limits.MAX_EXPECTED_MIN_ITEMS_PER_WEEK,
+    )
 
     @field_validator("selectors")
     @classmethod

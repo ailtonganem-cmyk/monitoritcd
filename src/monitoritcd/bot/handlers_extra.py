@@ -7,6 +7,7 @@ Handlers para os comandos faltantes em handlers.py:
 - /favoritar / /favoritos (#194, #195)
 - /arquivo (#196, #197)
 - /fontes (#205-#208)
+- /saude_fontes (issue #38)
 - /reprocessar (#209)
 - /backup (#210)
 - /export (#211, #212)
@@ -352,6 +353,40 @@ async def handle_fontes(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:  
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# /saude_fontes
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SAUDE_FONTES_EMPTY = "Nenhuma fonte com zero items recente."
+_SAUDE_FONTES_MAX_LINES = 30
+
+
+async def handle_saude_fontes(ctx: BotContext, cmd: ParsedCommand) -> HandlerResult:
+    """Lista fontes com zeros consecutivos recentes (issue #38)."""
+    from monitoritcd.security.markdown_escape import escape_markdown_v2  # noqa: PLC0415
+
+    if cmd.args:
+        return HandlerResult(text="❌ Argumentos inválidos.", is_error=True)
+
+    rows = await ctx.storage.list_source_run_health()
+    zeros = [h for h in rows if h.consecutive_zero_runs >= 1]
+    zeros.sort(key=lambda h: h.consecutive_zero_runs, reverse=True)
+    if not zeros:
+        return HandlerResult(text=_SAUDE_FONTES_EMPTY)
+
+    threshold = _limits.DEFAULT_ZERO_RUN_ALERT_THRESHOLD
+    lines = ["🩺 *Saúde das fontes*"]
+    for health in zeros[:_SAUDE_FONTES_MAX_LINES]:
+        sid = escape_markdown_v2(health.source_id)
+        n = escape_markdown_v2(str(health.consecutive_zero_runs))
+        marker = "🟠" if health.consecutive_zero_runs >= threshold else "•"
+        lines.append(f"{marker} `{sid}` — {n} zeros seguidos")
+    omitted = len(zeros) - _SAUDE_FONTES_MAX_LINES
+    if omitted > 0:
+        lines.append(escape_markdown_v2(f"...mais {omitted}"))
+    return HandlerResult(text="\n".join(lines), pre_escaped=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # /reprocessar, /backup, /coleta — operações destrutivas
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -633,6 +668,7 @@ EXTRA_HANDLERS: Final[dict[str, ExtraHandler]] = {
     "favoritos": handle_favoritos,
     "arquivo": handle_arquivo,
     "fontes": handle_fontes,
+    "saude_fontes": handle_saude_fontes,
     "reprocessar": handle_reprocessar,
     "backup": handle_backup,
     "coleta": handle_coleta,

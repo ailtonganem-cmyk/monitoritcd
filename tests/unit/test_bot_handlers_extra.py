@@ -25,6 +25,7 @@ from monitoritcd.bot.handlers_extra import (
     handle_lembrar,
     handle_quota,
     handle_reprocessar,
+    handle_saude_fontes,
     handle_sefazmg,
     handle_silenciar,
     handle_tags,
@@ -536,6 +537,85 @@ class TestFontes:
 
 
 @pytest.mark.unit
+class TestSaudeFontes:
+    @pytest.mark.asyncio
+    async def test_vazio(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        r = await handle_saude_fontes(ctx, _cmd("saude_fontes"))
+        assert r.text == "Nenhuma fonte com zero items recente."
+        assert r.is_error is False
+
+    @pytest.mark.asyncio
+    async def test_lista_zeros_pior_primeiro(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+        storage = InMemoryStorage(owner_id="o")
+        await storage.upsert_source_run_health(
+            SourceRunHealth(
+                owner_id="o",
+                source_id="ok-src",
+                consecutive_zero_runs=0,
+                last_run_at=NOW,
+                last_items_count=2,
+                last_nonzero_at=NOW,
+            )
+        )
+        await storage.upsert_source_run_health(
+            SourceRunHealth(
+                owner_id="o",
+                source_id="doe_mg",
+                consecutive_zero_runs=7,
+                last_run_at=NOW,
+                last_items_count=0,
+            )
+        )
+        await storage.upsert_source_run_health(
+            SourceRunHealth(
+                owner_id="o",
+                source_id="sefaz-sp",
+                consecutive_zero_runs=2,
+                last_run_at=NOW,
+                last_items_count=0,
+            )
+        )
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        r = await handle_saude_fontes(ctx, _cmd("saude_fontes"))
+        assert r.pre_escaped is True
+        assert "doe\\_mg" in r.text
+        assert "🟠" in r.text
+        assert "sefaz\\-sp" in r.text
+        assert "ok-src" not in r.text
+        assert r.text.index("doe\\_mg") < r.text.index("sefaz\\-sp")
+
+    @pytest.mark.asyncio
+    async def test_rejeita_argumentos(self) -> None:
+        storage = InMemoryStorage(owner_id="o")
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        r = await handle_saude_fontes(ctx, _cmd("saude_fontes", "extra"))
+        assert r.is_error
+        assert "extra" not in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_trunca_lista_longa(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+        storage = InMemoryStorage(owner_id="o")
+        for i in range(32):
+            await storage.upsert_source_run_health(
+                SourceRunHealth(
+                    owner_id="o",
+                    source_id=f"src-{i:02d}",
+                    consecutive_zero_runs=1,
+                    last_run_at=NOW,
+                )
+            )
+        ctx = BotContext(settings=_settings(), storage=storage, confirmation=TwoStepConfirmation())
+        r = await handle_saude_fontes(ctx, _cmd("saude_fontes"))
+        assert "mais 2" in r.text
+
+
+@pytest.mark.unit
 class TestReprocessar:
     @pytest.mark.asyncio
     async def test_data_valida_emite_token(self) -> None:
@@ -915,6 +995,7 @@ class TestExtraRegistration:
             "favoritos",
             "arquivo",
             "fontes",
+            "saude_fontes",
             "reprocessar",
             "backup",
             "coleta",

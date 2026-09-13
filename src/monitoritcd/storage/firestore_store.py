@@ -24,6 +24,7 @@ from monitoritcd.core.models import (
     StatusDocumento,
     Watch,
 )
+from monitoritcd.observability.source_run_health import SourceRunHealth
 from monitoritcd.storage.audit_log import OwnershipError
 from monitoritcd.storage.in_memory import GENESIS_HASH
 
@@ -42,6 +43,7 @@ COLLECTION_WATCHES = "monitor_watches"
 COLLECTION_AUDIT = "monitor_audit_log"
 COLLECTION_RUNS = "monitor_runs"
 COLLECTION_SUBSCRIPTIONS = "monitor_subscriptions"
+COLLECTION_SOURCE_HEALTH = "monitor_source_health"
 
 
 def _dt_to_stored(value: datetime) -> str:
@@ -77,6 +79,30 @@ def _dt_to_stored(value: datetime) -> str:
     """
     value = value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
     return value.strftime("%Y-%m-%dT%H:%M:%S.%f") + "Z"
+
+
+def _stored_to_dt(value: str | None) -> datetime | None:
+    """Inverso de `_dt_to_stored`. None permanece None."""
+    if value is None:
+        return None
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+
+
+def _health_from_stored(data: dict[str, Any]) -> SourceRunHealth:
+    last_nonzero = data.get("last_nonzero_at")
+    last_run = data.get("last_run_at")
+    last_run_at = _stored_to_dt(last_run if isinstance(last_run, str) else None)
+    if last_run_at is None:
+        msg = "last_run_at ausente em monitor_source_health"
+        raise ValueError(msg)
+    return SourceRunHealth(
+        owner_id=str(data.get("owner_id", "")),
+        source_id=str(data.get("source_id", "")),
+        last_nonzero_at=_stored_to_dt(last_nonzero if isinstance(last_nonzero, str) else None),
+        consecutive_zero_runs=int(data.get("consecutive_zero_runs", 0)),
+        last_run_at=last_run_at,
+        last_items_count=int(data.get("last_items_count", 0)),
+    )
 
 
 class FirestoreStorage:
@@ -550,3 +576,45 @@ class FirestoreStorage:
         )
         ref = self._client.collection(COLLECTION_RUNS).document(report.run_id)
         await ref.set(data)
+
+    # ─── Saúde por execução de fonte ──────────────────────────────────────
+
+    async def upsert_source_run_health(self, health: SourceRunHealth) -> None:
+        self._assert_owner(health.owner_id)
+        data = {
+            "owner_id": health.owner_id,
+            "source_id": health.source_id,
+            "last_nonzero_at": (
+                _dt_to_stored(health.last_nonzero_at)
+                if health.last_nonzero_at is not None
+                else None
+            ),
+            "consecutive_zero_runs": health.consecutive_zero_runs,
+            "last_run_at": _dt_to_stored(health.last_run_at),
+            "last_items_count": health.last_items_count,
+        }
+        ref = self._client.collection(COLLECTION_SOURCE_HEALTH).document(health.source_id)
+        await ref.set(data)
+
+    async def get_source_run_health(self, source_id: str) -> SourceRunHealth | None:
+        ref = self._client.collection(COLLECTION_SOURCE_HEALTH).document(source_id)
+        snapshot = await ref.get()
+        if not snapshot.exists:
+            return None
+        data = snapshot.to_dict() or {}
+        owner = data.get("owner_id", "")
+        if owner != self._owner_id:
+            self._assert_owner(owner if isinstance(owner, str) else "")
+        return _health_from_stored(data)
+
+    async def list_source_run_health(self) -> list[SourceRunHealth]:
+        query = self._client.collection(COLLECTION_SOURCE_HEALTH).where(
+            "owner_id", "==", self._owner_id
+        )
+        out: list[SourceRunHealth] = []
+        async for snapshot in query.stream():
+            data = snapshot.to_dict() or {}
+            if data.get("owner_id") != self._owner_id:
+                continue
+            out.append(_health_from_stored(data))
+        return out

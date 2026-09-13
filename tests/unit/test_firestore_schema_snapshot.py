@@ -120,3 +120,20 @@ def test_watch_schema_snapshot(snapshot) -> None:  # type: ignore[no-untyped-def
     )
     schema = _model_keys_recursive(w.model_dump(mode="json"))
     assert schema == snapshot
+
+
+@pytest.mark.unit
+def test_source_run_health_schema_snapshot(snapshot) -> None:  # type: ignore[no-untyped-def]
+    """Schema de `monitor_source_health/{source_id}`."""
+    from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+    health = SourceRunHealth(
+        owner_id="o",
+        source_id="doe-mg",
+        last_nonzero_at=None,
+        consecutive_zero_runs=7,
+        last_run_at=datetime.now(UTC),
+        last_items_count=0,
+    )
+    schema = _model_keys_recursive(health.model_dump(mode="json"))
+    assert schema == snapshot

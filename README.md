@@ -223,6 +223,7 @@ python scripts/cleanup_retention.py --dry-run
 - `/estados ativar <UF>` — ativa monitoramento
 - `/estados desativar <UF>` — requer confirmação 2 passos
 - `/confirmar <token>` — confirma operação destrutiva
+- `/saude_fontes` — fontes com zero items em execuções recentes
 
 ## Princípios em código
 

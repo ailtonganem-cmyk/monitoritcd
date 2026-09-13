@@ -31,6 +31,8 @@ from monitoritcd.storage.firestore_store import (
     COLLECTION_RUNS,
     FirestoreStorage,
     _dt_to_stored,
+    _health_from_stored,
+    _stored_to_dt,
 )
 
 OWNER = "owner-test"
@@ -122,6 +124,42 @@ class FakeWriteClient:
 # ─────────────────────────────────────────────────────────────────────────────
 # `_dt_to_stored` — helper puro
 # ─────────────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.unit
+class TestStoredToDtAndHealth:
+    def test_roundtrip_dt(self) -> None:
+        value = datetime(2026, 5, 19, 12, 0, 0, tzinfo=UTC)
+        assert _stored_to_dt(_dt_to_stored(value)) == value
+        assert _stored_to_dt(None) is None
+
+    def test_health_from_stored(self) -> None:
+        now = datetime(2026, 5, 19, 12, 0, 0, tzinfo=UTC)
+        health = _health_from_stored(
+            {
+                "owner_id": OWNER,
+                "source_id": "doe-mg",
+                "last_nonzero_at": None,
+                "consecutive_zero_runs": 4,
+                "last_run_at": _dt_to_stored(now),
+                "last_items_count": 0,
+            }
+        )
+        assert health.source_id == "doe-mg"
+        assert health.consecutive_zero_runs == 4
+        assert health.last_nonzero_at is None
+        assert health.last_run_at == now
+
+    def test_health_from_stored_exige_last_run_at(self) -> None:
+        with pytest.raises(ValueError, match="last_run_at"):
+            _health_from_stored(
+                {
+                    "owner_id": OWNER,
+                    "source_id": "doe-mg",
+                    "consecutive_zero_runs": 1,
+                    "last_items_count": 0,
+                }
+            )
 
 
 @pytest.mark.unit
@@ -284,3 +322,130 @@ class TestSaveRunReport:
         # passa pelo `_dt_to_stored`, que não trata None.
         assert data["finished_at"] is None
         assert data["started_at"] == "2026-04-26T00:00:00.000000Z"
+
+
+@pytest.mark.unit
+class TestUpsertSourceRunHealth:
+    async def test_grava_em_monitor_source_health(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+        from monitoritcd.storage.firestore_store import (  # noqa: PLC0415
+            COLLECTION_SOURCE_HEALTH,
+        )
+
+        client = FakeWriteClient()
+        storage = FirestoreStorage(client=client, owner_id=OWNER)  # type: ignore[arg-type]
+        now = datetime(2026, 5, 19, 12, 0, 0, tzinfo=UTC)
+        health = SourceRunHealth(
+            owner_id=OWNER,
+            source_id="doe-mg",
+            last_nonzero_at=None,
+            consecutive_zero_runs=7,
+            last_run_at=now,
+            last_items_count=0,
+        )
+        await storage.upsert_source_run_health(health)
+        assert len(client.writes) == 1
+        collection_name, doc_id, data = client.writes[0]
+        assert collection_name == COLLECTION_SOURCE_HEALTH
+        assert doc_id == "doe-mg"
+        assert data["owner_id"] == OWNER
+        assert data["source_id"] == "doe-mg"
+        assert data["last_nonzero_at"] is None
+        assert data["consecutive_zero_runs"] == 7
+        assert data["last_run_at"] == "2026-05-19T12:00:00.000000Z"
+        assert data["last_items_count"] == 0
+
+    async def test_rejeita_owner_errado(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+        from monitoritcd.storage.audit_log import OwnershipError  # noqa: PLC0415
+
+        client = FakeWriteClient()
+        storage = FirestoreStorage(client=client, owner_id=OWNER)  # type: ignore[arg-type]
+        health = SourceRunHealth(
+            owner_id="outro",
+            source_id="doe-mg",
+            last_run_at=datetime(2026, 5, 19, tzinfo=UTC),
+        )
+        with pytest.raises(OwnershipError):
+            await storage.upsert_source_run_health(health)
+
+
+class _Snap:
+    def __init__(self, data: dict[str, Any] | None) -> None:
+        self._data = data
+        self.exists = data is not None
+
+    def to_dict(self) -> dict[str, Any] | None:
+        return self._data
+
+
+class _StoreDoc:
+    def __init__(self, store: dict[str, dict[str, dict[str, Any]]], coll: str, doc_id: str) -> None:
+        self._store = store
+        self._coll = coll
+        self._doc_id = doc_id
+
+    async def set(self, data: dict[str, Any]) -> None:
+        self._store.setdefault(self._coll, {})[self._doc_id] = data
+
+    async def get(self) -> _Snap:
+        return _Snap(self._store.get(self._coll, {}).get(self._doc_id))
+
+
+class _StoreCollection:
+    def __init__(self, store: dict[str, dict[str, dict[str, Any]]], name: str) -> None:
+        self._store = store
+        self._name = name
+        self._filters: list[tuple[str, str, Any]] = []
+
+    def document(self, doc_id: str) -> _StoreDoc:
+        return _StoreDoc(self._store, self._name, doc_id)
+
+    def where(self, field: str, op: str, value: Any) -> _StoreCollection:
+        self._filters.append((field, op, value))
+        return self
+
+    async def stream(self):  # type: ignore[no-untyped-def]
+        for data in self._store.get(self._name, {}).values():
+            if all(data.get(field) == value for field, op, value in self._filters if op == "=="):
+                yield _Snap(data)
+
+
+class _StoreClient:
+    def __init__(self) -> None:
+        self.store: dict[str, dict[str, dict[str, Any]]] = {}
+
+    def collection(self, name: str) -> _StoreCollection:
+        return _StoreCollection(self.store, name)
+
+
+@pytest.mark.unit
+class TestGetListSourceRunHealth:
+    async def test_get_e_list_round_trip(self) -> None:
+        from monitoritcd.observability.source_run_health import SourceRunHealth  # noqa: PLC0415
+
+        client = _StoreClient()
+        storage = FirestoreStorage(client=client, owner_id=OWNER)  # type: ignore[arg-type]
+        now = datetime(2026, 5, 19, 12, 0, 0, tzinfo=UTC)
+        health = SourceRunHealth(
+            owner_id=OWNER,
+            source_id="mg_doe",
+            last_nonzero_at=now,
+            consecutive_zero_runs=2,
+            last_run_at=now,
+            last_items_count=0,
+        )
+        await storage.upsert_source_run_health(health)
+        got = await storage.get_source_run_health("mg_doe")
+        assert got is not None
+        assert got.source_id == "mg_doe"
+        assert got.consecutive_zero_runs == 2
+        assert got.last_nonzero_at == now
+        listed = await storage.list_source_run_health()
+        assert len(listed) == 1
+        assert listed[0].source_id == "mg_doe"
+
+    async def test_get_inexistente(self) -> None:
+        client = _StoreClient()
+        storage = FirestoreStorage(client=client, owner_id=OWNER)  # type: ignore[arg-type]
+        assert await storage.get_source_run_health("missing") is None

@@ -5,6 +5,7 @@ Componentes:
 - `tracing`: integração opcional com OpenTelemetry.
 - `dlq`: dead-letter queue para itens com falhas persistentes.
 - `source_heartbeat`: tracking per-source de última coleta bem-sucedida.
+- `source_run_health`: zeros consecutivos persistidos (issue #38).
 
 Princípio aplicado: tudo no-op por default. Habilitação via env var explícita.
 """
@@ -16,11 +17,19 @@ from monitoritcd.observability.source_heartbeat import (
     record_source_failure,
     record_source_success,
 )
+from monitoritcd.observability.source_run_health import (
+    SourceRunHealth,
+    apply_run_counts,
+    effective_expected_min_items,
+)
 
 __all__ = [
     "DLQEntry",
     "DeadLetterQueue",
     "SourceHeartbeat",
+    "SourceRunHealth",
+    "apply_run_counts",
+    "effective_expected_min_items",
     "record_source_failure",
     "record_source_success",
     "write_metrics",

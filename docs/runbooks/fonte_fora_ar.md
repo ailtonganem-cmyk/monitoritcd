@@ -5,8 +5,10 @@
 ## Sintomas
 
 - Bot `/status` mostra fonte na lista "stale".
+- Bot `/saude_fontes` lista a fonte com zeros consecutivos (coleta que devolve `[]`, sem exceção).
 - `report.failed_sources` contém o `source_id` repetidamente.
 - Email de digest mostra "0 itens" para UF impactada.
+- Warning `source.zero_run_threshold` no log após 7 runs seguidas com 0 items (fonte `fragile` ou com `expected_min_items_per_week` > 0).
 
 ## Diagnóstico (5 min)
 
@@ -19,6 +21,9 @@
    - `ConnectTimeout` → site fora do ar **ou** geo-restricted (e proxy_br falhou).
    - `ParseError` → layout do site mudou.
    - `403/404` → URL mudou ou bloqueio.
+   - Sem `source.failed`, mas `/saude_fontes` mostra zeros: coleta devolveu
+     `[]` (SPA/parser vazio). Distinto de exceção — a run completa e o ping
+     global do Healthchecks.io continua verde.
 
 ## Decisão
 
