@@ -1,6 +1,6 @@
 # Painel, cadeia de IA e HML — plano e segurança
 
-Data: 2026-09-13. HML = localhost. Sem Functions, Rules, IAM ou domínio próprio.
+Data: 2026-09-13. HML = localhost. Publicação remota das Functions: ver `docs/runbooks/publicacao_2026-09-13.md`.
 
 ## Diagnóstico HML (por que não funcionava)
 

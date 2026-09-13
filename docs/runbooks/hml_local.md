@@ -11,11 +11,11 @@ Regra permanente 2026-09-12: **HML = localhost**. Sem projeto Firebase de HML.
 | # | Canônico | Neste repo |
 |---|---|---|
 | 1 | HML = localhost; local cobre produção | `.env` → `demo-monitoritcd` + emuladores. Pipeline = `pytest` / `python -m monitoritcd.main run --dry-run`. Functions (`bot_webhook`, `proxy_br`, `canary_filter`) = Python/pytest (layout `functions/*` não é codebase Firebase CLI). |
-| 2 | Bateria HML antes de `/produção`; UI = Playwright | Sem `/produção` neste alinhamento. Playwright **obrigatório** na primeira mudança de UI. Hoje N/A: repo headless (Telegram + Pages gerado por `scripts/build_dashboard.py`), sem app FE. |
-| 3 | UI nova/alterada/corrigida: protótipo antes de fechar | Idem: protótipo para aprovação **antes** de fechar qualquer tarefa de UI. Sem UI aberta agora. |
+| 2 | Bateria HML antes de `/produção`; UI = Playwright | Painel local em http://127.0.0.1:8765 (Python serve o `dist` Angular). Playwright obrigatório em mudança de UI. Dashboard Pages continua estático. |
+| 3 | UI nova/alterada/corrigida: protótipo antes de fechar | Painel: `apps/painel`. Protótipo para aprovação **antes** de fechar tarefa de UI. |
 | 4 | Frontend/UI só Antigravity (`agy`) | Só `agy`. Fallback só por `~/Projetos/Skill/compartilhado/llm-ranking.yaml` se agy impossível. Nunca Gemini CLI. |
 | 5 | Contas teste automação + admin | Google `ailtonganem@gmail.com` (`OWNER_EMAIL` / `GMAIL_USER`). |
-| 6 | Firebase só-HML: listar → excluir depois | **Suspenso neste repo** (Orca ADE 2026-09-12): **não apagar** `sefworkstation-hml` nem `sefworkstation-app`. Projeto `monitoritcd` (`.firebaserc`) = UNKNOWN — não consultar, não deploy, não apagar. |
+| 6 | Firebase só-HML: listar → excluir depois | **Não apagar** `sefworkstation-hml` nem `sefworkstation-app`. Functions de produção vivem no GCP `monitoritcd`. O secret `FIREBASE_PROJECT_ID` do GitHub **não** deve ser usado para deploy até coincidir com esse projeto + SA correspondente. Ver `docs/runbooks/publicacao_2026-09-13.md`. |
 
 ## Paridade local × produção
 
@@ -40,7 +40,7 @@ python -m monitoritcd.main painel
 # NÃO use http://127.0.0.1:4200 — neste host isso é o SEFWorkStation, não o MonitorITCD.
 ```
 
-Alias Firebase HML: `.firebaserc` → `hml` = `demo-monitoritcd` (emulador). Auth emulator em `127.0.0.1:19099` para não colidir com o Auth do SEF na `9099`. O projeto remoto `monitoritcd` permanece intocado.
+Alias Firebase HML: `.firebaserc` → `default`/`hml` = `demo-monitoritcd` (emulador). Auth emulator em `127.0.0.1:19099` para não colidir com o Auth do SEF na `9099`. Functions remotas: projeto GCP `monitoritcd` (não o SEF).
 
 Não use só `ng serve` na `:4200` sem o proxy e sem o processo Python na `:8765`.
 Detalhe: `docs/painel_ia_hml.md`.
@@ -50,6 +50,7 @@ Aba Orca `emuladores` já usa esse comando. UI: <http://127.0.0.1:14000>.
 Portas dedicadas — a `8080` do Book é o Open WebUI, não o Firestore:
 - Firestore `127.0.0.1:18080`
 - Storage `127.0.0.1:18199`
+- Auth `127.0.0.1:19099`
 - Hub `127.0.0.1:14400`
 
 O `.env` local usa `FIREBASE_PROJECT_ID=demo-monitoritcd` e os hosts de emulador.
@@ -60,6 +61,6 @@ e `FIREBASE_STORAGE_EMULATOR_HOST` e não fala com projeto remoto.
 
 - Não apontar `.env` para `sefworkstation-hml`.
 - Não apagar `sefworkstation-hml` nem `sefworkstation-app`.
-- Projeto Firebase `monitoritcd` (`.firebaserc`) = UNKNOWN: não consultar, não deploy, não apagar.
-- Sem `/produção` neste alinhamento. Sem contratar serviço. Sem excluir repo.
-- Não alterar Functions, Rules, IAM nem rodar `deploy-functions.yml`.
+- Não disparar `deploy-functions.yml` enquanto o secret `FIREBASE_PROJECT_ID` apontar para o SEF.
+- Sem contratar serviço. Sem excluir repo.
+- Não alterar Rules/IAM no SEF. Functions do MonitorITCD: ver `docs/runbooks/publicacao_2026-09-13.md`.
