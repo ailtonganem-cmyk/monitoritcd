@@ -5,6 +5,20 @@ Todas as mudanças notáveis ao MonitorITCD são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Runtime Firebase (2026-09-14)
+
+### Adicionado
+
+- Functions `monitor_cron` e `painel_api` no projeto `monitoritcd` (`southamerica-east1`).
+- Cloud Scheduler (`monitor-cron-0233/1013/1447`) no lugar do cron do GitHub Actions.
+- Hosting do painel em https://monitoritcd.web.app (login Google, só `ailtonganem@gmail.com`).
+- Overlay do painel em Firestore (`monitor_painel_config`) quando `ENV=production`.
+- Provedores extras OpenRouter e DeepSeek (chaves novas; Gemini/Groq existentes não foram substituídos).
+
+### Alterado
+
+- `.github/workflows/monitor.yml` sem `schedule` — GitHub fica só como repositório; o workflow é reserva manual.
+
 ## [Unreleased] — Watchdog Healthchecks (2026-09-14)
 
 ### Corrigido

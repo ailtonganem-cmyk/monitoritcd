@@ -96,6 +96,9 @@ class _Cfg:
     OPENAI_API_KEY = SecretStr("openai-fake")
     ANTHROPIC_API_KEY = SecretStr("anthropic-fake")
     XAI_API_KEY = SecretStr("xai-fake")
+    OPENROUTER_API_KEY = SecretStr("or-fake")
+    DEEPSEEK_API_KEY = SecretStr("ds-fake")
+    OPENCODE_API_KEY = None
     OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 
 
@@ -106,6 +109,8 @@ def test_instanciar_familias() -> None:
     assert _instanciar({"familia": "openai", "modelo": "gpt-4o-mini"}, cfg) is not None
     assert _instanciar({"familia": "xai", "modelo": "grok-4"}, cfg) is not None
     assert _instanciar({"familia": "anthropic", "modelo": "claude-sonnet-4-5"}, cfg) is not None
+    assert _instanciar({"familia": "openrouter", "modelo": "openai/gpt-4o-mini"}, cfg) is not None
+    assert _instanciar({"familia": "deepseek", "modelo": "deepseek-chat"}, cfg) is not None
     assert _instanciar({"familia": "ollama", "modelo": "qwen2.5-coder:7b"}, cfg) is not None
     assert _instanciar({"familia": "desconhecida", "modelo": "x"}, cfg) is None
     vazio = _Cfg()

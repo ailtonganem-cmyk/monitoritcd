@@ -98,6 +98,14 @@ def _client_id() -> str:
     return os.environ.get("GOOGLE_OAUTH_CLIENT_ID", "").strip()
 
 
+def _cookie_attrs() -> str:
+    """HttpOnly; Secure em produção (Hosting HTTPS)."""
+    base = "HttpOnly; SameSite=Lax; Path=/"
+    if os.environ.get("ENV", "development") == "production":
+        return f"{base}; Secure"
+    return base
+
+
 def _hml_local(host_header: str) -> bool:
     if os.environ.get("ENV", "development") == "production":
         return False
@@ -230,7 +238,7 @@ class PainelHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(corpo)))
             self.send_header(
                 "Set-Cookie",
-                f"{COOKIE}={sessao}; HttpOnly; SameSite=Lax; Path=/; Max-Age=43200",
+                f"{COOKIE}={sessao}; {_cookie_attrs()}; Max-Age=43200",
             )
             self.end_headers()
             self.wfile.write(corpo)
@@ -246,7 +254,7 @@ class PainelHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(corpo)))
             self.send_header(
                 "Set-Cookie",
-                f"{COOKIE}={sessao}; HttpOnly; SameSite=Lax; Path=/; Max-Age=43200",
+                f"{COOKIE}={sessao}; {_cookie_attrs()}; Max-Age=43200",
             )
             self.end_headers()
             self.wfile.write(corpo)
@@ -255,9 +263,7 @@ class PainelHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", "11")
-            self.send_header(
-                "Set-Cookie", f"{COOKIE}=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"
-            )
+            self.send_header("Set-Cookie", f"{COOKIE}=; {_cookie_attrs()}; Max-Age=0")
             self.end_headers()
             self.wfile.write(b'{"ok":true}')
             return

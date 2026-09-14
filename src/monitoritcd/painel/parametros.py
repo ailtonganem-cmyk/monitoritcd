@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path  # noqa: TC003
 from typing import Any
 
@@ -12,19 +11,12 @@ from monitoritcd.filters.keywords import KEYWORDS_BY_TOPIC, KEYWORDS_DEFAULT, ex
 ARQUIVO = "keywords_extra.json"
 
 
-def _pasta(raiz: Path) -> Path:
-    return raiz / "config" / "painel"
-
-
-def _path(raiz: Path) -> Path:
-    return _pasta(raiz) / ARQUIVO
-
-
 def listar_parametros(raiz: Path) -> dict[str, Any]:
     extras: list[str] = []
-    if _path(raiz).is_file():
-        data = json.loads(_path(raiz).read_text(encoding="utf-8"))
-        extras = [str(x) for x in data.get("extras", []) if str(x).strip()]
+    from monitoritcd.painel.persistencia import ler_json  # noqa: PLC0415
+
+    data = ler_json(raiz, ARQUIVO)
+    extras = [str(x) for x in data.get("extras", []) if str(x).strip()]
     por_topico = {t.value: list(KEYWORDS_BY_TOPIC[t]) for t in Topic}
     return {
         "defaults": list(KEYWORDS_DEFAULT),
@@ -46,10 +38,7 @@ def gravar_extras(raiz: Path, extras: list[str]) -> dict[str, Any]:
             continue
         vistos.add(chave)
         limpos.append(kw)
-    pasta = _pasta(raiz)
-    pasta.mkdir(parents=True, exist_ok=True)
-    _path(raiz).write_text(
-        json.dumps({"extras": limpos}, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    from monitoritcd.painel.persistencia import gravar_json  # noqa: PLC0415
+
+    gravar_json(raiz, ARQUIVO, {"extras": limpos})
     return listar_parametros(raiz)

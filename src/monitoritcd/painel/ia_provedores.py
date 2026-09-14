@@ -6,7 +6,7 @@ import json
 from pathlib import Path  # noqa: TC003
 from typing import Any
 
-FAMILIAS = ("google", "groq", "openai", "anthropic", "xai", "ollama")
+FAMILIAS = ("google", "groq", "openai", "anthropic", "xai", "ollama", "openrouter", "deepseek")
 ESFORCOS = ("baixo", "medio", "alto", "extra-alto", "maximo")
 MODELOS: dict[str, list[str]] = {
     "google": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash"],
@@ -15,6 +15,8 @@ MODELOS: dict[str, list[str]] = {
     "anthropic": ["claude-sonnet-4-5", "claude-haiku-4-5", "claude-opus-4-1"],
     "xai": ["grok-4", "grok-4-fast", "grok-3-mini"],
     "ollama": ["qwen2.5-coder:7b", "gemma4:26b"],
+    "openrouter": ["openai/gpt-4o-mini", "google/gemini-2.5-flash", "anthropic/claude-sonnet-4.5"],
+    "deepseek": ["deepseek-chat", "deepseek-reasoner"],
 }
 ARQUIVO = "ia-provedores.json"
 
@@ -55,10 +57,15 @@ def _padrao() -> list[dict[str, Any]]:
 
 
 def listar(raiz: Path) -> list[dict[str, Any]]:
-    path = _path(raiz)
-    if not path.is_file():
-        return _padrao()
-    data = json.loads(path.read_text(encoding="utf-8"))
+    from monitoritcd.painel.persistencia import ler_json, usar_firestore  # noqa: PLC0415
+
+    if usar_firestore():
+        data = ler_json(raiz, ARQUIVO)
+    else:
+        path = _path(raiz)
+        if not path.is_file():
+            return _padrao()
+        data = json.loads(path.read_text(encoding="utf-8"))
     itens = data.get("itens")
     if not isinstance(itens, list):
         return _padrao()
@@ -88,10 +95,7 @@ def gravar(raiz: Path, itens: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "ordem": idx,
             }
         )
-    pasta = _path(raiz).parent
-    pasta.mkdir(parents=True, exist_ok=True)
-    _path(raiz).write_text(
-        json.dumps({"itens": limpos}, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    from monitoritcd.painel.persistencia import gravar_json  # noqa: PLC0415
+
+    gravar_json(raiz, ARQUIVO, {"itens": limpos})
     return listar(raiz)

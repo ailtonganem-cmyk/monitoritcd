@@ -6,6 +6,31 @@
   "storage": {
     "rules": "storage.rules"
   },
+  "hosting": {
+    "public": "apps/painel/dist/painel/browser",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "function": "painel_api",
+        "region": "southamerica-east1"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          { "key": "X-Frame-Options", "value": "DENY" },
+          { "key": "X-Content-Type-Options", "value": "nosniff" },
+          { "key": "Referrer-Policy", "value": "no-referrer" }
+        ]
+      }
+    ]
+  },
   "emulators": {
     "hub": {
       "host": "127.0.0.1",

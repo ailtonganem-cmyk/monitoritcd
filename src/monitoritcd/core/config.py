@@ -39,6 +39,9 @@ CAMPOS_OPCIONAIS_EM_BRANCO = (
     "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
     "XAI_API_KEY",
+    "OPENROUTER_API_KEY",
+    "DEEPSEEK_API_KEY",
+    "OPENCODE_API_KEY",
     "OLLAMA_BASE_URL",
     "TELEGRAM_GROUP_CHAT_ID",
     "FIREBASE_SERVICE_ACCOUNT_JSON",
@@ -76,6 +79,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: SecretStr | None = None
     ANTHROPIC_API_KEY: SecretStr | None = None
     XAI_API_KEY: SecretStr | None = None
+    OPENROUTER_API_KEY: SecretStr | None = None
+    DEEPSEEK_API_KEY: SecretStr | None = None
+    OPENCODE_API_KEY: SecretStr | None = None
     OLLAMA_BASE_URL: str | None = None
 
     # ─────────────────────────────────────────────────────────────────────

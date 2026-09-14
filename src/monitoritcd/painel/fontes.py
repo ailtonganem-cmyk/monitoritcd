@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
 import tempfile
@@ -35,22 +34,16 @@ def dir_config(raiz: Path | None = None) -> Path:
 
 
 def _ler_selecao(raiz: Path) -> dict[str, bool]:
-    path = dir_config(raiz) / SELECAO_NOME
-    if not path.is_file():
-        return {}
-    data = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict):
-        return {}
-    return {str(k): bool(v) for k, v in data.items()}
+    from monitoritcd.painel.persistencia import ler_json  # noqa: PLC0415
+
+    data = ler_json(raiz, SELECAO_NOME)
+    return {str(k): bool(v) for k, v in data.items() if k != "itens"}
 
 
 def _gravar_selecao(raiz: Path, mapa: dict[str, bool]) -> None:
-    pasta = dir_config(raiz)
-    pasta.mkdir(parents=True, exist_ok=True)
-    (pasta / SELECAO_NOME).write_text(
-        json.dumps(mapa, indent=2, ensure_ascii=False) + "\n",
-        encoding="utf-8",
-    )
+    from monitoritcd.painel.persistencia import gravar_json  # noqa: PLC0415
+
+    gravar_json(raiz, SELECAO_NOME, {str(k): bool(v) for k, v in mapa.items()})
 
 
 def _slug_fonte(fonte_id: str) -> str:
@@ -102,6 +95,9 @@ def _yaml_operador(root: Path, fonte_id: str) -> Path:
 def listar_fontes(raiz: Path | None = None) -> list[dict[str, Any]]:
     """Catálogo YAML + flag `selecionada` (overlay local, como no Coletor)."""
     root = raiz or _repo_root()
+    from monitoritcd.painel.persistencia import materializar_operador  # noqa: PLC0415
+
+    materializar_operador(root)
     fontes = load_all_sources(dir_sources(root), ativo_only=False)
     selecao = _ler_selecao(root)
     pasta_op = dir_sources(root) / OPERADOR_DIR
@@ -181,9 +177,15 @@ def incluir_fonte(
     }
     Source.model_validate(payload)
     destino = _yaml_operador(root, sid)
-    destino.write_text(
-        yaml.safe_dump(payload, allow_unicode=True, sort_keys=False), encoding="utf-8"
+    texto = yaml.safe_dump(payload, allow_unicode=True, sort_keys=False)
+    destino.write_text(texto, encoding="utf-8")
+    from monitoritcd.painel.persistencia import (  # noqa: PLC0415
+        gravar_operador_yaml,
+        usar_firestore,
     )
+
+    if usar_firestore():
+        gravar_operador_yaml(root, sid, texto)
     selecionar_fonte(sid, True, raiz=root)
     return next(s for s in listar_fontes(root) if s["id"] == sid)
 
@@ -192,10 +194,17 @@ def excluir_fonte(fonte_id: str, *, raiz: Path | None = None) -> None:
     """Remove só YAML do operador; catálogo versionado não apaga."""
     root = raiz or _repo_root()
     sid = _slug_fonte(fonte_id)
+    from monitoritcd.painel.persistencia import (  # noqa: PLC0415
+        apagar_operador_yaml,
+        usar_firestore,
+    )
+
     alvo = _achar_yaml_operador(_pasta_operador(root), sid)
-    if alvo is None or not alvo.is_file():
+    apagou_fs = apagar_operador_yaml(root, sid) if usar_firestore() else False
+    if (alvo is None or not alvo.is_file()) and not apagou_fs:
         raise SourceConfigError("só fontes incluídas pelo painel podem ser excluídas")
-    alvo.unlink()
+    if alvo is not None and alvo.is_file():
+        alvo.unlink()
     mapa = _ler_selecao(root)
     mapa.pop(sid, None)
     _gravar_selecao(root, mapa)
