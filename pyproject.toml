@@ -47,7 +47,7 @@ dev = [
     "html5lib>=1.1",
     "syrupy>=4.6.0",
     "respx>=0.21.0",
-    "ruff==0.16.5",
+    "ruff==0.16.7",
     "mypy>=1.10.0",
     "bandit[toml]>=1.7.8",
     "pip-audit>=2.7.0",
