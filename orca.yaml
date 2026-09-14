@@ -1,0 +1,17 @@
+# Orca ADE - MonitorITCD
+# Python + Firebase Functions. .venv recriado por worktree de proposito.
+
+scripts:
+  setup: bash scripts/orca-worktree-setup.sh
+  archive: bash scripts/orca-worktree-archive.sh
+
+defaultTabs:
+  - title: testes
+    command: .venv/bin/python -m pytest -q
+    color: "#38bdf8"
+  - title: lint
+    command: .venv/bin/python -m ruff check .
+    color: "#a78bfa"
+  - title: emuladores
+    command: firebase emulators:start --project demo-monitoritcd --only firestore,storage,ui
+    color: "#f59e0b"

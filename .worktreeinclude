@@ -1,0 +1,3 @@
+# Arquivos gitignored COPIADOS para cada novo worktree (apenas caminhos literais).
+.env
+.claude/settings.local.json

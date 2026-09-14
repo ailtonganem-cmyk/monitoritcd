@@ -164,3 +164,18 @@ config/painel/
 
 # Dump local dos emuladores Firebase (HML)
 .emulator-data/
+
+# Segredo local do painel HML
+.painel_secret
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Ferramentas locais de agente / Orca (não versionar)
+# ─────────────────────────────────────────────────────────────────────────────
+.agents/
+.cursor/skills/
+.playwright-mcp/
+.orq/
+_multiagente/
+_trabalho/
+orca.yaml.bak*
+*.bak
