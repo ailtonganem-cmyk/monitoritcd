@@ -156,20 +156,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           THRESHOLD_HOURS: '18'
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
-          # Só conta o job "Cron diário" em sucesso. Run só-watchdog (job
-          # skipped) NÃO pode renovar o threshold.
+          # Sem checkout neste job: `gh` precisa de -R. Sem isso, o erro
+          # "not a git repository" não dispara set -e (process substitution)
+          # e o watchdog trata histórico vazio como cron pulado — pinga /fail
+          # no Healthchecks.io em falso (incidente 2026-09-14 18:50 UTC).
           LAST_SUCCESS=""
+          RUN_IDS=$(gh run list -R "$GH_REPO" --workflow="Monitor (cron diário)" --limit=30 --json databaseId --jq '.[].databaseId')
           while read -r run_id; do
             [ -z "$run_id" ] && continue
-            started=$(gh run view "$run_id" --json jobs --jq \
+            started=$(gh run view "$run_id" -R "$GH_REPO" --json jobs --jq \
               '[.jobs[] | select(.name=="Cron diário" and .conclusion=="success") | .startedAt] | .[0] // empty')
             if [ -n "$started" ]; then
               LAST_SUCCESS=$started
               break
             fi
-          done < <(gh run list --workflow="Monitor (cron diário)" --limit=30 --json databaseId --jq '.[].databaseId')
+          done <<< "$RUN_IDS"
 
           if [ -z "$LAST_SUCCESS" ]; then
             echo "alert=true" >> "$GITHUB_OUTPUT"
