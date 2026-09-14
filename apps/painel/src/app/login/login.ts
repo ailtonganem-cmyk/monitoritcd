@@ -1,13 +1,12 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { catchError, of } from 'rxjs';
 
 @Component({
   selector: 'app-login',
-  imports: [MatCardModule, MatButtonModule],
+  imports: [MatButtonModule],
   templateUrl: './login.html',
   styleUrl: './login.scss',
 })
@@ -61,10 +60,22 @@ export class Login implements OnInit {
       const provider = new fb.GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-      await fb.signInWithRedirect(fb.auth, provider);
-    } catch {
+      const result = await fb.signInWithPopup(fb.auth, provider);
+      const cred = fb.GoogleAuthProvider.credentialFromResult(result);
+      const googleTok = cred?.idToken;
+      const fbTok = await result.user.getIdToken();
+      this.enviarIdToken(googleTok || fbTok);
+    } catch (err) {
+      const code = (err as {code?: string}).code || '';
+      if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') {
+        alert(
+          code === 'auth/popup-blocked'
+            ? 'O navegador bloqueou a janela do Google. Permita pop-ups neste site.'
+            : 'Login Google cancelado ou recusado.',
+        );
+      }
+    } finally {
       this.googleEmCurso = false;
-      alert('Login Google cancelado ou recusado.');
     }
   }
 
@@ -91,13 +102,13 @@ export class Login implements OnInit {
     }
     const cfg = await cfgResp.json();
     const { initializeApp, getApps } = await import('firebase/app');
-    const { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } =
+    const { getAuth, GoogleAuthProvider, signInWithPopup, getRedirectResult } =
       await import('firebase/auth');
     const app = getApps()[0] ?? initializeApp(cfg);
     return {
       auth: getAuth(app),
       GoogleAuthProvider,
-      signInWithRedirect,
+      signInWithPopup,
       getRedirectResult,
     };
   }

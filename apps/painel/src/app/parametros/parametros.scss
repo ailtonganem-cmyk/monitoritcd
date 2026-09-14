@@ -1,7 +1,15 @@
-.full-width {
-  width: 100%;
-}
-mat-card {
+.parametros-card {
   max-width: 600px;
-  margin: 0 auto;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  margin-top: 1rem;
+}
+
+.btn-salvar {
+  min-height: 44px;
+  align-self: flex-start;
+  margin-top: 0.5rem;
 }

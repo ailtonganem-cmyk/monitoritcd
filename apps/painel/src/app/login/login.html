@@ -1,25 +1,30 @@
-<div class="login-container">
-  <mat-card>
-    <mat-card-header>
-      <mat-card-title>MonitorITCD</mat-card-title>
-      <mat-card-subtitle>Painel de Controle</mat-card-subtitle>
-    </mat-card-header>
-    <mat-card-content>
-      <p>Faça login com sua conta Google (<code>ailtonganem@gmail.com</code>).</p>
+<div class="login-wrapper">
+  <div class="login-box">
+    <h1>MonitorITCD</h1>
+    <p class="subtitle">Painel de Controle</p>
+    
+    <div class="login-actions">
+      <p class="instruction">Faça login com sua conta Google.</p>
+      <p class="allowlist">Acesso restrito a <code>ailtonganem@gmail.com</code></p>
+      
       <button
         mat-raised-button
         color="primary"
+        class="btn-google"
         type="button"
         [disabled]="googleEmCurso"
         (click)="entrarGoogle()">
         Entrar com Google
       </button>
+      
       @if (hmlLocal) {
-        <p>HML localhost: sem client OAuth, use o botão abaixo (não funciona em produção).</p>
-        <button mat-raised-button color="primary" type="button" (click)="entrarHml()">
-          Entrar local (HML)
-        </button>
+        <div class="hml-section">
+          <p class="hml-text">HML localhost: sem client OAuth, use o botão abaixo (não funciona em produção).</p>
+          <button mat-raised-button color="primary" type="button" class="btn-hml" (click)="entrarHml()">
+            Entrar local (HML)
+          </button>
+        </div>
       }
-    </mat-card-content>
-  </mat-card>
+    </div>
+  </div>
 </div>

@@ -1,1 +1,112 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$green-palette,
+        theme-type: light,
+      ),
+      typography: 'Source Sans 3',
+      density: 0,
+    )
+  );
+  height: 100%;
+}
+
+:root {
+  --sys-primary: #3f5c4b;
+  --sys-on-primary: #fffdf8;
+  --sys-background: #f4f1ea;
+  --sys-on-background: #1c1917;
+  --sys-surface: #fffdf8;
+  --sys-on-surface: #1c1917;
+  --sys-outline: #e7e5e4;
+  --sys-error: #9a3412;
+  --sys-on-surface-variant: #78716c;
+  --mat-sys-primary: #3f5c4b;
+  --mat-sys-on-primary: #fffdf8;
+  --mat-sys-background: #f4f1ea;
+  --mat-sys-on-background: #1c1917;
+  --mat-sys-surface: #fffdf8;
+  --mat-sys-on-surface: #1c1917;
+  --mat-sys-outline: #e7e5e4;
+  --mat-sys-error: #9a3412;
+  --mat-sys-on-surface-variant: #78716c;
+}
+
+// Base typography
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--sys-background);
+  color: var(--sys-on-background);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  height: 100%;
+}
+
+app-root {
+  display: block;
+  min-height: 100%;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--sys-on-background);
+  margin-top: 0;
+}
+
+code, pre, .mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+a {
+  color: var(--sys-primary);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Global overrides for material components to match the design
+.mat-mdc-card {
+  background-color: var(--sys-surface) !important;
+  color: var(--sys-on-surface) !important;
+  border: 1px solid var(--sys-outline);
+  box-shadow: none !important;
+  border-radius: 4px !important;
+}
+
+.mat-mdc-table {
+  background-color: var(--sys-surface) !important;
+  border: 1px solid var(--sys-outline);
+  box-shadow: none !important;
+  border-radius: 4px;
+}
+
+.mat-mdc-row:hover {
+  background-color: rgba(0,0,0,0.02) !important;
+}
+
+.mat-mdc-header-cell {
+  color: var(--sys-on-surface-variant) !important;
+  font-weight: 600 !important;
+  border-bottom-color: var(--sys-outline) !important;
+}
+
+.mat-mdc-cell {
+  border-bottom-color: var(--sys-outline) !important;
+}
+
+// Utilities
+.full-width {
+  width: 100%;
+}
+
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-4 { margin-bottom: 1rem; }

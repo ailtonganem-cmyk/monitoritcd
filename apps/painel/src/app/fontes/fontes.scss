@@ -1,18 +1,39 @@
 .form-row {
   display: flex;
-  gap: 16px;
-  align-items: center;
   flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-start;
+  
+  mat-form-field {
+    flex: 1 1 200px;
+  }
+  
+  .btn-action {
+    margin-top: 0.5rem;
+    min-height: 44px;
+  }
 }
-.full-width {
-  flex: 1 1 auto;
-}
-.mb-4 {
-  margin-bottom: 24px;
-}
-.mb-2 {
-  margin-bottom: 16px;
-}
-table {
+
+.table-container {
+  overflow-x: auto;
   width: 100%;
+}
+
+.fontes-table {
+  width: 100%;
+  min-width: 600px; /* Garante scroll no mobile */
+}
+
+@media (max-width: 768px) {
+  .form-row {
+    flex-direction: column;
+    
+    mat-form-field {
+      width: 100%;
+    }
+    
+    .btn-action {
+      width: 100%;
+    }
+  }
 }
