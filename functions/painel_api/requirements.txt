@@ -1,0 +1,3 @@
+./monitoritcd-src
+functions-framework==3.*
+flask==3.*

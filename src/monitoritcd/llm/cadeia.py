@@ -36,7 +36,7 @@ def _chave(settings: Settings, nome: str) -> Any:  # noqa: ANN401
     return valor
 
 
-def _instanciar(item: dict[str, Any], settings: Settings) -> LLMProvider | None:  # noqa: PLR0911
+def _instanciar(item: dict[str, Any], settings: Settings) -> LLMProvider | None:  # noqa: PLR0911,PLR0912
     familia = item.get("familia")
     modelo = str(item.get("modelo") or "")
     if familia == "google":
@@ -62,6 +62,27 @@ def _instanciar(item: dict[str, Any], settings: Settings) -> LLMProvider | None:
     if familia == "anthropic":
         key = _chave(settings, "ANTHROPIC_API_KEY")
         return AnthropicProvider(key, modelo) if key else None
+    if familia == "openrouter":
+        key = _chave(settings, "OPENROUTER_API_KEY")
+        if not key:
+            return None
+        return OpenAICompatProvider(
+            key,
+            modelo,
+            endpoint="https://openrouter.ai/api/v1/chat/completions",
+            name=f"openrouter:{modelo}",
+            extra_headers={"HTTP-Referer": "https://monitoritcd.web.app", "X-Title": "MonitorITCD"},
+        )
+    if familia == "deepseek":
+        key = _chave(settings, "DEEPSEEK_API_KEY")
+        if not key:
+            return None
+        return OpenAICompatProvider(
+            key,
+            modelo,
+            endpoint="https://api.deepseek.com/v1/chat/completions",
+            name=f"deepseek:{modelo}",
+        )
     if familia == "ollama":
         base = getattr(settings, "OLLAMA_BASE_URL", None) or "http://127.0.0.1:11434"
         endpoint = str(base).rstrip("/") + "/v1/chat/completions"
