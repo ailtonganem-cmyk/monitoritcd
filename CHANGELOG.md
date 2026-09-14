@@ -5,6 +5,12 @@ Todas as mudanças notáveis ao MonitorITCD são documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/).
 Versionamento [SemVer](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Watchdog Healthchecks (2026-09-14)
+
+### Corrigido
+
+- Watchdog do `monitor.yml` passou a chamar `gh -R` com `github.repository`. Sem checkout, `gh run list` falhava com "not a git repository", o histórico ficava vazio e o job pingava `/fail` no Healthchecks.io mesmo com o Cron diário em sucesso.
+
 ## [Unreleased] — Painel HML, cadeia de IA e Functions (2026-09-13)
 
 ### Adicionado

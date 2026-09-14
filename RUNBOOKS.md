@@ -164,15 +164,19 @@ Para reprocessamento amplo, edit `main.py` para adicionar `--reprocess --since Y
 
 ## Cron silenciou
 
-**Sintoma**: alerta do Healthchecks.io ("nenhum ping nas últimas X horas").
+**Sintoma**: alerta do Healthchecks.io ("nenhum ping nas últimas X horas") **ou** ping de tipo Falha com o job "Cron diário" em sucesso.
 
-1. Verificar GitHub Actions: https://github.com/{user}/monitoritcd/actions/workflows/monitor.yml
-2. Causas comuns:
+1. Verificar GitHub Actions: https://github.com/ailtonganem-cmyk/monitoritcd/actions/workflows/monitor.yml
+2. Distinguir os dois jobs do `monitor.yml`:
+   - **Cron diário** — coleta real; ping de sucesso/falha no Healthchecks.
+   - **Verificar última coleta** (watchdog, crons `23 6` / `37 13` / `53 21` UTC) — só alerta se o Cron diário passou do threshold (18h).
+3. Causas comuns:
+   - **Watchdog falso positivo**: `gh` sem `-R`/`checkout` trata histórico vazio como "nunca coletou" e pinga `/fail` (incidente 2026-09-14). O Actions do Cron diário pode estar verde.
    - **Cota de minutos esgotada** (raro em repo público; possível em privado).
-   - **Workflow falhou silenciosamente** (logs do runner).
+   - **Workflow falhou** (logs do job Cron diário).
    - **`schedule:` desativado** após 60 dias de inatividade do repo (push para reativar).
-3. Disparar manualmente: `gh workflow run monitor.yml`.
-4. Se o problema persistir, verificar `secrets` (algum vazio ou expirado).
+4. Disparar manualmente: `gh workflow run monitor.yml` (restaura ping de sucesso se a pipeline passar).
+5. Se o problema persistir, verificar `secrets` (algum vazio ou expirado).
 
 ## Quota Firestore esgotada
 
