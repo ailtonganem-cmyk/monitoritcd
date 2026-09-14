@@ -11,28 +11,9 @@ Produção: projeto GCP/Firebase **`monitoritcd`** (Blaze). HML continua localho
 | Pipeline diária | Function `monitor_cron` + Cloud Scheduler `monitor-cron-0233/1013/1447` |
 | Já existentes | `proxy_br`, `canary_filter`, `bot_webhook` |
 
-Login: Google Sign-In, allowlist **somente** `ailtonganem@gmail.com`. Em produção o botão HML local está desligado (`ENV=production`).
+Login: Google via Firebase Auth (`signInWithPopup`, com `signInWithRedirect` se o popup falhar), allowlist **somente** `ailtonganem@gmail.com`. Em produção o botão HML local está desligado (`ENV=production`).
 
-## OAuth (passo único no Console)
-
-A Function `painel_api` precisa de `GOOGLE_OAUTH_CLIENT_ID` (cliente Web) com origens:
-
-- `https://monitoritcd.web.app`
-- `https://monitoritcd.firebaseapp.com`
-- `http://127.0.0.1:8765` (HML)
-
-Criar em: https://console.cloud.google.com/apis/credentials?project=monitoritcd  
-Tipo: **Aplicativo da Web**. Depois:
-
-```bash
-# CLIENT_ID = identificador do cliente OAuth tipo Web (Console > Credenciais).
-gcloud functions deploy painel_api --gen2 --region=southamerica-east1 --project=monitoritcd \
-  --update-env-vars=GOOGLE_OAUTH_CLIENT_ID="$CLIENT_ID"
-```
-
-Não commitar o client secret. O client ID pode ir só na env da Function.
-
-Ativar Authentication no Console Firebase (Get started) e o provedor Google, com domínio autorizado `monitoritcd.web.app`.
+O painel não usa o botão GIS no `web.app` (origem JavaScript do cliente OAuth não é gravável por API). O fluxo usa o redirect já autorizado `https://monitoritcd.firebaseapp.com/__/auth/handler`. O backend continua validando o ID token Google com `GOOGLE_OAUTH_CLIENT_ID` na Function `painel_api`.
 
 ## Redeploy
 

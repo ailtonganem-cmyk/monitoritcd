@@ -6,7 +6,14 @@
     </mat-card-header>
     <mat-card-content>
       <p>Faça login com sua conta Google (<code>ailtonganem@gmail.com</code>).</p>
-      <div id="google-btn"></div>
+      <button
+        mat-raised-button
+        color="primary"
+        type="button"
+        [disabled]="googleEmCurso"
+        (click)="entrarGoogle()">
+        Entrar com Google
+      </button>
       @if (hmlLocal) {
         <p>HML localhost: sem client OAuth, use o botão abaixo (não funciona em produção).</p>
         <button mat-raised-button color="primary" type="button" (click)="entrarHml()">
