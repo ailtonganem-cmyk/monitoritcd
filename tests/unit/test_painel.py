@@ -162,11 +162,11 @@ def test_http_raiz_e_api_exigem_sessao(monkeypatch: pytest.MonkeyPatch) -> None:
         hml = httpx.post(f"{base}/api/auth/hml", json={}, timeout=5)
         assert hml.status_code == 200
         assert hml.json()["email"] == EMAIL_PERMITIDO
-        cookie = hml.cookies.get("monitoritcd_painel")
+        cookie = hml.cookies.get("__session")
         assert cookie
         fontes_ok = httpx.get(
             f"{base}/api/fontes",
-            cookies={"monitoritcd_painel": cookie},
+            cookies={"__session": cookie},
             timeout=5,
         )
         assert fontes_ok.status_code == 200
@@ -359,9 +359,9 @@ def test_http_fluxo_hml_e_apis(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) 
         assert httpx.get(f"{base}/api/nao", timeout=5).status_code == 404
         hml = httpx.post(f"{base}/api/auth/hml", json={}, timeout=5)
         assert hml.status_code == 200
-        cookie = hml.cookies.get("monitoritcd_painel")
+        cookie = hml.cookies.get("__session")
         assert cookie
-        ck = {"monitoritcd_painel": cookie}
+        ck = {"__session": cookie}
         assert httpx.get(f"{base}/api/me", cookies=ck, timeout=5).json()["email"] == EMAIL_PERMITIDO
         assert httpx.get(f"{base}/api/parametros", cookies=ck, timeout=5).status_code == 200
         ia = httpx.get(f"{base}/api/ia", cookies=ck, timeout=5)

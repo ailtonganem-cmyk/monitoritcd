@@ -33,7 +33,8 @@ from monitoritcd.painel.ia_provedores import gravar as gravar_ia
 from monitoritcd.painel.ia_provedores import listar as listar_ia
 from monitoritcd.painel.parametros import gravar_extras, listar_parametros
 
-COOKIE = "monitoritcd_painel"
+# Hosting + Cloud Run só encaminha o cookie `__session`.
+COOKIE = "__session"
 _REL_ESTATICO = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]*$")
 _TIPOS_ESTATICOS = {
     ".js": "text/javascript; charset=utf-8",

@@ -15,6 +15,8 @@ Login: Google via Firebase Auth (`signInWithRedirect` em `https://monitoritcd.fi
 
 O painel não usa popup GIS: o COOP do Google bloqueia `window.closed`. O redirect autorizado é `https://monitoritcd.firebaseapp.com/__/auth/handler`. O backend valida o ID token Google (`tokeninfo` + `GOOGLE_OAUTH_CLIENT_ID`) e, se não for GIS, o JWT do Firebase Auth.
 
+Sessão HTTP: cookie `__session` (único nome que o Hosting encaminha para a Function).
+
 ## Redeploy
 
 ```bash
