@@ -56,13 +56,14 @@ def _ler_chave_arquivo(nome: str) -> str | None:
 
 def _novas_chaves(existentes: dict[str, str]) -> dict[str, str]:
     """Só adiciona o que ainda não está nas env da Function já publicada."""
-    mapa = {
-        "OPENROUTER_API_KEY": "openrouter.txt",
-        "DEEPSEEK_API_KEY": "deepseek.txt",
-        "OPENCODE_API_KEY": "opencode.txt",
-    }
+    pares = (
+        ("OPENROUTER", "openrouter.txt"),
+        ("DEEPSEEK", "deepseek.txt"),
+        ("OPENCODE", "opencode.txt"),
+    )
     extra: dict[str, str] = {}
-    for env_nome, arquivo in mapa.items():
+    for prefixo, arquivo in pares:
+        env_nome = f"{prefixo}_API_KEY"
         if env_nome in existentes and existentes[env_nome].strip():
             continue
         valor = _ler_chave_arquivo(arquivo)
