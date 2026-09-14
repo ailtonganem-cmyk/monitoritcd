@@ -26,11 +26,14 @@ from monitoritcd.painel.fontes import (
     selecionar_fonte,
     ufs_validas,
 )
-from monitoritcd.painel.http import COOKIE, _client_id, _cookie_attrs, _hml_local, _secret
+from monitoritcd.painel.http import _client_id, _hml_local, _secret
 from monitoritcd.painel.ia_provedores import catalogo as catalogo_ia
 from monitoritcd.painel.ia_provedores import gravar as gravar_ia
 from monitoritcd.painel.ia_provedores import listar as listar_ia
 from monitoritcd.painel.parametros import gravar_extras, listar_parametros
+
+# Hosting só encaminha este nome; não importar COOKIE do pacote pip (cache de wheel).
+COOKIE = "__session"
 
 logger = logging.getLogger("painel_api")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -46,7 +49,15 @@ def _json(codigo: int, payload: dict, *, set_cookie: str | None = None) -> Respo
     resp = Response(corpo, status=codigo, mimetype="application/json")
     resp.headers["Cache-Control"] = "no-store"
     if set_cookie is not None:
-        resp.headers["Set-Cookie"] = set_cookie
+        resp.set_cookie(
+            COOKIE,
+            set_cookie,
+            max_age=43200 if set_cookie else 0,
+            httponly=True,
+            samesite="Lax",
+            secure=os.environ.get("ENV", "development") == "production",
+            path="/",
+        )
     return resp
 
 
@@ -112,7 +123,7 @@ def painel_api(request: Request) -> Response:  # noqa: PLR0912
         return _json(
             200,
             {"ok": True, "email": email},
-            set_cookie=f"{COOKIE}={sessao}; {_cookie_attrs()}; Max-Age=43200",
+            set_cookie=sessao,
         )
     if path == "/api/auth/hml":
         if not _hml_local(host):
@@ -121,13 +132,13 @@ def painel_api(request: Request) -> Response:  # noqa: PLR0912
         return _json(
             200,
             {"ok": True, "email": EMAIL_PERMITIDO, "hml_local": True},
-            set_cookie=f"{COOKIE}={sessao}; {_cookie_attrs()}; Max-Age=43200",
+            set_cookie=sessao,
         )
     if path == "/api/auth/sair":
         return _json(
             200,
             {"ok": True},
-            set_cookie=f"{COOKIE}=; {_cookie_attrs()}; Max-Age=0",
+            set_cookie="",
         )
 
     if not _email(request):
