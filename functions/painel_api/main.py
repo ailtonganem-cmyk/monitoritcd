@@ -70,7 +70,7 @@ def painel_api(request: Request) -> Response:  # noqa: PLR0912
         hml = _hml_local(host)
         if not email:
             return _json(
-                401,
+                200,
                 {
                     "ok": False,
                     "erro": "não autenticado",
