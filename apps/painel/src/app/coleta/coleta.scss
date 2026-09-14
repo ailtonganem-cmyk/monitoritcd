@@ -1,26 +1,39 @@
-mat-card {
+.coleta-card {
   max-width: 500px;
-  margin: 0 auto;
 }
+
 .form-content {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 1rem;
+  margin-top: 1rem;
 }
+
+.btn-coleta {
+  min-height: 44px;
+  margin-top: 0.5rem;
+}
+
 .comando-box {
-  margin-top: 24px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.05);
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: var(--sys-background);
+  border: 1px solid var(--sys-outline);
   border-radius: 4px;
+  
+  .comando-label {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    color: var(--sys-on-surface-variant);
+  }
   
   code {
     display: block;
-    margin-top: 8px;
-    padding: 8px;
-    background: #333;
-    color: #fff;
+    padding: 0.75rem;
+    background-color: var(--sys-on-background);
+    color: var(--sys-background);
     border-radius: 4px;
     word-break: break-all;
+    font-size: 0.875rem;
   }
 }

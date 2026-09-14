@@ -1,12 +1,17 @@
-<mat-toolbar color="primary" *ngIf="router.url !== '/'">
-  <span>MonitorITCD</span>
-  <span class="spacer"></span>
-  <a mat-button routerLink="/fontes" routerLinkActive="active">Fontes</a>
-  <a mat-button routerLink="/parametros" routerLinkActive="active">Parâmetros</a>
-  <a mat-button routerLink="/coleta" routerLinkActive="active">Coleta</a>
-  <a mat-button routerLink="/ia" routerLinkActive="active">Inteligência</a>
-  <button mat-button (click)="logout()">Sair</button>
-</mat-toolbar>
-<div class="content">
+@if (!isLogin) {
+  <mat-toolbar class="shell-toolbar">
+    <span class="logo">MonitorITCD</span>
+    <span class="spacer"></span>
+    <nav class="nav-links">
+      <a mat-button routerLink="/fontes" routerLinkActive="active">Fontes</a>
+      <a mat-button routerLink="/parametros" routerLinkActive="active">Parâmetros</a>
+      <a mat-button routerLink="/coleta" routerLinkActive="active">Coleta</a>
+      <a mat-button routerLink="/ia" routerLinkActive="active">Inteligência</a>
+    </nav>
+    <button mat-button (click)="logout()">Sair</button>
+  </mat-toolbar>
+}
+
+<div class="content" [class.is-login]="isLogin">
   <router-outlet></router-outlet>
 </div>
