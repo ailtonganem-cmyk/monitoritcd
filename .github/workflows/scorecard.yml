@@ -35,7 +35,7 @@ jobs:
           results_format: sarif
           publish_results: false  # privado: não publica externamente
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: scorecard-sarif
           path: scorecard-results.sarif

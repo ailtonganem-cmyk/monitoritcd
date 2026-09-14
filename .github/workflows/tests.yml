@@ -128,7 +128,7 @@ jobs:
           diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --fail-under=90
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-py${{ matrix.python-version }}
           path: coverage.xml
