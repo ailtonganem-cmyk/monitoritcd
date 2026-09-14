@@ -8,7 +8,9 @@ import json
 import time
 from typing import Any
 
+import firebase_admin  # type: ignore[import-untyped]
 import httpx
+from firebase_admin import auth as fb_auth  # type: ignore[import-untyped]
 
 from monitoritcd.painel import EMAIL_PERMITIDO
 
@@ -20,16 +22,16 @@ class AuthPainelError(ValueError):
     """Token inválido ou e-mail fora da allowlist."""
 
 
-def verificar_id_token(id_token: str, *, client_id: str) -> str:
-    """Valida o JWT do Google Identity Services e devolve o e-mail.
+def _email_allowlist(dados: dict[str, Any]) -> str:
+    email = str(dados.get("email") or "").strip().lower()
+    if dados.get("email_verified") not in ("true", True):
+        raise AuthPainelError("e-mail Google não verificado")
+    if email != EMAIL_PERMITIDO:
+        raise AuthPainelError("conta não autorizada neste painel")
+    return email
 
-    Raises:
-        AuthPainelError: token vazio, Google recusou, e-mail não verificado
-            ou diferente de `EMAIL_PERMITIDO`.
-    """
-    token = (id_token or "").strip()
-    if not token or not client_id.strip():
-        raise AuthPainelError("token ou client_id ausente")
+
+def _verificar_google(token: str, client_id: str) -> str:
     try:
         resp = httpx.get(TOKENINFO_URL, params={"id_token": token}, timeout=10.0)
     except httpx.HTTPError as exc:
@@ -39,12 +41,39 @@ def verificar_id_token(id_token: str, *, client_id: str) -> str:
     dados: dict[str, Any] = resp.json()
     if dados.get("aud") != client_id:
         raise AuthPainelError("audience do token não confere")
-    email = str(dados.get("email") or "").strip().lower()
-    if dados.get("email_verified") not in ("true", True):
-        raise AuthPainelError("e-mail Google não verificado")
-    if email != EMAIL_PERMITIDO:
-        raise AuthPainelError("conta não autorizada neste painel")
-    return email
+    return _email_allowlist(dados)
+
+
+def _verificar_firebase(token: str) -> str:
+    try:
+        firebase_admin.get_app()
+    except ValueError:
+        firebase_admin.initialize_app()
+    try:
+        dados = fb_auth.verify_id_token(token)
+    except (ValueError, fb_auth.InvalidIdTokenError) as exc:
+        raise AuthPainelError("token Firebase recusado") from exc
+    return _email_allowlist(dados)
+
+
+def verificar_id_token(id_token: str, *, client_id: str) -> str:
+    """Valida JWT Google (GIS/OAuth) ou Firebase Auth e devolve o e-mail.
+
+    Raises:
+        AuthPainelError: token vazio, recusado, e-mail não verificado
+            ou diferente de `EMAIL_PERMITIDO`.
+    """
+    token = (id_token or "").strip()
+    if not token:
+        raise AuthPainelError("token ou client_id ausente")
+    if client_id.strip():
+        try:
+            return _verificar_google(token, client_id)
+        except AuthPainelError as exc:
+            msg = str(exc)
+            if "recusado" not in msg and "falha ao validar" not in msg:
+                raise
+    return _verificar_firebase(token)
 
 
 def emitir_sessao(email: str, secret: str, *, agora: int | None = None) -> str:

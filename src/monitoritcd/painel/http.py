@@ -174,7 +174,7 @@ class PainelHandler(BaseHTTPRequestHandler):
             hml = _hml_local(self.headers.get("Host") or "")
             if not email:
                 self._json(
-                    401,
+                    200,
                     {
                         "ok": False,
                         "erro": "não autenticado",

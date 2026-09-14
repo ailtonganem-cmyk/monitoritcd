@@ -55,6 +55,25 @@ def test_token_google_rejeita_email_estranho(monkeypatch: pytest.MonkeyPatch) ->
         verificar_id_token("tok", client_id="cid")
 
 
+def test_token_firebase_aceita_founder(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Recusado:
+        status_code = 401
+
+        def json(self) -> dict[str, str]:
+            return {}
+
+    def _app() -> object:
+        return object()
+
+    monkeypatch.setattr("monitoritcd.painel.auth.httpx.get", lambda *_a, **_k: _Recusado())
+    monkeypatch.setattr("firebase_admin.get_app", _app)
+    monkeypatch.setattr(
+        "firebase_admin.auth.verify_id_token",
+        lambda _t: {"email": EMAIL_PERMITIDO, "email_verified": True},
+    )
+    assert verificar_id_token("jwt-firebase", client_id="cid") == EMAIL_PERMITIDO
+
+
 def test_token_google_aceita_founder(monkeypatch: pytest.MonkeyPatch) -> None:
     class _Resp:
         status_code = 200
@@ -137,7 +156,8 @@ def test_http_raiz_e_api_exigem_sessao(monkeypatch: pytest.MonkeyPatch) -> None:
         assert fontes.status_code == 401
         assert "não autenticado" in fontes.json()["erro"]
         me = httpx.get(f"{base}/api/me", timeout=5)
-        assert me.status_code == 401
+        assert me.status_code == 200
+        assert me.json()["ok"] is False
         assert me.json().get("hml_local") is True
         hml = httpx.post(f"{base}/api/auth/hml", json={}, timeout=5)
         assert hml.status_code == 200
@@ -180,17 +200,31 @@ def test_ia_cadeia(tmp_path: Path) -> None:
     assert itens[0]["esforco"] == "alto"
 
 
+def _firebase_recusa(monkeypatch: pytest.MonkeyPatch) -> None:
+    class _Fb:
+        @staticmethod
+        def get_app() -> object:
+            return object()
+
+        class auth:
+            @staticmethod
+            def verify_id_token(_token: str) -> dict[str, str]:
+                raise ValueError("jwt inválido")
+
+    monkeypatch.setattr("firebase_admin.get_app", _Fb.get_app)
+    monkeypatch.setattr("firebase_admin.auth.verify_id_token", _Fb.auth.verify_id_token)
+
+
 def test_token_google_rejeita_entrada_invalida(monkeypatch: pytest.MonkeyPatch) -> None:
     with pytest.raises(AuthPainelError, match="ausente"):
         verificar_id_token("", client_id="cid")
-    with pytest.raises(AuthPainelError, match="ausente"):
-        verificar_id_token("tok", client_id="")
 
     def _boom(*_a: object, **_k: object) -> None:
         raise httpx.HTTPError("falha")
 
+    _firebase_recusa(monkeypatch)
     monkeypatch.setattr("monitoritcd.painel.auth.httpx.get", _boom)
-    with pytest.raises(AuthPainelError, match="falha ao validar"):
+    with pytest.raises(AuthPainelError, match="Firebase recusado"):
         verificar_id_token("tok", client_id="cid")
 
     class _Recusado:
@@ -200,7 +234,7 @@ def test_token_google_rejeita_entrada_invalida(monkeypatch: pytest.MonkeyPatch) 
             return {}
 
     monkeypatch.setattr("monitoritcd.painel.auth.httpx.get", lambda *_a, **_k: _Recusado())
-    with pytest.raises(AuthPainelError, match="recusado"):
+    with pytest.raises(AuthPainelError, match="Firebase recusado"):
         verificar_id_token("tok", client_id="cid")
 
     class _Aud:
