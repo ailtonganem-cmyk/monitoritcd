@@ -167,6 +167,13 @@ async def handle_status(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
     for doc in recent:
         por_uf[doc.source.uf] = por_uf.get(doc.source.uf, 0) + 1
 
+    today = datetime.now(UTC).date()
+    classified_today = sum(
+        1 for d in recent if d.llm is not None and d.llm.classified_at.date() == today
+    )
+    llm_quota_max = 1500
+    llm_quota_restante = max(0, llm_quota_max - classified_today)
+
     lines = [
         "📊 *Status*",
         f"• Documentos: {len(docs)} total",
@@ -174,6 +181,8 @@ async def handle_status(ctx: BotContext, _cmd: ParsedCommand) -> HandlerResult:
         f"  - classified: {classified}",
         f"  - notified: {notified}",
         f"• UFs ativas: {active_count}",
+        f"• Cota LLM hoje (Gemini): {classified_today}/{llm_quota_max} usadas "
+        f"(~{llm_quota_restante} restantes)",
     ]
     if not por_uf:
         lines.append("• Últimos 7 dias: nenhum documento")

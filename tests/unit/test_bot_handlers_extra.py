@@ -1002,12 +1002,16 @@ class TestExtraRegistration:
             "backup",
             "coleta",
             "export",
+            "exportar",
             "quota",
+            "cota",
             "diff",
             "historico",
             "comentar",
             "lembrar",
             "cancelar",
             "sefazmg",
+            "saude",
+            "healthcheck",
         ):
             assert cmd_name in HANDLERS, f"comando {cmd_name} não registrado"
