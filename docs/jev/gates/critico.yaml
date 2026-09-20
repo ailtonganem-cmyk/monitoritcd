@@ -1,0 +1,18 @@
+# gate=critico — item classificado como CRITICO dispara push imediato no Telegram.
+# Espelha templates/monitor-itcd-critico.yaml da frota, com o state deste projeto.
+monitoritcd_critico:
+  critico_vs_digest:
+    type: choice
+    instructions: >
+      The state carries the classified item, its relevancia score, its severity tier, the source
+      authority and the collected text excerpt. Should this item stay CRITICO (immediate Telegram
+      push) or be downgraded to the digest? Do not invent legal conclusions. Prefer the digest
+      when the evidence in state is weak.
+    options:
+      - "keep_critico: escalate now"
+      - "digest_only: downgrade"
+      - "need_more_evidence"
+    criteria:
+      "keep_critico: escalate now": "Official source plus an explicit rate change, binding decision, new súmula or a stated deadline in the source text"
+      "digest_only: downgrade": "Urgency inferred rather than stated, or the source is generic press"
+      "need_more_evidence": "Signals conflict or the source text in state was truncated before the relevant part"

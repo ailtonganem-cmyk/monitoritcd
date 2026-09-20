@@ -72,7 +72,35 @@ def listar(raiz: Path) -> list[dict[str, Any]]:
     return sorted(itens, key=lambda i: int(i.get("ordem", 99)))
 
 
+def _resumo_cadeia(itens: list[dict[str, Any]]) -> str:
+    """Descrição de uma linha da cadeia — família, modelo, esforço. Sem chave."""
+    partes = [
+        f"{i.get('familia')}/{i.get('modelo')}"
+        f"@{i.get('esforco')}{'' if i.get('habilitado', True) else ' (off)'}"
+        for i in itens
+    ]
+    return " → ".join(partes) or "empty"
+
+
 def gravar(raiz: Path, itens: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    # Jev shadow (Fase 0): observa a troca da cadeia de IA. Só metadado —
+    # nenhuma chave de API existe neste arquivo nem neste state.
+    from monitoritcd.llm import jev_gate  # noqa: PLC0415
+
+    if jev_gate.habilitado():
+        jev_gate.avaliar_sync(
+            "material",
+            "cadeia-painel",
+            jev_gate.montar_state(
+                {
+                    "current_chain": _resumo_cadeia(listar(raiz)),
+                    "requested_chain": _resumo_cadeia(itens),
+                    "known_families": ",".join(FAMILIAS),
+                },
+            ),
+            contexto={"callpoint": "painel.ia_provedores.gravar"},
+        )
+
     limpos: list[dict[str, Any]] = []
     for idx, bruto in enumerate(itens, start=1):
         familia = str(bruto.get("familia") or "")

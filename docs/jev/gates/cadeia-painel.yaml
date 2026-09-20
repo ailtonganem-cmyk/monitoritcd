@@ -1,0 +1,17 @@
+# gate=material — POST /api/ia persiste uma nova cadeia de provedores.
+monitoritcd_cadeia:
+  material_fork:
+    type: choice
+    instructions: >
+      The panel is about to persist a new AI provider chain (family, model, effort, enabled,
+      order). The state carries the current chain and the requested one. No API key is ever part
+      of this state. Choose whether to persist. Never approve a chain whose only enabled entry is
+      a non-loopback Ollama endpoint.
+    options:
+      - "proceed with chain change"
+      - "safer_path: keep current chain"
+      - "escalate_user: hand off to Ailton"
+    criteria:
+      "proceed with chain change": "Every enabled family is in the catalogue, every model is in its family list, at least one entry can classify"
+      "safer_path: keep current chain": "Requested chain leaves no usable provider, or drops the fallback with no replacement"
+      "escalate_user: hand off to Ailton": "Chain change arrives together with a scope or authorization change"

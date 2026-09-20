@@ -1,0 +1,17 @@
+# gate=destructive — reprocessar sobrescreve llm.* de documentos já classificados.
+monitoritcd_reprocessamento:
+  material_fork:
+    type: choice
+    instructions: >
+      A reprocess run will overwrite the `llm.*` block of stored documents and consume provider
+      quota. The state carries the document count, the window, the current prompt version and the
+      prompt version stored on those documents. Choose the next step. The original collected data
+      is write-once and is never touched by this run.
+    options:
+      - "proceed with reprocess"
+      - "safer_path: dry-run or narrower window"
+      - "escalate_user: hand off to Ailton"
+    criteria:
+      "proceed with reprocess": "Prompt or model version actually changed, document count fits the remaining quota, window is bounded"
+      "safer_path: dry-run or narrower window": "Large window, unclear gain, or quota is tight"
+      "escalate_user: hand off to Ailton": "Whole-corpus scope, or the stored classifications were already reviewed by the owner"

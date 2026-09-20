@@ -1,0 +1,19 @@
+# gate=material — rota de provedor para o lote (advisory; não troca a cadeia do painel).
+monitoritcd_rota:
+  route:
+    type: choice
+    instructions: >
+      Pick the compute path for this classification batch. The state carries batch size, the
+      source authority mix, the configured provider chain and the remaining daily quota. Prefer
+      the cheapest path that fits. This is advisory: it never enables a provider without a
+      configured key and never rewrites the operator chain stored in the panel.
+    options:
+      - "local_or_flash: cheap/fast model"
+      - "standard: configured chain head"
+      - "frontier: strongest configured model"
+      - "defer_batch: wait for next run"
+    criteria:
+      "local_or_flash: cheap/fast model": "Small batch of generic press items with low prescore"
+      "standard: configured chain head": "Ordinary daily batch"
+      "frontier: strongest configured model": "Official acts, statutory text, or a reprocess run that overwrites stored classifications"
+      "defer_batch: wait for next run": "Quota nearly exhausted and the batch is not urgent"

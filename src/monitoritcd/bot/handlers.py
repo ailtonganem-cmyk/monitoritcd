@@ -524,6 +524,23 @@ async def _topicos_adicionar(  # noqa: PLR0911
             is_error=True,
         )
 
+    # Jev shadow (Fase 0): a descrição entra no system prompt do classifier como
+    # dado literal. Observa jailbreak/instrução embutida; não bloqueia ainda.
+    from monitoritcd.llm import jev_gate  # noqa: PLC0415
+
+    await jev_gate.avaliar(
+        "guardrails",
+        "topico",
+        jev_gate.montar_state(
+            {
+                "topic_id": topic_id,
+                "topic_description": descricao,
+                "destination": "embedded verbatim in the classifier system prompt",
+            },
+        ),
+        contexto={"callpoint": "bot.topicos.adicionar"},
+    )
+
     new_entry = TopicEntry(
         id=topic_id,
         descricao=descricao,
