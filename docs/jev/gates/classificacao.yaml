@@ -1,0 +1,26 @@
+# gate=citation — a saída do classificador está sustentada pelo texto coletado?
+# `supported` é o nome que jev-act-decide.py procura no gate citation.
+monitoritcd_classificacao:
+  supported:
+    type: noul
+    instructions: >
+      The state carries the verbatim collected item (title, publication date, source text
+      excerpt) and the classifier output (resumo, resumo_completo, pontos_chave, numero_ato,
+      orgao_emissor). Is every factual element of the output supported by the item text in
+      state? Names, act numbers, dates, figures and issuing bodies must appear in the source
+      text. Do not judge legal merit. Do not supply missing facts.
+    criteria:
+      "true": "Every name, number, date, figure and issuing body in the output appears in the source text in state"
+      "false": "Output adds, alters or reformulates a fact that is not in the source text"
+
+  risco_contexto:
+    type: score
+    instructions: >
+      Score how far the `contexto` field goes beyond the collected text. The classifier prompt
+      allows general legal background in this field, but forbids inventing norm numbers, tax
+      rates, deadlines or case law.
+    criteria:
+      - "restates only what the source text says"
+      - "general background with no specific norm, rate or precedent asserted"
+      - "asserts a norm, rate or precedent as fact without it appearing in the source text"
+      - "invents an act number, tax rate, deadline or court decision"

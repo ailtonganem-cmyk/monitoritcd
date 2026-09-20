@@ -76,8 +76,13 @@ from monitoritcd.core.models import (
 from monitoritcd.core.source_loader import load_all_sources
 from monitoritcd.dedup import assign_clusters
 from monitoritcd.filters.keywords import KEYWORDS_DEFAULT, expand_with_extras, matches_keywords
-from monitoritcd.filters.llm_classifier import build_system_prompt, classify_with_provider
+from monitoritcd.filters.llm_classifier import (
+    PROMPT_VERSION,
+    build_system_prompt,
+    classify_with_provider,
+)
 from monitoritcd.filters.prescore import passes_cutoff, prescore
+from monitoritcd.llm import jev_gate
 from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.severity import effective_severity
@@ -94,7 +99,7 @@ from monitoritcd.storage.audit_log import AuditChainError, AuditLog, OwnershipEr
 if TYPE_CHECKING:
     from monitoritcd.core.base_collector import BaseCollector
     from monitoritcd.core.config import Settings
-    from monitoritcd.core.models import CanalNotificacao, RawItem, Source
+    from monitoritcd.core.models import CanalNotificacao, LLMResult, RawItem, Source
     from monitoritcd.filters.llm_classifier import LLMProvider
     from monitoritcd.storage.base import StorageProtocol
 
@@ -248,6 +253,71 @@ async def filter_by_dedup(
     return out
 
 
+def _iso_ou_vazio(valor: datetime | None) -> str:
+    return valor.isoformat() if valor else ""
+
+
+async def _jev_shadow_classificacao(
+    source: Source,
+    item: RawItem,
+    llm_result: LLMResult,
+) -> None:
+    """Consulta shadow do Jev sobre um item já classificado (Fase 0).
+
+    Dois gates, nesta ordem: `citation` sobre toda a saída do classificador e,
+    quando o tier efetivo é CRITICO, `critico` sobre o push imediato. Nenhum dos
+    dois altera o que a pipeline faz — só registram divergência para calibração.
+    """
+    if not jev_gate.habilitado():
+        return
+
+    ctx = {"doc": f"{source.id}:{item.content_hash[:16]}"}
+    base = {
+        "source_name": source.nome,
+        "source_authority": source.tipo.value,
+        "collected_title": item.titulo_raw,
+        "collected_published_at": _iso_ou_vazio(item.data_publicacao),
+        "collected_text": item.texto_raw or "",
+    }
+
+    await jev_gate.avaliar(
+        "citation",
+        "classificacao",
+        jev_gate.montar_state(
+            {
+                **base,
+                "output_resumo": llm_result.resumo,
+                "output_resumo_completo": llm_result.resumo_completo,
+                "output_pontos_chave": " | ".join(llm_result.pontos_chave),
+                "output_numero_ato": llm_result.metadados_extraidos.get("numero_ato", ""),
+                "output_orgao_emissor": llm_result.metadados_extraidos.get("orgao_emissor", ""),
+                "output_contexto": llm_result.contexto,
+                "output_model": llm_result.llm_model,
+            },
+        ),
+        contexto=ctx,
+    )
+
+    if llm_result.severity_tier != SeverityTier.CRITICO:
+        return
+
+    await jev_gate.avaliar(
+        "critico",
+        "critico",
+        jev_gate.montar_state(
+            {
+                **base,
+                "output_resumo_completo": llm_result.resumo_completo,
+                "output_relevancia": llm_result.relevancia,
+                "output_severity_tier": llm_result.severity_tier.value,
+                "output_motivo_relevancia": llm_result.motivo_relevancia,
+                "notification_effect": "immediate Telegram push to the owner",
+            },
+        ),
+        contexto=ctx,
+    )
+
+
 async def classify_and_store(
     items: list[tuple[Source, RawItem]],
     *,
@@ -271,6 +341,25 @@ async def classify_and_store(
     # Atribui cluster_ids
     raw_items = [item for _, item in items]
     cluster_map = assign_clusters(raw_items)
+
+    # Jev shadow (Fase 0): observa a rota de provedor escolhida para a execução.
+    # Advisory puro — a cadeia continua sendo a do painel.
+    await jev_gate.avaliar(
+        "material",
+        "rota-provedor",
+        jev_gate.montar_state(
+            {
+                "batch_items": len(items),
+                "batch_size": _lim.MAX_BATCH_LLM,
+                "provider_chain": llm_provider.name,
+                "source_authority_mix": ",".join(
+                    sorted({source.tipo.value for source, _ in items}),
+                ),
+                "run_kind": "daily_pipeline",
+            },
+        ),
+        contexto={"callpoint": "classify_and_store"},
+    )
 
     docs_saved: list[Documento] = []
     for batch_idx, batch_start in enumerate(range(0, len(items), _lim.MAX_BATCH_LLM)):
@@ -341,6 +430,8 @@ async def classify_and_store(
             if llm_result.severity_tier == SeverityTier.DESCARTADO:
                 report.items_discarded += 1
                 continue
+
+            await _jev_shadow_classificacao(source, item, llm_result)
 
             doc_id = f"{source.id}:{item.content_hash[:16]}"
             doc = Documento(
@@ -418,6 +509,30 @@ async def reprocess_documents(
         extra_topics_cfg = await storage.get_extra_topics()
     system_prompt = build_system_prompt(extra_topics_cfg)
     allowed_topic_ids = extra_topics_cfg.all_topic_ids() if extra_topics_cfg is not None else None
+
+    # Jev shadow (Fase 0): reprocessar sobrescreve `llm.*` e gasta cota.
+    # Observa a decisão; a execução segue igual.
+    if jev_gate.habilitado():
+        versoes_armazenadas = sorted(
+            {d.llm.llm_prompt_version for d in docs if d.llm is not None},
+        )
+        await jev_gate.avaliar(
+            "destructive",
+            "reprocessamento",
+            jev_gate.montar_state(
+                {
+                    "document_count": len(docs),
+                    "window_since": since.isoformat() if since else "no lower bound",
+                    "window_uf": uf or "all",
+                    "limit": limit,
+                    "current_prompt_version": PROMPT_VERSION,
+                    "stored_prompt_versions": ",".join(versoes_armazenadas) or "none",
+                    "provider_chain": llm_provider.name,
+                    "effect": "overwrites llm.* on stored documents; original.* untouched",
+                },
+            ),
+            contexto={"run_id": run_id, "callpoint": "reprocess_documents"},
+        )
 
     for batch_idx, batch_start in enumerate(range(0, len(docs), _lim.MAX_BATCH_LLM)):
         batch = docs[batch_start : batch_start + _lim.MAX_BATCH_LLM]
