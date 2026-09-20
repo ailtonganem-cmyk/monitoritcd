@@ -546,8 +546,11 @@ class TestReindexSearch:
 @pytest.mark.integration
 class TestNotifyErrorPaths:
     @pytest.mark.asyncio
-    async def test_critico_falha_em_send_nao_quebra(self) -> None:
+    async def test_critico_falha_em_send_nao_quebra(self, monkeypatch: pytest.MonkeyPatch) -> None:
         # Telegram retorna 500 em CRITICO -> exception capturada
+        # Gate Jev desligado: o teste prova o push CRITICO, nao o roteamento
+        # Act (wrapper ambiente real degradaria para digest).
+        monkeypatch.setenv("MONITORITCD_JEV_SHADOW", "0")
         storage = InMemoryStorage(OWNER)
         doc = _make_doc("d1", tier=SeverityTier.CRITICO)
         await _save_all(storage, [doc])
