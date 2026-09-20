@@ -82,6 +82,7 @@ from monitoritcd.llm.fallback import LLMProvidersExhaustedError
 from monitoritcd.notifiers.email_notifier import EmailNotifier
 from monitoritcd.notifiers.severity import effective_severity
 from monitoritcd.notifiers.telegram_notifier import TelegramNotifier
+from monitoritcd.observability.jev_shadow_critico import filter_criticos_for_notify
 from monitoritcd.observability.source_run_health import (
     SourceRunHealth,
     apply_run_counts,
@@ -521,6 +522,161 @@ async def reindex_search_indexes(
     return report
 
 
+def _apply_jev_act_criticos(
+    criticos: list[Documento],
+    digest_docs: list[Documento],
+) -> tuple[list[Documento], list[Documento]]:
+    """Aplica o gate Jev Act (Pacote 4) degradando CRITICO->digest se deny."""
+    if not criticos:
+        return criticos, digest_docs
+
+    try:
+        kept, downgraded = filter_criticos_for_notify(criticos)
+        if downgraded:
+            logger.info(
+                "jev_act.criticos_downgraded",
+                count=len(downgraded),
+                doc_ids=[d.doc_id for d in downgraded],
+            )
+        return kept, [*downgraded, *digest_docs]
+    except Exception as e:  # noqa: BLE001 — act never breaks notify (fail-open)
+        logger.warning("jev_act.batch_failed", error=str(e))
+        return criticos, digest_docs
+
+
+async def _notify_criticos_push(
+    criticos: list[Documento],
+    *,
+    settings: Settings,
+    storage: StorageProtocol,
+    report: RunReport,
+    now: datetime,
+    digest_chat_id: int | None,
+) -> None:
+    """1. Push imediato dos CRITICO (1 mensagem por item)."""
+    if not criticos:
+        return
+
+    try:
+        async with TelegramNotifier(settings) as tg:
+            for doc in criticos:
+                await tg.send_digest(
+                    [doc],
+                    digest_label="🔴 CRÍTICO",
+                    data_geracao=now,
+                    chat_id=digest_chat_id,
+                )
+                report.items_notified_telegram += 1
+                await storage.update_notificacao(
+                    doc.doc_id,
+                    NotificacaoStatus(
+                        enviada=True,
+                        enviada_em=now,
+                        canais=["telegram"],
+                    ),
+                )
+                await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
+    except Exception as e:
+        logger.exception("notify.critico_failed", error=str(e))
+        report.errors.append(f"notify_critico: {e}")
+
+
+async def _send_digest_email(
+    digest_docs: list[Documento],
+    *,
+    settings: Settings,
+    storage: StorageProtocol,
+    report: RunReport,
+    digest_label: str,
+    now: datetime,
+) -> bool:
+    """Envia digest por e-mail para o owner e inscritos ativos."""
+    if not settings.email_habilitado:
+        logger.warning("notify.email_desabilitado", motivo=AVISO_EMAIL_DESABILITADO)
+        return False
+
+    try:
+        subscribers: list[str] = []
+        try:
+            subscribers = await storage.list_email_subscribers()
+        except Exception:
+            logger.exception("notify.subscribers_read_failed")
+        recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
+        email_notifier = EmailNotifier(settings)
+        await email_notifier.send_digest(
+            digest_docs,
+            digest_label=digest_label,
+            data_geracao=now,
+            recipients=recipients,
+        )
+        report.items_notified_email += len(digest_docs)
+        return True
+    except Exception as e:
+        logger.exception("notify.digest_email_failed", error=str(e))
+        report.errors.append(f"notify_digest_email: {e}")
+        return False
+
+
+async def _notify_digest_docs(
+    digest_docs: list[Documento],
+    *,
+    settings: Settings,
+    storage: StorageProtocol,
+    report: RunReport,
+    digest_label: str,
+    now: datetime,
+    digest_chat_id: int | None,
+) -> None:
+    """2. Digest consolidado (Telegram + Email) para o resto."""
+    if not digest_docs:
+        return
+
+    canais_usados: list[CanalNotificacao] = []
+
+    # Telegram
+    try:
+        async with TelegramNotifier(settings) as tg:
+            await tg.send_digest(
+                digest_docs,
+                digest_label=digest_label,
+                data_geracao=now,
+                chat_id=digest_chat_id,
+            )
+            report.items_notified_telegram += len(digest_docs)
+            canais_usados.append("telegram")
+    except Exception as e:
+        logger.exception("notify.digest_telegram_failed", error=str(e))
+        report.errors.append(f"notify_digest_telegram: {e}")
+
+    # Email
+    if await _send_digest_email(
+        digest_docs,
+        settings=settings,
+        storage=storage,
+        report=report,
+        digest_label=digest_label,
+        now=now,
+    ):
+        canais_usados.append("email")
+
+    # Marca como notificado
+    for doc in digest_docs:
+        try:
+            await storage.update_notificacao(
+                doc.doc_id,
+                NotificacaoStatus(
+                    enviada=bool(canais_usados),
+                    enviada_em=now,
+                    canais=canais_usados,
+                ),
+            )
+            await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
+        except (OwnershipError, ValueError, RuntimeError) as e:
+            # OwnershipError não deve abortar a marcação do restante do digest —
+            # mesmo racional do guard em classify_and_store, acima neste arquivo.
+            logger.warning("notify.status_update_failed", doc_id=doc.doc_id, error=str(e))
+
+
 async def notify_documents(
     docs: list[Documento],
     *,
@@ -549,90 +705,28 @@ async def notify_documents(
     criticos = [d for d in docs if d.llm and d.llm.severity_tier == SeverityTier.CRITICO]
     digest_docs = [d for d in docs if d.llm and d.llm.severity_tier != SeverityTier.CRITICO]
 
-    # 1. Push imediato dos CRITICO (1 mensagem por item)
-    if criticos:
-        try:
-            async with TelegramNotifier(settings) as tg:
-                for doc in criticos:
-                    await tg.send_digest(
-                        [doc],
-                        digest_label="🔴 CRÍTICO",
-                        data_geracao=now,
-                        chat_id=digest_chat_id,
-                    )
-                    report.items_notified_telegram += 1
-                    await storage.update_notificacao(
-                        doc.doc_id,
-                        NotificacaoStatus(
-                            enviada=True,
-                            enviada_em=now,
-                            canais=["telegram"],
-                        ),
-                    )
-                    await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
-        except Exception as e:  # last-resort - notif não pode derrubar pipeline
-            logger.exception("notify.critico_failed", error=str(e))
-            report.errors.append(f"notify_critico: {e}")
+    # Pacote 4 Act ON (ordem Ailton 2026-09-19 / ACT-ON.md):
+    # wrapper exit 2 = deny → degradar CRITICO→digest. Jev down = fail-open.
+    criticos, digest_docs = _apply_jev_act_criticos(criticos, digest_docs)
 
-    # 2. Digest consolidado (Telegram + Email) para o resto
-    if digest_docs:
-        canais_usados: list[CanalNotificacao] = []
+    await _notify_criticos_push(
+        criticos,
+        settings=settings,
+        storage=storage,
+        report=report,
+        now=now,
+        digest_chat_id=digest_chat_id,
+    )
 
-        # Telegram
-        try:
-            async with TelegramNotifier(settings) as tg:
-                await tg.send_digest(
-                    digest_docs,
-                    digest_label=digest_label,
-                    data_geracao=now,
-                    chat_id=digest_chat_id,
-                )
-                report.items_notified_telegram += len(digest_docs)
-                canais_usados.append("telegram")
-        except Exception as e:
-            logger.exception("notify.digest_telegram_failed", error=str(e))
-            report.errors.append(f"notify_digest_telegram: {e}")
-
-        # Email (digest único) — owner + inscritos com opt-in ativo (fase 2)
-        if not settings.email_habilitado:
-            logger.warning("notify.email_desabilitado", motivo=AVISO_EMAIL_DESABILITADO)
-        else:
-            try:
-                subscribers: list[str] = []
-                try:
-                    subscribers = await storage.list_email_subscribers()
-                except Exception:  # ler inscritos nunca derruba o envio ao owner
-                    logger.exception("notify.subscribers_read_failed")
-                recipients = list(dict.fromkeys([settings.OWNER_EMAIL, *subscribers]))
-                email_notifier = EmailNotifier(settings)
-                await email_notifier.send_digest(
-                    digest_docs,
-                    digest_label=digest_label,
-                    data_geracao=now,
-                    recipients=recipients,
-                )
-                report.items_notified_email += len(digest_docs)
-                canais_usados.append("email")
-            except Exception as e:
-                logger.exception("notify.digest_email_failed", error=str(e))
-                report.errors.append(f"notify_digest_email: {e}")
-
-        # Marca como notificado
-        for doc in digest_docs:
-            try:
-                await storage.update_notificacao(
-                    doc.doc_id,
-                    NotificacaoStatus(
-                        enviada=bool(canais_usados),
-                        enviada_em=now,
-                        canais=canais_usados,
-                    ),
-                )
-                await storage.update_status(doc.doc_id, StatusDocumento.NOTIFIED)
-            except (OwnershipError, ValueError, RuntimeError) as e:
-                # OwnershipError não deve abortar a marcação do restante do digest —
-                # mesmo racional do guard em classify_and_store, acima neste arquivo.
-                logger.warning("notify.status_update_failed", doc_id=doc.doc_id, error=str(e))
+    await _notify_digest_docs(
+        digest_docs,
+        settings=settings,
+        storage=storage,
+        report=report,
+        digest_label=digest_label,
+        now=now,
+        digest_chat_id=digest_chat_id,
+    )
 
 
 DIGEST_WINDOW_DIAS: Final[dict[str, int]] = {"semanal": 7, "mensal": 30}

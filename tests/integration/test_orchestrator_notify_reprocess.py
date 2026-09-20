@@ -310,6 +310,35 @@ class TestNotifyDocuments:
         assert loaded is not None
         assert loaded.notificacao.canais == ["email"]
 
+    @pytest.mark.asyncio
+    async def test_critico_downgraded_by_jev_act_routes_to_digest(self) -> None:
+        storage = InMemoryStorage(OWNER)
+        doc = _make_doc("d1", tier=SeverityTier.CRITICO)
+        await _save_all(storage, [doc])
+        report = RunReport(run_id="t", started_at=FIXED_NOW)
+
+        target = "monitoritcd.orchestrator.filter_criticos_for_notify"
+        with patch(target, return_value=([], [doc])):
+            async with respx.mock:
+                route = respx.post(f"https://api.telegram.org/bot{TOKEN}/sendMessage").mock(
+                    return_value=httpx.Response(200, json={"ok": True}),
+                )
+                await notify_documents(
+                    [doc],
+                    settings=_settings(email_habilitado=False),
+                    storage=storage,
+                    report=report,
+                    digest_label="Diário",
+                )
+
+        assert report.items_notified_telegram == 1
+        payload = route.calls[0].request.read().decode()
+        assert "🔴 CRÍTICO" not in payload
+        assert "Diário" in payload
+        loaded = await storage.get_documento("d1")
+        assert loaded is not None
+        assert loaded.status == StatusDocumento.NOTIFIED
+
 
 @pytest.mark.integration
 class TestReprocessDocuments:
