@@ -112,6 +112,8 @@ jobs:
         env:
           HEALTHCHECKS_URL: ${{ secrets.HEALTHCHECKS_URL }}
         run: |
+          # Ping final de sucesso. Healthchecks.io usa este sinal + o cron
+          # configurado no painel para detectar runs pulados (missed run alert).
           curl -fsS -m 10 "${HEALTHCHECKS_URL}" || true
 
       - name: Healthcheck — fail ping (se job falhou)
