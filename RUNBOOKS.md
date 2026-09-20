@@ -189,3 +189,5 @@ Para reprocessamento amplo, edit `main.py` para adicionar `--reprocess --since Y
    - Rever queries que fazem N+1 reads.
    - Considerar export de audit antigo para Storage (mais barato).
 4. Se persistir, esperar reset diário (00:00 UTC).
+
+13. [Jev shadow CRITICO](docs/runbooks/jev_shadow_critico.md)

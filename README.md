@@ -216,17 +216,43 @@ AGE_PUBLIC_KEY=age1... python scripts/backup.py --output backup.json.gz.age
 python scripts/cleanup_retention.py --dry-run
 ```
 
+## Como adicionar uma fonte nova
+
+Passo-a-passo para estender as fontes monitoradas:
+
+1. **Declarar o YAML**: Crie `sources/{UF}/{nome}.yaml` (ou `sources/_federal/{nome}.yaml`).
+2. **Definir campos obrigatórios**:
+   - `id`: identificador único kebab-case (ex: `almg-projetos`).
+   - `nome`: nome descritivo do órgão/veículo.
+   - `tipo`: `assembleia`, `sefaz`, `doe`, `tribunal_superior`, etc.
+   - `parser`: `generic_html`, `generic_rss`, `lexml`, `sapl`, etc.
+   - `url`: endpoint estável da fonte.
+   - `keywords_required`: termos obrigatórios para pré-filtro.
+   - `selectors` (se HTML): container, título, link, data.
+3. **Validar estrutura**:
+   ```bash
+   pytest tests/unit/test_source_loader.py
+   ```
+4. **Smoke test local (dry-run)**:
+   ```bash
+   python -m monitoritcd.main run --dry-run --source-id <id>
+   ```
+5. **Verificar logs**: Certifique-se de que não há timeouts, falhas de parsing ou seletores vazios.
+6. **Ativar**: Marque `ativo: true` e defina `expected_min_items_per_week` se aplicável.
+
 ## Bot Telegram — comandos
 
 - `/start` ou `/help` — saudação + lista de comandos
-- `/status` — saúde do sistema, UFs ativas, contadores
+- `/status` — saúde do sistema, cota LLM hoje, UFs ativas, contadores
 - `/buscar <termo> [topico=itcd|sucessoes|regime_bens]` — busca filtrada
 - `/topicos` — lista divisões temáticas
 - `/estados listar` — UFs ativas
 - `/estados ativar <UF>` — ativa monitoramento
 - `/estados desativar <UF>` — requer confirmação 2 passos
 - `/confirmar <token>` — confirma operação destrutiva
-- `/saude_fontes` — fontes com zero items em execuções recentes
+- `/saude_fontes` (ou `/saude`, `/healthcheck`) — fontes com zero items em execuções recentes
+- `/exportar <csv|json> <YYYY-MM-DD>` — exporta documentos do período
+- `/cota` — estimativa de cotas Firestore/LLM/Storage
 
 ## Princípios em código
 

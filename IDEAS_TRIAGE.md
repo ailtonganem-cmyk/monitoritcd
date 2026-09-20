@@ -18,19 +18,19 @@ Itens que melhoram a UX/operação do sistema com pouco código novo.
 
 - [ ] **#100** Digest diário configurável (horário via env) — já tem `/relatorio`,
       falta envio automático no horário. Reusa template existente.
-- [ ] **#103** Ranking dos itens mais relevantes da semana no digest — agrega
+- [x] **#103** Ranking dos itens mais relevantes da semana no digest — agrega
       por relevância LLM, top 5 destaque visual.
-- [ ] **#176** Comando `/exportar csv [periodo]` — exporta docs do período
+- [x] **#176** Comando `/exportar csv [periodo]` — exporta docs do período
       para CSV via DM Telegram (anexo). Útil pra análise off-line.
-- [ ] **#197** Stats por UF no `/status` — adiciona quebra "documentos por UF
+- [x] **#197** Stats por UF no `/status` — adiciona quebra "documentos por UF
       últimos 7 dias" ao output atual.
 - [ ] **#283** Watch list com notif **imediata** em match — hoje notifica no
       próximo cron; melhorar para disparar `/notify_watch` no fim do pipeline.
 - [ ] **#310** Correlation ID em logs ponta-a-ponta — já existe `run_id`,
       propagar para notifier/bot/audit (facilita debugging).
-- [ ] **#348** Métrica de cota LLM restante no `/status` — Gemini tem 1500/dia;
+- [x] **#348** Métrica de cota LLM restante no `/status` — Gemini tem 1500/dia;
       mostrar quanto sobrou. Detecta quota bursts.
-- [ ] **#129** Botão "marcar útil/inútil" via inline keyboard Telegram — feedback
+- [x] **#129** Botão "marcar útil/inútil" via inline keyboard Telegram — feedback
       do dono retroalimenta scoring (não retreina LLM, mas tags pessoais).
 - [ ] **#46** Detecção automática de feed mudou (Last-Modified/ETag) — economiza
       bandwidth e cota LLM evitando reprocessamento de feeds estáveis.
@@ -66,9 +66,9 @@ Aumentam confiabilidade ou experiência operacional.
       sem chamar net real.
 - [ ] **#356** Dashboard com séries temporais (volumes diários nos últimos 30d).
       Estende `build_dashboard.py`.
-- [ ] **#368** Comando `/healthcheck` que testa cada fonte ativa e reporta
+- [x] **#368** Comando `/healthcheck` que testa cada fonte ativa e reporta
       latência/erro. Diagnóstico rápido sem ver logs.
-- [ ] **#487** README com seção "Como adicionar uma fonte nova" passo-a-passo
+- [x] **#487** README com seção "Como adicionar uma fonte nova" passo-a-passo
       (atualmente só CLAUDE.md tem isso).
 
 ## ❌ Não recomendado agora (esforço alto, valor incerto)
