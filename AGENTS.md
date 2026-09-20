@@ -59,11 +59,11 @@ Desde o início de **toda** sessão: em cada **fork material** (decisão), consu
 - **Confiança ≤70%:** contestar + reperguntar (EN); se ainda ≤70% → **Ailton** (sessão normal) ou **3 agentes** (`/autonomo`)
 - `/autonomo`|`/loop`: Jev decide quando disponível e confiança >70%; reabrir só com evidência nova; teto N=3;
   ao **drenar a fila sem impeditivo**, disparar **`/produção` automaticamente**
-- **Cascata Outpost:** Jev nativo → se falhar e sessão **fraca** → System One Adapter + modelo **fronteira** (mesmas perguntas; tag `backend=adapter`) → senão PREVC **sem** árbitro. Jev OK = **não** trocar por Adapter. Proibido Adapter com o mesmo modelo fraco da sessão.
+- **Cascata Outpost:** Jev nativo → se falhar por **qualquer** motivo → System One Adapter + modelo **fronteira** (mesmas perguntas; tag `backend=adapter`) → senão PREVC **sem** árbitro. Jev OK = **não** trocar por Adapter. Proibido Adapter com o mesmo modelo fraco da sessão. Pendência frota: `JEV-ADAPTER-FALLBACK-001` (verificar na próxima sessão).
 - Jev/Adapter **não** escrevem código e **não** autorizam `/produção`/merge sozinho
 
 **Pacotes 2026-09-19:** ver `JEV-SESSAO.md` §§10–13 e `~/Projetos/Skill/compartilhado/jev-implementacao-20260919/` (Grok Bot/CU, Spark/Cowork doc, shadow gates, hooks CLI). Shadow only até calibração.
-**Onda 2 (2026-09-19):** núcleo `~/Projetos/Skill/compartilhado/jev-implementacao-20260919/onda2/` — antes de despachar especialista: `wrappers/cli-session-router.sh`; browser embutido CU A–E: `wrappers/cu-stagehand-act.sh`; citation/RAG/semantic onde houver base. Fail-open se Jev down. Sem Ollama Act. Nunca `/produção` via Jev.
+**Onda 2 (2026-09-19):** núcleo `~/Projetos/Skill/compartilhado/jev-implementacao-20260919/onda2/` — antes de despachar especialista: `wrappers/cli-session-router.sh`; browser embutido CU A–E: `wrappers/cu-stagehand-act.sh`; citation/RAG/semantic onde houver base. Jev down → Adapter; Adapter down → fail-open. Sem Ollama Act. `/produção` só no fim limpo via Jev/Adapter.
 **Onda 3 (2026-09-19):** Router Layer — antes de despachar especialista/worktree: `~/Projetos/Skill/compartilhado/jev-implementacao-20260919/onda3/wrappers/task-envelope.sh` + `skill-router.sh`; respeitar `apply.specialist` (mapa bots). UI→`antigravity_ui`. Fail-open. Nunca `/produção` via Jev. Doc: `onda3/BRIEF.md` + `PROPOSTA-JEV-TOOL-ROUTER-20260919.md`.
 <!-- /JEV-SESSAO -->
 - Evidência de HML/prod = o comando canônico já mapeado neste arquivo, uma vez, no SHA, exit 0.
