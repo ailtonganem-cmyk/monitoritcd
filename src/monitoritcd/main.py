@@ -68,7 +68,15 @@ def _make_backends(
         from monitoritcd.storage.firestore_store import FirestoreStorage  # noqa: PLC0415
 
         firestore_client = AsyncClient(project=settings.FIREBASE_PROJECT_ID)
-        storage: Any = FirestoreStorage(firestore_client, settings.OWNER_ID)
+        replica = None
+        if settings.MINUTA_SEF_PROJECT_ID.strip() and settings.MINUTA_SEF_OWNER_UID.strip():
+            replica = AsyncClient(project=settings.MINUTA_SEF_PROJECT_ID.strip())
+        storage: Any = FirestoreStorage(
+            firestore_client,
+            settings.OWNER_ID,
+            replica_client=replica,
+            replica_owner_id=settings.MINUTA_SEF_OWNER_UID,
+        )
 
         # Decisão do dono (2026-07-08): escopo geográfico reduzido a MG + fontes
         # federais derruba o volume diário processado pelo LLM, então a cota free

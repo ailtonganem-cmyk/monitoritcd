@@ -108,9 +108,17 @@ def _health_from_stored(data: dict[str, Any]) -> SourceRunHealth:
 class FirestoreStorage:
     """Backend Firestore. Async via google-cloud-firestore."""
 
-    def __init__(self, client: AsyncClient, owner_id: str) -> None:
+    def __init__(
+        self,
+        client: AsyncClient,
+        owner_id: str,
+        replica_client: AsyncClient | None = None,
+        replica_owner_id: str = "",
+    ) -> None:
         self._client = client
         self._owner_id = owner_id
+        self._replica = replica_client
+        self._replica_owner_id = replica_owner_id.strip()
 
     @property
     def owner_id(self) -> str:
@@ -144,7 +152,15 @@ class FirestoreStorage:
             )
             return
         doc = doc.model_copy(update={"search_index": build_document_search_index(doc)})
-        await ref.set(doc.model_dump(mode="json"))
+        payload = doc.model_dump(mode="json")
+        await ref.set(payload)
+        if self._replica and self._replica_owner_id:
+            replica_doc = {**payload, "owner_id": self._replica_owner_id}
+            await (
+                self._replica.collection(COLLECTION_DOCUMENTOS)
+                .document(doc.doc_id)
+                .set(replica_doc)
+            )
 
     async def get_documento(self, doc_id: str) -> Documento | None:
         ref = self._client.collection(COLLECTION_DOCUMENTOS).document(doc_id)
