@@ -41,9 +41,10 @@ Linha com etiqueta é gate da Validação (`homologar.sh rodar`); sem etiqueta �
 - YAML de fontes [gate]: `python scripts/lint_sources_yaml.py`
 - Segredos [segredos]: `git ls-files -z | xargs -0 -- detect-secrets-hook --baseline .secrets.baseline`
 - Dependências [dependencias]: `pip-audit --strict --vulnerability-service osv --ignore-vuln CVE-2026-3219 --ignore-vuln PYSEC-2022-42969 --ignore-vuln GHSA-4xh5-x5gv-qwph --ignore-vuln PYSEC-2025-49`
+- Build do painel [build]: `npm --prefix apps/painel run build` (Angular; é o que o Hosting publica, `apps/painel/dist/painel/browser`; pré-requisito `npm ci --prefix apps/painel`)
 - Painel HML: `.venv/bin/python -m monitoritcd.main painel --host 127.0.0.1 --port 8765`
 
-CI (não criar job novo): `tests.yml` (lint, mypy, pytest com cobertura 95 em 3.11/3.12/3.13), `security.yml`
+CI (não criar job novo): `tests.yml` (lint e build do painel, mypy, pytest com cobertura 95 em 3.11/3.12/3.13), `security.yml`
 (bandit, ruff S, gitleaks, detect-secrets, pip-audit, lint YAML, SBOM), `codeql.yml`, `mutation.yml` (semanal),
 mais workflows operacionais (`backup`, `digests`, `monitor`, `reprocess`, `seed-active-states` etc.).
 
@@ -69,7 +70,6 @@ o SHA já aprovado por Tests e Security.
 - Segredos fora do git (`.env` gitignored). Não abra, não commite, não copie valor.
 - Área sensível (SPEC explícita e revisão adversarial atenta): Functions, Rules/IAM, conteúdo jurídico,
   CI/release, `deploy-functions.yml`, dado pessoal.
-- Lacuna declarada (piso T3): falta `[build]` — sem comando no repositório.
 
 ## Adaptações locais
 
