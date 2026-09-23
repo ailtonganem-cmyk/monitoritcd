@@ -32,9 +32,11 @@ jobs:
         run: ruff format --check .
       - name: Testes de tooling
         run: pytest tests/unit/test_ci_test_shards.py
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/painel/package-lock.json
       - name: Build do painel (piso T3 [build]; é o que o Hosting publica)
         run: npm ci --prefix apps/painel && npm --prefix apps/painel run build
 
