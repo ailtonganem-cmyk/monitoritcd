@@ -1,0 +1,116 @@
+{
+  "sha": "9cb178c8b86083a1200606c424fb1ffdc299a05f",
+  "sha12": "9cb178c8b860",
+  "gerado_por": "homologar",
+  "versao": 1,
+  "data": "2026-09-23T17:21:59-03:00",
+  "tier": "T3",
+  "arvore_suja": [],
+  "gates": [
+    {
+      "linha": 37,
+      "rotulo": "Lint",
+      "etiquetas": [
+        "gate"
+      ],
+      "comando": "ruff check . && ruff format --check .",
+      "exit": 0,
+      "duracao_ms": 267,
+      "log": "docs/evidencia/logs/9cb178c8b860/01-lint.log",
+      "sha256": "0fe62428f7418cab4d74aa42f51f35f335ddd33e06df60469ae440c0af1daf85"
+    },
+    {
+      "linha": 38,
+      "rotulo": "Tipos",
+      "etiquetas": [
+        "gate"
+      ],
+      "comando": "mypy",
+      "exit": 0,
+      "duracao_ms": 516,
+      "log": "docs/evidencia/logs/9cb178c8b860/02-tipos.log",
+      "sha256": "88fe827c636a04c691d60cb768a7ac3077b3f88379842e946f181a3ad3f821ea"
+    },
+    {
+      "linha": 39,
+      "rotulo": "Testes",
+      "etiquetas": [
+        "testes"
+      ],
+      "comando": "pytest --cov=src/monitoritcd --cov-fail-under=95",
+      "exit": 0,
+      "duracao_ms": 197858,
+      "log": "docs/evidencia/logs/9cb178c8b860/03-testes.log",
+      "sha256": "a1cbff67cf0ae3adf524a22e717a81254e4a76eb6def542c9ef1e489a2045c95"
+    },
+    {
+      "linha": 40,
+      "rotulo": "SAST",
+      "etiquetas": [
+        "gate"
+      ],
+      "comando": "bandit -c pyproject.toml -r src/ -ll && ruff check . --select S",
+      "exit": 0,
+      "duracao_ms": 1117,
+      "log": "docs/evidencia/logs/9cb178c8b860/04-sast.log",
+      "sha256": "bf7964f0566effb4448c9d76dda70ca50e2b051ed557001f9af19861b00c4f2e"
+    },
+    {
+      "linha": 41,
+      "rotulo": "YAML de fontes",
+      "etiquetas": [
+        "gate"
+      ],
+      "comando": "python scripts/lint_sources_yaml.py",
+      "exit": 0,
+      "duracao_ms": 465,
+      "log": "docs/evidencia/logs/9cb178c8b860/05-yaml-de-fontes.log",
+      "sha256": "e4c50e3baee27802b44d9f1333da7bfec90f8242ee5ab3beccd434d84a1a5a19"
+    },
+    {
+      "linha": 42,
+      "rotulo": "Segredos",
+      "etiquetas": [
+        "segredos"
+      ],
+      "comando": "git ls-files -z | xargs -0 -- detect-secrets-hook --baseline .secrets.baseline",
+      "exit": 0,
+      "duracao_ms": 10037,
+      "log": "docs/evidencia/logs/9cb178c8b860/06-segredos.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "linha": 43,
+      "rotulo": "Dependências",
+      "etiquetas": [
+        "dependencias"
+      ],
+      "comando": "pip-audit --strict --vulnerability-service osv --ignore-vuln CVE-2026-3219 --ignore-vuln PYSEC-2022-42969 --ignore-vuln GHSA-4xh5-x5gv-qwph --ignore-vuln PYSEC-2025-49",
+      "exit": 0,
+      "duracao_ms": 46673,
+      "log": "docs/evidencia/logs/9cb178c8b860/07-depend-ncias.log",
+      "sha256": "15950a68a7ed99c59779717acefdceb3f69cfd31bde67d2c954f2a3cea4d7955"
+    },
+    {
+      "linha": 44,
+      "rotulo": "Build do painel",
+      "etiquetas": [
+        "build"
+      ],
+      "comando": "npm --prefix apps/painel run build",
+      "exit": 0,
+      "duracao_ms": 4025,
+      "log": "docs/evidencia/logs/9cb178c8b860/08-build-do-painel.log",
+      "sha256": "ba763a7993889f8e420e710cf02fbcad32e3c4717517f95d06c6b16cc214fddf"
+    }
+  ],
+  "gates_ok": true,
+  "piso_t3": {
+    "build": true,
+    "testes": true,
+    "segredos": true,
+    "dependencias": true
+  },
+  "adversarial": null,
+  "veredito": "PENDENTE"
+}
