@@ -9,17 +9,17 @@ Functions gen2, Firestore). Não é parecer jurídico nem fonte oficial: o texto
 Este `AGENTS.md` manda; depois `~/Projetos/Skill/AGENTS.md` no que aqui não estiver; depois skill ativada
 por gatilho. `CLAUDE.md` é ponteiro e não redefine precedência.
 
-<!-- METODO:BEGIN v5 2026-09-23 -->
+<!-- METODO:BEGIN v7 2026-09-29 -->
 ## Método
 
 Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
 **Tier deste projeto:** `T3` (fonte: `Skill/compartilhado/projetos.yaml`) · T1 descartável · T2 interno · T3 produção.
 
-**Ciclo P-R-E-V-C** — o mesmo agente planeja, revisa, executa, valida e conclui.
-- **P:** T2/T3 → `SPEC.md` por entrevista (objetivo, fora de escopo, critérios executáveis). T1 ou diff de uma frase → frase de propósito, sem R. T3: a sessão que escreveu a spec não implementa.
+**Ciclo P-R-E-V-C**, todo pelo mesmo agente.
+- **P** (skill `spec`, SDD por nível): S0 = T1 ou diff de uma frase → frase de propósito + aceite Dado/Quando/Então no item, sem R · S1 = `SPEC.md` curta por entrevista (objetivo, fora de escopo, critérios `CA-n`) · S2 = specify → clarify → plan → tasks → analyze. T3: a sessão da spec não implementa.
 - **R:** revisa a SPEC → `docs/evidencia/<id>-revisar.json` (PASS/FAIL).
 - **E:** uma feature · ≤ 5 arquivos não relacionados · ≤ 1 dia sem integrar · um escritor por projeto. Commit com trailer `Agente-CLI: <cli>`. Credencial de produção nunca no agente.
-- **V:** `~/Projetos/Skill/tools/homologar/homologar.sh rodar` executa os gates etiquetados de **Comandos** e grava a evidência; depois `homologar.sh adversarial` registra a revisão do diff contra a SPEC (escopo, casos de borda; afirmação jurídica sem fonte reprova). T3: a revisão adversarial roda em **contexto novo** (subagente ou sessão nova que vê só SPEC, diff e Comandos).
+- **V:** `~/Projetos/Skill/tools/homologar/homologar.sh rodar` roda os gates etiquetados de **Comandos**; depois `homologar.sh adversarial` registra a revisão do diff contra a SPEC (escopo, bordas; jurídico sem fonte reprova). T3: adversarial em **contexto novo** (vê só SPEC, diff e Comandos).
 - **C:** contrato de 4 campos: (1) intenção (2) prova (3) tier (4) o que mudou fora do escopo.
 
 Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (shadow) → Ailton. Gate vermelho não sobe a escada: corrige.
@@ -27,7 +27,9 @@ Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (shadow) → Ailton. Gate
 **Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias]` e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção. Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
 
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
-<!-- METODO:END v5 -->
+
+**Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele.
+<!-- METODO:END v7 -->
 
 ## Comandos
 
