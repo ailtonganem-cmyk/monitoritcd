@@ -9,7 +9,7 @@ Functions gen2, Firestore). Não é parecer jurídico nem fonte oficial: o texto
 Este `AGENTS.md` manda; depois `~/Projetos/Skill/AGENTS.md` no que aqui não estiver; depois skill ativada
 por gatilho. `CLAUDE.md` é ponteiro e não redefine precedência.
 
-<!-- METODO:BEGIN v7 2026-09-29 -->
+<!-- METODO:BEGIN v8 2026-10-03 -->
 ## Método
 
 Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
@@ -22,14 +22,19 @@ Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
 - **V:** `~/Projetos/Skill/tools/homologar/homologar.sh rodar` roda os gates etiquetados de **Comandos**; depois `homologar.sh adversarial` registra a revisão do diff contra a SPEC (escopo, bordas; jurídico sem fonte reprova). T3: adversarial em **contexto novo** (vê só SPEC, diff e Comandos).
 - **C:** contrato de 4 campos: (1) intenção (2) prova (3) tier (4) o que mudou fora do escopo.
 
-Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (shadow) → Ailton. Gate vermelho não sobe a escada: corrige.
+Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ailton. Gate vermelho não sobe a escada: corrige.
 
 **Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias]` e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção. Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
 
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
 
 **Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele.
-<!-- METODO:END v7 -->
+<!-- METODO:END v8 -->
+
+<!-- JEV-SESSAO:BEGIN v2 2026-10-03 -->
+## Jev (always-on)
+Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; sem `/autonomo` → Ailton. Fail-open se Jev down. **Não** autoriza produção/deploy/release. Exclui Gemini CLI e Codex.
+<!-- JEV-SESSAO:END v2 -->
 
 ## Comandos
 
