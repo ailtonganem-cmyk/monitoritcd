@@ -28,7 +28,7 @@ Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ail
 
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
 
-**Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele.
+**Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele. Detalhe: skill `perguntas`, ativa por padrão (`/perguntas` reativa, `/perguntas off` desliga).
 <!-- METODO:END v8 -->
 
 <!-- JEV-SESSAO:BEGIN v2 2026-10-03 -->
