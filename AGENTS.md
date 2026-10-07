@@ -34,6 +34,7 @@ Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ail
 <!-- JEV-SESSAO:BEGIN v2 2026-10-03 -->
 ## Jev (always-on)
 Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; sem `/autonomo` → Ailton. Fail-open se Jev down. **Não** autoriza produção/deploy/release. Exclui Gemini CLI e Codex.
+Gates V/C: `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → Ailton). JEV-SESSAO §5b.
 <!-- JEV-SESSAO:END v2 -->
 
 ## Comandos
