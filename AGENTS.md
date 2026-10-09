@@ -37,6 +37,11 @@ Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/j
 Gates V/C (commit, push e "pronto"; deploy fica fora): `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → Ailton). JEV-SESSAO §5b.
 <!-- JEV-SESSAO:END v3 -->
 
+<!-- OXLINT:BEGIN v1 2026-10-08 -->
+## Lint (Oxlint)
+Linter JS/TS = **Oxlint** (`oxlint`, pacote npm `oxlint`, config `.oxlintrc.json`) **em vez de ESLint**. Não adicionar ESLint nem plugins `eslint-*`; projeto existente migra (`npx @oxlint/migrate`). Regra sem equivalente no Oxlint → registrar a lacuna no `AGENTS.md` do projeto, nunca manter ESLint em silêncio. `compartilhado/DETERMINACAO-OXLINT-EM-VEZ-DE-ESLINT-20261008.md`.
+<!-- OXLINT:END v1 -->
+
 ## Comandos
 
 Linha com etiqueta é gate da Validação (`homologar.sh rodar`); sem etiqueta é informativa. Rodar no `.venv`
