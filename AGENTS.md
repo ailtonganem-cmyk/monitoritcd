@@ -24,18 +24,18 @@ Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
 
 Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ailton. Gate vermelho não sobe a escada: corrige.
 
-**Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias]` e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção. Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
+**Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias]` e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção nem bloqueiam/arbitram deploy (deploy fora do Jev, 2026-10-08). Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
 
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
 
 **Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele. Detalhe: skill `perguntas`, ativa por padrão (`/perguntas` reativa, `/perguntas off` desliga).
 <!-- METODO:END v8 -->
 
-<!-- JEV-SESSAO:BEGIN v2 2026-10-03 -->
+<!-- JEV-SESSAO:BEGIN v3 2026-10-08 -->
 ## Jev (always-on)
-Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; sem `/autonomo` → Ailton. Fail-open se Jev down. **Não** autoriza produção/deploy/release. Exclui Gemini CLI e Codex.
-Gates V/C: `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → Ailton). JEV-SESSAO §5b.
-<!-- JEV-SESSAO:END v2 -->
+Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; sem `/autonomo` → Ailton. Fail-open se Jev down. **Deploy fora do Jev (2026-10-08):** o Jev não autoriza, não bloqueia nem arbitra produção/deploy/release — nenhum gate, banda, juiz forte ou escalonamento roda por causa de deploy; deploy = ordem do Ailton ou `/producao` do fluxo + checks do projeto (`compartilhado/DETERMINACAO-JEV-FORA-DO-DEPLOY-20261008.md`). Exclui Gemini CLI e Codex.
+Gates V/C (commit, push e "pronto"; deploy fica fora): `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → Ailton). JEV-SESSAO §5b.
+<!-- JEV-SESSAO:END v3 -->
 
 ## Comandos
 
