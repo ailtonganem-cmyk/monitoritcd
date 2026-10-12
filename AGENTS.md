@@ -31,11 +31,12 @@ Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ail
 **Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele. Detalhe: skill `perguntas`, ativa por padrão (`/perguntas` reativa, `/perguntas off` desliga).
 <!-- METODO:END v8 -->
 
-<!-- JEV-SESSAO:BEGIN v3 2026-10-08 -->
+<!-- JEV-SESSAO:BEGIN v4 2026-10-12 -->
 ## Jev (always-on)
-Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; sem `/autonomo` → Ailton. Fail-open se Jev down. **Deploy fora do Jev (2026-10-08):** o Jev não autoriza, não bloqueia nem arbitra produção/deploy/release — nenhum gate, banda, juiz forte ou escalonamento roda por causa de deploy; deploy = ordem do Ailton ou `/producao` do fluxo + checks do projeto (`compartilhado/DETERMINACAO-JEV-FORA-DO-DEPLOY-20261008.md`). Exclui Gemini CLI e Codex.
-Gates V/C (commit, push e "pronto"; deploy fica fora): `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → Ailton). JEV-SESSAO §5b.
-<!-- JEV-SESSAO:END v3 -->
+Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; dúvida sem causa = aceita; só regra de negócio → Ailton. Fail-open se Jev down. **Deploy fora do Jev (2026-10-08):** o Jev não autoriza, não bloqueia nem arbitra produção/deploy/release — nenhum gate, banda, juiz forte ou escalonamento roda por causa de deploy; deploy = ordem do Ailton ou `/producao` do fluxo + checks do projeto (`compartilhado/DETERMINACAO-JEV-FORA-DO-DEPLOY-20261008.md`). Exclui Gemini CLI e Codex.
+Gates V/C (commit, push e "pronto"; deploy fica fora): `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → recusa acionável §5c). JEV-SESSAO §5b.
+**Recusa acionável e autocorreção (2026-10-12, §5c):** recusa do gate traz `jev recusa: [causa] passos … evidência exigida … corrija …` — corrija e chame o gate de novo (teto 3); depois `tools/autocorrecao/escalar.py` (outro modelo/agente, sem `--por-ailton`); esgotou = PENDENTE. Recusa sem causa = aceita. Só regra de negócio (`.orq/regras-negocio.paths`, `tools/autocorrecao/classificar.py`) vai ao Ailton. Perguntas: prazo 5 min; sem resposta → recomendada + `/autonomo` só na tarefa (`tools/perguntas/prazo.py`); regra de negócio vira PENDENTE.
+<!-- JEV-SESSAO:END v4 -->
 
 <!-- OXLINT:BEGIN v1 2026-10-08 -->
 ## Lint (Oxlint)
