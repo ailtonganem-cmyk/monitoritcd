@@ -89,3 +89,15 @@ o SHA já aprovado por Tests e Security.
 ## Adaptações locais
 
 Nenhuma.
+
+## Contrato Jules (recomendações)
+
+O bot Jules grava recomendações do Google Jules em `.orq/jules-recomendacoes/`, um arquivo por recomendação (id, data, projeto, descrição, evidência, severidade), mais uma linha em `INDICE.md`. Status inicial: `PENDENTE-VERIFICACAO`.
+
+O agente deste projeto, com o Jev, analisa cada item e grava no próprio arquivo um destes status:
+- `APLICADA`: com referência ao commit/PR;
+- `NEGADA`: com o motivo;
+- `PENDENTE-AILTON`: quando envolve regra de negócio (nunca aplicar sem o Ailton);
+- `EM-ANALISE`.
+
+O Jules lê os status diariamente, registra o histórico em `RETORNO.md` e devolve o resultado ao Google Jules. Recomendação negada não volta sem evidência nova. O Jules nunca aplica correções nem faz commit no código.
