@@ -89,3 +89,9 @@ o SHA já aprovado por Tests e Security.
 ## Adaptações locais
 
 Nenhuma.
+
+---
+## Roteamento Condicional de Ecossistema (Gemini / Google Antigravity)
+- **Condição de Ativação:** Se o ambiente, CLI, IDE, SDK ou modelo de linguagem ativo pertencer ao ecossistema **Google Gemini** ou **Google Antigravity**, você DEVE carregar, priorizar e obedecer integralmente às diretrizes técnicas e de arquitetura contidas no arquivo abaixo:
+@.agents/gemini-antigravity.md
+
