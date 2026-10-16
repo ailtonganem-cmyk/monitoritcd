@@ -24,7 +24,7 @@ Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
 
 Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ailton. Gate vermelho não sobe a escada: corrige.
 
-**Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias]` e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção nem bloqueiam/arbitram deploy (deploy fora do Jev, 2026-10-08). Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
+**Produção por sinal verde, em qualquer tier:** `~/Projetos/Skill/tools/homologar/verificar-veredito.sh` com exit 0 (gates do homologar e adversarial PASS no SHA; em T3, piso `[build] [testes] [segredos] [dependencias] [sast]` (+ `[e2e]` em WEB/MOB) e contexto novo) + campo 4 vazio → entrypoint da seção Release. Campo 4 não vazio → Ailton decide. Jev e Adapter nunca autorizam produção nem bloqueiam/arbitram deploy (deploy fora do Jev, 2026-10-08). Vedado em qualquer modo (bypass/yolo é permitido): force-push em main/master, apagar dado de produção, canal de deploy inventado.
 
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
 
