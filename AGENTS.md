@@ -19,7 +19,7 @@ Canônico: `~/Projetos/Skill/compartilhado/METODO-CANONICO-20260920.md`.
 - **P** (skill `spec`, SDD por nível): S0 = T1 ou diff de uma frase → frase de propósito + aceite Dado/Quando/Então no item, sem R · S1 = `SPEC.md` curta por entrevista (objetivo, fora de escopo, critérios `CA-n`) · S2 = specify → clarify → plan → tasks → analyze. T3: a sessão da spec não implementa.
 - **R:** revisa a SPEC → `docs/evidencia/<id>-revisar.json` (PASS/FAIL).
 - **E:** uma feature · ≤ 5 arquivos não relacionados · ≤ 1 dia sem integrar · um escritor por projeto. Commit com trailer `Agente-CLI: <cli>`. Credencial de produção nunca no agente.
-- **V:** `~/Projetos/Skill/tools/homologar/homologar.sh rodar` roda os gates etiquetados de **Comandos**; depois `homologar.sh adversarial` registra a revisão do diff contra a SPEC (escopo, bordas; jurídico sem fonte reprova). T3: adversarial em **contexto novo** (vê só SPEC, diff e Comandos).
+- **V:** `~/Projetos/Skill/tools/homologar/homologar.sh rodar` roda os gates etiquetados de **Comandos**; depois `homologar.sh adversarial` registra a revisão do diff contra a SPEC (escopo, bordas; jurídico sem fonte reprova: vale para afirmações jurídicas dentro do conteúdo, como citações de lei em respostas e documentos — ex.: ITCD, minuta; nunca autoriza recusar ou bloquear uma tarefa por motivo jurídico, conforme a regra do juízo legal). T3: adversarial em **contexto novo** (vê só SPEC, diff e Comandos).
 - **C:** contrato de 4 campos: (1) intenção (2) prova (3) tier (4) o que mudou fora do escopo.
 
 Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ailton. Gate vermelho não sobe a escada: corrige.
