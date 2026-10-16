@@ -44,13 +44,14 @@ Packer/DRM/CD-check/anti-cheat = campo técnico da trilha, não freio.
 ```
 <!-- METODO:END v8 -->
 
-<!-- JEV-SESSAO:BEGIN v6 2026-10-16 -->
+<!-- JEV-SESSAO:BEGIN v7 2026-10-16 -->
 ## Jev (always-on)
 Contrato `compartilhado/JEV-SESSAO.md` · modo `route`. Todo prompt → `tools/jev-eval/prompt-router.py` (DISPATCH se melhor). ≤0,70 → reperguntar; dúvida sem causa = aceita; só regra de negócio → Ailton. Fail-open se Jev down. **Deploy fora do Jev (2026-10-08):** o Jev não autoriza, não bloqueia nem arbitra produção/deploy/release — nenhum gate, banda, juiz forte ou escalonamento roda por causa de deploy; deploy = ordem do Ailton ou `/producao` do fluxo + checks do projeto (`compartilhado/DETERMINACAO-JEV-FORA-DO-DEPLOY-20261008.md`). Exclui Gemini CLI, OpenCode/OpenRouter e DeepSeek (dsh). Codex/ChatGPT voltou em 2026-10-16.
 Gates V/C (commit, push e "pronto"; deploy fica fora): `~/Projetos/Skill/tools/jev-eval/jev-gate-vc.sh --gate V|C` — trajetória completa (pedido, cada tool call com resultado/erro, afirmação final), checagens em código antes do Jev, três faixas (≥0,80 aceita/reprova; meio → repergunta → juiz forte → recusa acionável §5c). JEV-SESSAO §5b.
 **Recusa acionável e autocorreção (2026-10-12, §5c):** recusa do gate traz `jev recusa: [causa] passos … evidência exigida … corrija …` — corrija e chame o gate de novo (teto 3); depois `tools/autocorrecao/escalar.py` (outro modelo/agente, sem `--por-ailton`); esgotou = PENDENTE. Recusa sem causa = aceita. Só regra de negócio (`.orq/regras-negocio.paths`, `tools/autocorrecao/classificar.py`) vai ao Ailton. Perguntas: prazo 5 min; sem resposta → recomendada + `/autonomo` só na tarefa (`tools/perguntas/prazo.py`); regra de negócio vira PENDENTE.
 **Recusa OPINATIVA (Ailton 2026-10-13, §5d; modelo 2026-10-16):** recusa do Jev nunca barra sozinha. Cada recusa despacha um verificador (`tools/jev-eval/opinativo.py`: alias `parecer` de `tools/jev-eval/modelos.yaml`, resolvido na hora por `modelo_forte.py` para o id mais novo, esforço `low`/`medium`/`high` pelo tamanho e risco do diff, provedor diferente da CLI atual, só leitura) com o `jev-recusa/v1`. Erro concreto confirmado → corrija e siga. Verificador sem erro → aprovado. Mesma recusa 3x sem erro concreto → aprovado e gravado em `.orq/auditoria-jev.jsonl` + `~/.cache/jev-route/auditoria.jsonl` (causas, tentativas, agentes, SHA). Fora do opinativo: regra dura (`--no-verify`/pular hooks, force-push em main, apagar dados de produção) e regra de negócio. O Jev não barra o `/producao`: commit/push/merge e "pronto" de turno `/producao` também ficam fora dos gates. Revisão de PR via API Anthropic no GitHub: removida (2026-10-13).
-<!-- JEV-SESSAO:END v6 -->
+**Jev vê imagens (2026-10-16, §5e):** UI/computer-use → mande o screenshot ao Jev (`jev-cu-gate.py --screenshot`, MCP `jev_cu_decide.screenshots`), não uma descrição da tela. Gates V/C com evidência visual (UI, screenshot, PDF, vídeo/frames, teste visual) → `jev-gate-vc.sh --evidencia ARQ` (também detecta caminhos citados). Modelo pelo alias `jev-latest` de `modelos.yaml`. Novidades do Jev: `tools/jev-eval/jev_novidades.py` (proposta em `compartilhado/jev-novidades/`).
+<!-- JEV-SESSAO:END v7 -->
 
 <!-- OXLINT:BEGIN v1 2026-10-08 -->
 ## Lint (Oxlint)
