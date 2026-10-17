@@ -33,3 +33,14 @@ Fila canônica do projeto (skill `tarefas`).
 - **Ideias novas:** (1) diagrama do pipeline de monitoramento (fontes → coleta → alertas); (2) máquina de estados do processo ITCD monitorado; (3) runbook visual de incidente.
 - **Aceite:** nota em `docs/estudos/` com decisão por ideia (fazer/adiar/não), esforço e riscos (bundle, acessibilidade, dado sensível em MCP remoto); nada implementado sem ordem.
 - **Registrado:** 2026-10-17 (FazTudo/Grok Skill, sem executar agora)
+
+## Pendência frota teste de regressão (2026-10-17)
+
+### REGRESSAO-001 — Teste de regressão em toda correção de bug
+
+- **Risco:** R2 · **C:** C2
+- **Estado:** pronto
+- **Pedido:** Adotar a regra do método (Ailton 2026-10-17): todo commit `fix:` traz teste novo ou alterado que falha no código anterior e passa depois, com o trailer `Regressao-teste: <caminho>::<nome>`. Isenção só com `Regressao-isento: <motivo>` da lista fechada (doc, config, infra, deps, build, nao-reproduzivel; este exige tarefa no TAREFAS.md). Commit sem `fix:` com corrige/bug/fix só gera aviso.
+- **Aceite:** marcador `regressao` na camada mais baixa que reproduz o bug, com id da issue/tarefa/SHA (`@pytest.mark.regressao` + `test_regressao_<id>` ou `describe('regressao: <id>')`; pasta `tests/regressao/` só sem marcador); linha `[regressao]` em `## Comandos` com `{teste}` se o runner não for pytest; hook `commit-msg` ativo (`~/Projetos/Skill/instalar.sh`, ou encadeado no husky/.githooks/hook próprio do projeto); job `regressao` do `checks.yml` do template se houver CI; `- Regressão: <marcador/local>` preenchida em `## Perfil de testes`. Preencher essa linha fecha esta tarefa e liga o bloqueio (até lá, hook/homologar/CI só avisam).
+- **Refs:** `~/Projetos/Skill/compartilhado/TESTES.md` §7.3 (D9) · bloco METODO (Regressão)
+- **Registrado:** 2026-10-17 (FazTudo/Grok Skill, sem executar agora)
