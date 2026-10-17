@@ -1,0 +1,39 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigestsToSemver",
+    "docker:pinDigests"
+  ],
+  "pinDigests": true,
+  "minimumReleaseAge": "1 day",
+  "internalChecksFilter": "strict",
+  "prConcurrentLimit": 5,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "minimumReleaseAge": null,
+    "labels": [
+      "security"
+    ],
+    "prPriority": 10
+  },
+  "packageRules": [
+    {
+      "description": "Caminho rápido: correção de segurança sem quarentena (D-06)",
+      "matchCategories": [
+        "security"
+      ],
+      "minimumReleaseAge": null
+    },
+    {
+      "description": "Actions e imagens sempre por SHA/digest (D-07)",
+      "matchManagers": [
+        "github-actions",
+        "dockerfile",
+        "docker-compose"
+      ],
+      "pinDigests": true
+    }
+  ]
+}

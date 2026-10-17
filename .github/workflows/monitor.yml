@@ -54,9 +54,11 @@ jobs:
       PROXY_BR_TOKEN: ${{ secrets.PROXY_BR_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.11'
           cache: pip
@@ -90,22 +92,26 @@ jobs:
         run: python -m monitoritcd.main check-config
 
       - name: Run pipeline
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_SOURCE_ID: ${{ github.event.inputs.source_id }}
+          INPUT_UF: ${{ github.event.inputs.uf }}
         run: |
           # Com PROXY_BR_URL configurado, fontes geo_restricted (ex: ALMG)
           # fazem fallback automatico via Cloud Function southamerica-east1.
           # Sem proxy, BaseCollector levanta ConnectTimeout e fonte falha
           # isolada. Worker local Windows continua disponivel como reserva.
-          ARGS="run"
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
+          ARGS=(run)
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            ARGS+=(--dry-run)
           fi
-          if [ -n "${{ github.event.inputs.source_id }}" ]; then
-            ARGS="$ARGS --source-id ${{ github.event.inputs.source_id }}"
+          if [ -n "$INPUT_SOURCE_ID" ]; then
+            ARGS+=(--source-id "$INPUT_SOURCE_ID")
           fi
-          if [ -n "${{ github.event.inputs.uf }}" ]; then
-            ARGS="$ARGS --uf ${{ github.event.inputs.uf }}"
+          if [ -n "$INPUT_UF" ]; then
+            ARGS+=(--uf "$INPUT_UF")
           fi
-          python -m monitoritcd.main $ARGS
+          python -m monitoritcd.main "${ARGS[@]}"
 
       - name: Healthcheck — success ping (se job passou)
         if: success() && env.HEALTHCHECKS_URL != ''

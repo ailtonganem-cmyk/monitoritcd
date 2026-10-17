@@ -18,8 +18,10 @@ jobs:
     name: Lint & format
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.11'
           cache: pip
@@ -32,7 +34,7 @@ jobs:
         run: ruff format --check .
       - name: Testes de tooling
         run: pytest tests/unit/test_ci_test_shards.py
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '22'
           cache: npm
@@ -44,8 +46,10 @@ jobs:
     name: mypy --strict
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.11'
           cache: pip
@@ -65,10 +69,11 @@ jobs:
       matrix:
         python-version: ['3.11', '3.12', '3.13']
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -131,11 +136,13 @@ jobs:
       - name: Diff coverage (PR, informativo)
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          diff-cover coverage.xml --compare-branch=origin/${{ github.base_ref }} --fail-under=90
+          diff-cover coverage.xml --compare-branch="origin/$BASE_REF" --fail-under=90
       - name: Upload coverage
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: coverage-py${{ matrix.python-version }}
           path: coverage.xml

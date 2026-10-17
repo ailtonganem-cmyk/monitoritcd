@@ -1,0 +1,5 @@
+# Ignorados aqui só valem citando um id de security-exceptions.yaml (TESTES.md §9.5).
+[[IgnoredVulns]]
+id = "GHSA-ch52-4w7c-c8xp"
+ignoreUntil = 2027-01-15
+reason = "SEC-EXC-001: sem correção publicada; dev-only (@angular/cli > make-fetch-happen), fora do bundle"

@@ -1,0 +1,80 @@
+# Proposta de segurança v3 (§9 CI agendado, semanal; falha = P1 em TAREFAS.md).
+# Jobs condicionados a variável ficam documentados em SECURITY-CI.md (sem alvo = não verificado).
+name: Segurança agendada
+
+on:
+  schedule:
+    - cron: '0 7 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trufflehog:
+    name: trufflehog (histórico, só verificados)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: trufflehog --only-verified (falha = P1)
+        run: docker run --rm -v "$PWD:/repo" trufflesecurity/trufflehog:3.99.2@sha256:47a84bc18a0d04a165498bbbd3bacfd84176661cbc91f8e0f85467f6a771e99a git file:///repo --only-verified --fail --no-update
+
+  # Scorecard: já roda em scorecard.yml (D-31).
+
+  zap-full:
+    name: ZAP full scan (HML, T3)
+    # D-21: só contra homologação, nunca produção. Defina a variável de repositório HML_URL para ligar.
+    if: vars.HML_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: ZAP full scan (imagem por digest)
+        env:
+          ALVO: ${{ vars.HML_URL }}
+        run: |
+          mkdir -p zap && chmod 777 zap
+          docker run --rm -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable@sha256:5ccfff9a411743ab2615136a2edd7416bec9ce41572fa94e935df38c14adb2b6 zap-full-scan.py -t "$ALVO" -r zap-full.html -J zap-full.json -m 10
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: zap-full
+          path: zap/
+
+  nuclei:
+    name: Nuclei sem intrusivos (HML, T3)
+    if: vars.HML_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Nuclei (sem intrusive/dos/fuzz, taxa baixa)
+        env:
+          ALVO: ${{ vars.HML_URL }}
+        run: |
+          mkdir -p nuclei && chmod 777 nuclei
+          docker run --rm -v "$PWD/nuclei:/out" projectdiscovery/nuclei:v3.11.1@sha256:582d5546902e67052097cb2d07296c642d50a1afc5e44623cb038845df9a32eb -u "$ALVO" -etags intrusive,dos,fuzz -rl 10 -c 5 -severity medium,high,critical -o /out/nuclei.txt -silent
+          if [ -s nuclei/nuclei.txt ]; then cat nuclei/nuclei.txt; exit 1; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: nuclei
+          path: nuclei/
+
+  fuzz:
+    name: Fuzz 1 h (corpus versionado; crash vira regressão)
+    # Liga com a variável FUZZ_ENABLED=true quando existir o script npm "fuzz" (D-26).
+    if: vars.FUZZ_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: timeout 3600 npm run fuzz

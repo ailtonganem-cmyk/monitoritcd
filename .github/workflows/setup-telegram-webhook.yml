@@ -21,11 +21,11 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Auth gcloud
-        uses: google-github-actions/auth@v3
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
         with:
           credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
 
-      - uses: google-github-actions/setup-gcloud@v3
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
 
       - name: Buscar URL da Cloud Function
         id: url
@@ -65,4 +65,5 @@ jobs:
         env:
           TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
         run: |
-          curl -sS "https://api.telegram.org/bot${TOKEN}/getWebhookInfo" | python3 -m json.tool
+          RESP=$(curl -sS "https://api.telegram.org/bot${TOKEN}/getWebhookInfo")
+          printf '%s' "$RESP" | python3 -m json.tool

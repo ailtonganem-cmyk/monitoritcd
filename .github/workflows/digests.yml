@@ -38,9 +38,11 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
         with:
           python-version: '3.11'
           cache: pip
@@ -52,10 +54,14 @@ jobs:
 
       - name: Determine periodicidade
         id: per
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PERIODICIDADE: ${{ github.event.inputs.periodicidade }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.periodicidade }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 21 * * 0" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "value=$INPUT_PERIODICIDADE" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_SCHEDULE" = "0 21 * * 0" ]; then
             echo "value=semanal" >> "$GITHUB_OUTPUT"
           else
             echo "value=mensal" >> "$GITHUB_OUTPUT"
@@ -85,5 +91,6 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          PERIODICIDADE: ${{ steps.per.outputs.value }}
         run: |
-          python -m monitoritcd.main digest --periodicidade "${{ steps.per.outputs.value }}"
+          python -m monitoritcd.main digest --periodicidade "$PERIODICIDADE"
