@@ -1,0 +1,4 @@
+#!/bin/sh
+# >>> METODO-SEGURANCA (instalado por ~/Projetos/Skill/instalar.sh; só aviso, TESTES.md §9)
+if [ -f "$HOME/Projetos/Skill/tools/hooks/seguranca_hook.py" ]; then R=HEAD~1..HEAD; git rev-parse -q --verify "@{u}" >/dev/null 2>&1 && R="@{u}..HEAD"; timeout 180 python3 "$HOME/Projetos/Skill/tools/hooks/seguranca_hook.py" pre-push --range "$R" --aviso || true; fi
+# <<< METODO-SEGURANCA
