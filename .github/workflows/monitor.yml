@@ -92,22 +92,26 @@ jobs:
         run: python -m monitoritcd.main check-config
 
       - name: Run pipeline
+        env:
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
+          INPUT_SOURCE_ID: ${{ github.event.inputs.source_id }}
+          INPUT_UF: ${{ github.event.inputs.uf }}
         run: |
           # Com PROXY_BR_URL configurado, fontes geo_restricted (ex: ALMG)
           # fazem fallback automatico via Cloud Function southamerica-east1.
           # Sem proxy, BaseCollector levanta ConnectTimeout e fonte falha
           # isolada. Worker local Windows continua disponivel como reserva.
-          ARGS="run"
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
+          ARGS=(run)
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            ARGS+=(--dry-run)
           fi
-          if [ -n "${{ github.event.inputs.source_id }}" ]; then
-            ARGS="$ARGS --source-id ${{ github.event.inputs.source_id }}"
+          if [ -n "$INPUT_SOURCE_ID" ]; then
+            ARGS+=(--source-id "$INPUT_SOURCE_ID")
           fi
-          if [ -n "${{ github.event.inputs.uf }}" ]; then
-            ARGS="$ARGS --uf ${{ github.event.inputs.uf }}"
+          if [ -n "$INPUT_UF" ]; then
+            ARGS+=(--uf "$INPUT_UF")
           fi
-          python -m monitoritcd.main $ARGS
+          python -m monitoritcd.main "${ARGS[@]}"
 
       - name: Healthcheck — success ping (se job passou)
         if: success() && env.HEALTHCHECKS_URL != ''

@@ -54,10 +54,14 @@ jobs:
 
       - name: Determine periodicidade
         id: per
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_PERIODICIDADE: ${{ github.event.inputs.periodicidade }}
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "value=${{ github.event.inputs.periodicidade }}" >> "$GITHUB_OUTPUT"
-          elif [ "${{ github.event.schedule }}" = "0 21 * * 0" ]; then
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "value=$INPUT_PERIODICIDADE" >> "$GITHUB_OUTPUT"
+          elif [ "$EVENT_SCHEDULE" = "0 21 * * 0" ]; then
             echo "value=semanal" >> "$GITHUB_OUTPUT"
           else
             echo "value=mensal" >> "$GITHUB_OUTPUT"
@@ -87,5 +91,6 @@ jobs:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          PERIODICIDADE: ${{ steps.per.outputs.value }}
         run: |
-          python -m monitoritcd.main digest --periodicidade "${{ steps.per.outputs.value }}"
+          python -m monitoritcd.main digest --periodicidade "$PERIODICIDADE"

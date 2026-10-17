@@ -51,9 +51,13 @@ jobs:
           OWNER_ID: ${{ secrets.OWNER_ID }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
+          INPUT_UFS: ${{ github.event.inputs.ufs }}
+          INPUT_FEDERAL_ACTIVE: ${{ github.event.inputs.federal_active }}
+          INPUT_DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          ARGS="--ufs ${{ github.event.inputs.ufs }} --federal-active ${{ github.event.inputs.federal_active }}"
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            ARGS="$ARGS --dry-run"
+          read -ra UFS <<< "$INPUT_UFS"
+          ARGS=(--ufs "${UFS[@]}" --federal-active "$INPUT_FEDERAL_ACTIVE")
+          if [ "$INPUT_DRY_RUN" = "true" ]; then
+            ARGS+=(--dry-run)
           fi
-          python scripts/seed_active_states.py $ARGS
+          python scripts/seed_active_states.py "${ARGS[@]}"

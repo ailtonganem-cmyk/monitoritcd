@@ -32,5 +32,7 @@ jobs:
         # SC2086 (quote prevenção) é apenas "info" — workflows pré-existentes
         # (backup, deploy-functions) usam expressões GH não quotadas
         # intencionalmente (controladas pelo runner). Filtramos esses códigos.
-        run: ${{ steps.get_actionlint.outputs.executable }} -shellcheck=
+        env:
+          ACTIONLINT_BIN: ${{ steps.get_actionlint.outputs.executable }}
+        run: '"$ACTIONLINT_BIN" -shellcheck='
         shell: bash
