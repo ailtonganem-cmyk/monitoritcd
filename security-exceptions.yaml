@@ -1,0 +1,16 @@
+# Exceções de segurança (compartilhado/TESTES.md §9.5, D-23). Único lugar onde uma exceção vale.
+# Campos obrigatórios: id, ferramenta, componente, motivo, dono, validade (AAAA-MM-DD, ≤ 90 dias de `criada`), tarefa.
+# Exceção vencida, sem campo ou acima de 90 dias reprova no homologar. `nosemgrep`, `.gitleaksignore` e
+# `.trivyignore` só valem citando um id daqui; commit que usa a exceção leva o trailer `Seguranca-exc: <id>`.
+excecoes:
+  - id: SEC-EXC-001
+    ferramenta: osv-scanner
+    componente: http-cache-semantics@4.2.0 (GHSA-ch52-4w7c-c8xp)
+    motivo: >-
+      sem correção publicada; dependência só de desenvolvimento (@angular/cli > pacote >
+      npm-registry-fetch > make-fetch-happen), usada pelo CLI para baixar pacotes do registry;
+      não entra no bundle do painel nem roda em produção. Reavaliar quando houver versão corrigida (Renovate).
+    dono: ailton
+    criada: 2026-10-17
+    validade: 2027-01-15
+    tarefa: SEGURANCA-001
