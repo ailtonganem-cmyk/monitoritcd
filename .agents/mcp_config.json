@@ -1,0 +1,90 @@
+{
+  "mcpServers": {
+    "firebase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "firebase-tools@latest",
+        "experimental:mcp"
+      ],
+      "env": {
+        "FIREBASE_PROJECT_ID": "${FIREBASE_PROJECT_ID}"
+      },
+      "trust": false,
+      "description": "Inspeciona schemas do Firestore, regras de seguranca, Firebase Auth e deploy."
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "trust": false,
+      "description": "Gerencia repositorios, GitHub Pages workflows, branches, issues e Pull Requests."
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "trust": true,
+      "description": "Inspecao de DOM em tempo real, captura de logs do console, rede e testes visuais web."
+    },
+    "figma": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "figma-developer-mcp",
+        "--stdio"
+      ],
+      "env": {
+        "FIGMA_API_KEY": "${FIGMA_API_KEY}"
+      },
+      "trust": false,
+      "description": "Extrai tokens de design, layouts e especificacoes diretamente do Figma para Web e Mobile."
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "./"
+      ],
+      "trust": true,
+      "description": "Leitura e indexacao estruturada da arvore de arquivos do projeto."
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "trust": true,
+      "description": "Planejamento arquitetural em multiplas etapas antes da alteracao de arquivos."
+    }
+  },
+  "permissions": {
+    "allow": [
+      "mcp(filesystem/*)",
+      "mcp(sequential-thinking/*)",
+      "mcp(chrome-devtools/*)",
+      "mcp(figma/*)",
+      "mcp(firebase/get_*)",
+      "mcp(firebase/list_*)",
+      "mcp(github/get_*)",
+      "mcp(github/list_*)",
+      "mcp(github/search_*)"
+    ],
+    "ask": [
+      "mcp(firebase/update_*)",
+      "mcp(firebase/deploy*)",
+      "mcp(github/create_*)",
+      "mcp(github/push_*)",
+      "mcp(github/merge_*)"
+    ]
+  }
+}

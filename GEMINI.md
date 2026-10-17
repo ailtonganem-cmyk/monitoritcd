@@ -1,0 +1,1 @@
+.agents/gemini-antigravity.md
