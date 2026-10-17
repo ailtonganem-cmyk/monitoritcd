@@ -1,0 +1,5 @@
+#!/bin/sh
+# metodo-commit-msg (encadeado à mão) — teste de regressão em fix:, TESTES.md §7.3
+H="$HOME/Projetos/Skill/tools/hooks/commit-msg"
+[ -f "$H" ] || exit 0
+exec python3 "$H" "$@"
