@@ -28,6 +28,8 @@ Escada de FAIL: corrige → na 2ª FAIL consulta o Jev (always-on/route) → Ail
 
 **Piso de cobertura (todos os tiers, 2026-10-16):** geral linhas 75 · ramos 70 · funções 80 · diff 80 · mutação 60; módulos críticos (cálculo, fiscal, regra de negócio, declarados em `## Perfil de testes`) linhas 90 · ramos 90 · funções 100 · diff 90 · mutação 85 (agendada). Projeto sobe, nunca baixa; o `homologar` rejeita valor abaixo (`compartilhado/TESTES.md` §7.1).
 
+**Regra de negócio no back-end (Ailton 2026-10-17):** o servidor decide e faz valer toda regra de negócio; o front-end só exibe e valida UX (nunca é a única validação). `## Perfil de testes` declara `- Regras de negócio: back-end (<caminho>)` ou `n/a (motivo)`; o `homologar` rejeita front-end.
+
 **HML = localhost:** emuladores com projeto `demo-<nome>`; serviço de terceiro sem emulador → modo sandbox do fornecedor, declarado em Adaptações locais; recurso de produção nunca.
 
 **Decisões do Ailton:** UMA pergunta por vez, questionário com opções concretas selecionáveis (widget da superfície se houver; senão lista numerada). Não empilhar decisões em prosa aberta. Vale para todo agente/CLI/Orca que fale com ele. Detalhe: skill `perguntas`, ativa por padrão (`/perguntas` reativa, `/perguntas off` desliga).
