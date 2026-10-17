@@ -5,14 +5,9 @@ on:
     # 30 min apos o cron diario (ja terao novos dados)
     - cron: '43 10 * * *'
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Monitor (cron diário)"]
-    types: [completed]
+  # workflow_run removido (zizmor dangerous-triggers): o cron acima já roda 30 min após o Monitor.
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -21,6 +16,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -40,8 +37,10 @@ jobs:
         env:
           OWNER_ID: ${{ secrets.OWNER_ID }}
           GOOGLE_APPLICATION_CREDENTIALS: /tmp/sa.json
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
-          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}' > /tmp/sa.json
+          umask 077
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > /tmp/sa.json
           python scripts/build_dashboard.py \
             --output docs/dashboard/index.html \
             --metrics-json docs/dashboard/metrics.json
@@ -55,6 +54,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
